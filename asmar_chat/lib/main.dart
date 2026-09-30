@@ -1,9 +1,116 @@
 import 'package:flutter/material.dart';
 
-const gold=Color(0xFFFFD36A), gold2=Color(0xFFB77921), bg=Color(0xFF090604), card=Color(0xFF1B0E08);
-void main()=>runApp(const AsmarApp());
-class AsmarApp extends StatelessWidget{const AsmarApp({super.key});@override Widget build(BuildContext c)=>MaterialApp(debugShowCheckedModeBanner:false,title:'Asmar Chat',theme:ThemeData(useMaterial3:true,brightness:Brightness.dark,scaffoldBackgroundColor:bg,colorScheme:ColorScheme.fromSeed(seedColor:gold,brightness:Brightness.dark)),home:const Shell());}
-class Shell extends StatefulWidget{const Shell({super.key});@override State<Shell> createState()=>_ShellState();}
-class _ShellState extends State<Shell>{int tab=0;final pages=const[Home(),Discover(),Wallet(),Profile()];@override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(body:pages[tab],bottomNavigationBar:NavigationBar(backgroundColor:const Color(0xFF100805),indicatorColor:const Color(0xFF4A2C12),selectedIndex:tab,onDestinationSelected:(v)=>setState(()=>tab=v),destinations:const[NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'الرئيسية'),NavigationDestination(icon:Icon(Icons.explore_outlined),selectedIcon:Icon(Icons.explore),label:'اكتشف'),NavigationDestination(icon:Icon(Icons.account_balance_wallet_outlined),selectedIcon:Icon(Icons.account_balance_wallet),label:'المحفظة'),NavigationDestination(icon:Icon(Icons.person_outline),selectedIcon:Icon(Icons.person),label:'حسابي')]));}
-class Home extends StatelessWidget{const Home({super.key});@override Widget build(BuildContext c)=>Scaffold(body:SafeArea(child:CustomScrollView(slivers:[SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.all(16),child:Row(children:[const CircleAvatar(radius:23,backgroundColor:Color(0xFF4A2B11),child:Icon(Icons.shield,color:gold)),const SizedBox(width:10),const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Asmar Chat',style:TextStyle(color:gold,fontSize:24,fontWeight:FontWeight.w900)),Text('مجتمع صوتي • غرف • هدايا • VIP',style:TextStyle(color:Colors.white54,fontSize:11))])),IconButton(onPressed:(){},icon:const Icon(Icons.notifications_none)),IconButton(onPressed:(){},icon:const Icon(Icons.search))]))),SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Container(height:175,decoration:BoxDecoration(borderRadius:BorderRadius.circular(24),gradient:const LinearGradient(colors:[Color(0xFF6B2C0B),Color(0xFF160A06)]),border:Border.all(color:gold2)),child:Stack(children:[const Positioned(left:18,top:16,child:Icon(Icons.auto_awesome,color:gold,size:32)),Padding(padding:const EdgeInsets.all(22),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('أهلاً بك في',style:TextStyle(color:Colors.white70)),const Text('ASMAR CHAT',style:TextStyle(color:gold,fontSize:32,fontWeight:FontWeight.w900)),const SizedBox(height:6),const Text('ادخل غرفتك المفضلة وتحدث مع الأصدقاء.',style:TextStyle(color:Colors.white60,fontSize:12)),const Spacer(),FilledButton.icon(onPressed:(){},icon:const Icon(Icons.mic),label:const Text('ابدأ الدردشة الصوتية'),style:ButtonStyle(backgroundColor:WidgetStatePropertyAll(gold2)))]))])))),const SliverToBoxAdapter(child:Padding(padding:EdgeInsets.fromLTRB(18,20,18,10),child:Text('الغرف النشطة',style:TextStyle(color:gold,fontSize:21,fontWeight:FontWeight.w900)))),SliverPadding(padding:const EdgeInsets.symmetric(horizontal:16),sliver:SliverList.builder(itemCount:10,itemBuilder:(c,i)=>RoomCard(i))),SliverToBoxAdapter(child:SizedBox(height:20))]));}
-class RoomCard extends StatelessWidget{final int i;const RoomCard(this.i,{super.key});@override Widget build(BuildContext c){final names=['سهرات أسمر','لمة الأصدقاء','VIP Lounge','نجوم الليل','مجلس العرب','المضيفين','دردشة عامة','الوكالات','أهل الخير','الاستراحة'];return InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>Room(name:names[i]))),borderRadius:BorderRadius.circular(18),child:Container(margin:const EdgeInsets.only(bottom:10),padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:card,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFF4C3019))),child:Row(children:[CircleAvatar(radius:29,backgroundColor:const Color(0xFF422511),child:Icon([Icons.local_fire_department,Icons.people,Icons.workspace_premium,Icons.nightlight,Icons.groups][i%5],color:gold)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(names[i],style:const TextStyle(color:Colors.white,fontSize:16,fontWeight:FontWeight.bold)),const SizedBox(height:5),Text('مضيف • هدايا • دردشة صوتية',style:const TextStyle(color:Colors.white54,fontSize:10)),const SizedBox(height
+const gold = Color(0xFFFFD36A);
+const gold2 = Color(0xFFB77921);
+const bg = Color(0xFF090604);
+const card = Color(0xFF1B0E08);
+
+void main() {
+  runApp(const AsmarApp());
+}
+
+class AsmarApp extends StatelessWidget {
+  const AsmarApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Asmar Chat',
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: bg,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: gold,
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: const Shell(),
+    );
+  }
+}
+
+class Shell extends StatefulWidget {
+  const Shell({super.key});
+
+  @override
+  State<Shell> createState() => _ShellState();
+}
+
+class _ShellState extends State<Shell> {
+  int tab = 0;
+
+  final pages = const [
+    Home(),
+    Discover(),
+    Wallet(),
+    Profile(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: pages[tab],
+        bottomNavigationBar: NavigationBar(
+          backgroundColor: const Color(0xFF100805),
+          indicatorColor: const Color(0xFF4A2C12),
+          selectedIndex: tab,
+          onDestinationSelected: (value) {
+            setState(() => tab = value);
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'الرئيسية',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.explore_outlined),
+              selectedIcon: Icon(Icons.explore),
+              label: 'اكتشف',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              selectedIcon: Icon(Icons.account_balance_wallet),
+              label: 'المحفظة',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'حسابي',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== الرئيسية ====================
+
+class Home extends StatelessWidget {
+  const Home({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Color(0xFF4A2B11),
+                      child: Icon(Icons.shield, color: gold),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start
