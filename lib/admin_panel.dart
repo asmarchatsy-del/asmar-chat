@@ -199,6 +199,26 @@ class _AdminPanelState extends State<AdminPanel> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _ownerWallet(),
+        const SizedBox(height: 16),
+        const Text(
+          'الأوسمة والصلاحيات',
+          style: TextStyle(color: gold, fontSize: 19, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: const [
+            _RoleBadge(title: 'CEO', icon: Icons.workspace_premium),
+            _RoleBadge(title: 'SUPER ADMIN', icon: Icons.shield),
+            _RoleBadge(title: 'ADMIN', icon: Icons.admin_panel_settings),
+            _RoleBadge(title: 'MANAGER', icon: Icons.manage_accounts),
+            _RoleBadge(title: 'HOST', icon: Icons.mic),
+            _RoleBadge(title: 'AGENT', icon: Icons.business),
+          ],
+        ),
+        const SizedBox(height: 18),
         Row(
           children: [
             Expanded(
@@ -360,6 +380,42 @@ class _AdminPanelState extends State<AdminPanel> {
     );
   }
 
+  Widget _ownerWallet() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7A3A0C), Color(0xFF251006)],
+        ),
+        border: Border.all(color: gold2),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(
+            radius: 27,
+            backgroundColor: Color(0xFF422511),
+            child: Icon(Icons.account_balance_wallet, color: gold, size: 29),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('محفظة المالك', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                SizedBox(height: 3),
+                Text('1,000,000 Coins', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+                SizedBox(height: 2),
+                Text('رصيد مخصص للتوزيع على المستخدمين والوكلاء والمشترين', style: TextStyle(color: Colors.white54, fontSize: 10)),
+              ],
+            ),
+          ),
+          Icon(Icons.send, color: gold),
+        ],
+      ),
+    );
+  }
+
   Widget _statCard(String title, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -459,6 +515,33 @@ class _AdminPanelState extends State<AdminPanel> {
       SnackBar(
         content: Text(text),
         backgroundColor: gold2,
+      ),
+    );
+  }
+}
+
+
+class _RoleBadge extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  const _RoleBadge({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFF241307),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: gold2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: gold, size: 18),
+          const SizedBox(width: 6),
+          Text(title, style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w900)),
+        ],
       ),
     );
   }
