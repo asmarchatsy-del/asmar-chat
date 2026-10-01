@@ -402,6 +402,11 @@ class _AdminPanelState extends State<AdminPanel> {
     );
   }
 
+  int get activeHosts => hosts.where((h) => h['status'] == true).length;
+  int get activeAgencies => agencies.where((a) => a['status'] == true).length;
+  int get totalUserCoins => users.fold<int>(0, (sum, u) => sum + ((u['coins'] ?? 0) as int));
+  int get totalHostCoins => hosts.fold<int>(0, (sum, h) => sum + ((h['coins'] ?? 0) as int));
+
   String _roleLabel(String role) {
     switch (role) {
       case 'CEO': return 'CEO';
@@ -426,6 +431,21 @@ class _AdminPanelState extends State<AdminPanel> {
     }
   }
 
+  Widget _stat(String title, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF4C3019))),
+      child: Row(children: [
+        Icon(icon, color: gold, size: 22),
+        const SizedBox(width: 8),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(title, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+        ])),
+      ]),
+    );
+  }
+
   Widget _roleBadge(String role) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
     decoration: BoxDecoration(
@@ -434,6 +454,43 @@ class _AdminPanelState extends State<AdminPanel> {
     ),
     child: Text(_roleLabel(role), style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900)),
   );
+
+  void _liveStats() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('إحصائيات مباشرة', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 16),
+              Row(children: [
+                Expanded(child: _stat('المستخدمون', users.length.toString(), Icons.people)),
+                const SizedBox(width: 8),
+                Expanded(child: _stat('المضيفون', activeHosts.toString(), Icons.mic)),
+              ]),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(child: _stat('الوكالات', activeAgencies.toString(), Icons.business)),
+                const SizedBox(width: 8),
+                Expanded(child: _stat('تحويلات', coinTransactions.length.toString(), Icons.swap_horiz)),
+              ]),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(child: _stat('كوينز المستخدمين', totalUserCoins.toString(), Icons.monetization_on)),
+                const SizedBox(width: 8),
+                Expanded(child: _stat('كوينز المضيفين', totalHostCoins.toString(), Icons.stars)),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   void _manageRoles() {
     showModalBottomSheet<void>(
