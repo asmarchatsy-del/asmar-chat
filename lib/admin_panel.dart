@@ -1,7 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -17,49 +15,17 @@ class AdminPanel extends StatefulWidget {
 
 class _AdminPanelState extends State<AdminPanel> {
   int selected = 0;
-  int coins = 1000000;
+  int coins = 0;
 
   final List<Map<String, dynamic>> coinTransactions = [];
 
-  final List<Map<String, dynamic>> users = [
-    {'name': 'Asmar Owner', 'role': 'CEO', 'coins': 500000, 'online': true},
-    {'name': 'مضيف أسمر', 'role': 'HOST', 'coins': 12000, 'online': true},
-    {'name': 'محمد', 'role': 'AGENT', 'coins': 8500, 'online': false},
-    {'name': 'VIP User', 'role': 'USER', 'coins': 3200, 'online': true},
-  ];
+  final List<Map<String, dynamic>> users = [];
 
-  final List<Map<String, dynamic>> hosts = [
-    {'name': 'مضيف أسمر', 'agency': 'وكالة أسمر', 'status': true, 'coins': 12000},
-    {'name': 'ليان', 'agency': 'وكالة سوريا', 'status': true, 'coins': 9800},
-    {'name': 'نور', 'agency': 'وكالة النجوم', 'status': false, 'coins': 6500},
-  ];
+  final List<Map<String, dynamic>> hosts = [];
 
-  final List<Map<String, dynamic>> agencies = [
-    {'name': 'وكالة أسمر', 'manager': 'MANAGER', 'hosts': 12, 'status': true},
-    {'name': 'وكالة سوريا', 'manager': 'AGENT', 'hosts': 8, 'status': true},
-    {'name': 'وكالة النجوم', 'manager': 'AGENT', 'hosts': 5, 'status': false},
-  ];
+  final List<Map<String, dynamic>> agencies = [];
 
-  final List<Map<String, dynamic>> rooms = [
-    {
-      'name': 'سهرات أسمر',
-      'host': 'مضيف أسمر',
-      'users': 24,
-      'active': true,
-    },
-    {
-      'name': 'لمة الأصدقاء',
-      'host': 'محمد',
-      'users': 18,
-      'active': true,
-    },
-    {
-      'name': 'VIP Lounge',
-      'host': 'VIP',
-      'users': 12,
-      'active': false,
-    },
-  ];
+  final List<Map<String, dynamic>> rooms = [];
 
   @override
   void initState() {
@@ -68,37 +34,53 @@ class _AdminPanelState extends State<AdminPanel> {
   }
 
   Future<void> _loadData() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      coins = prefs.getInt('owner_coins') ?? coins;
-      _restoreList(users, prefs.getString('admin_users'));
-      _restoreList(hosts, prefs.getString('admin_hosts'));
-      _restoreList(agencies, prefs.getString('admin_agencies'));
-      _restoreList(coinTransactions, prefs.getString('coin_transactions'));
-    });
-  }
-
-  void _restoreList(List<Map<String, dynamic>> target, String? raw) {
-    if (raw == null) return;
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return;
     try {
-      final data = jsonDecode(raw);
-      if (data is List) {
-        target
-          ..clear()
-          ..addAll(data.map((e) => Map<String, dynamic>.from(e as Map)));
-      }
-    } catch (_) {}
+      final profile = await client.from('profiles').select('id,display_name,username,role,is_active').eq('id', user.id).maybeSingle();
+      final role = profile?['role'] as String? ?? 'USER';
+      if (!['CEO', 'SUPER_ADMIN', 'MANAGER', 'ADMIN'].contains(role)) return;
+
+      final profiles = await client.from('profiles').select('id,display_name,username,role,is_active').eq('is_active', true).order('created_at', ascending: false);
+      final wallets = await client.from('wallets').select('user_id,balance');
+      final walletByUser = <String, int>{for (final w in wallets) w['user_id'] as String: (w['balance'] as num).toInt()};
+      final agenciesData = await client.from('agencies').select('id,name,manager_id,is_active,created_at').order('created_at', ascending: false);
+      final roomsData = await client.from('rooms').select('id,name,owner_id,livekit_room_name,is_active,created_at').order('created_at', ascending: false);
+      final transactions = await client.from('coin_transactions').select('id,from_user_id,to_user_id,amount,reason,created_at').or('from_user_id.eq.${user.id},to_user_id.eq.${user.id}').order('created_at', ascending: false).limit(100);
+
+      if (!mounted) return;
+      setState(() {
+        users..clear()..addAll(profiles.map<Map<String, dynamic>>((p) => {
+          'id': p['id'], 'name': (p['display_name'] ?? p['username'] ?? 'مستخدم').toString(),
+          'role': p['role'].toString(), 'coins': walletByUser[p['id']] ?? 0, 'online': false,
+        }));
+        hosts..clear()..addAll(users.where((u) => u['role'] == 'HOST').map((u) => {
+          'id': u['id'], 'name': u['name'], 'agency': '—', 'status': true, 'coins': u['coins'],
+        }));
+        agencies..clear()..addAll(agenciesData.map<Map<String, dynamic>>((a) => {
+          'id': a['id'], 'name': a['name'], 'manager': a['manager_id']?.toString() ?? '—',
+          'hosts': 0, 'status': a['is_active'] == true,
+        }));
+        rooms..clear()..addAll(roomsData.map<Map<String, dynamic>>((r) => {
+          'id': r['id'], 'name': r['name'], 'host': r['owner_id']?.toString() ?? '—',
+          'users': 0, 'active': r['is_active'] == true,
+        }));
+        coins = walletByUser[user.id] ?? 0;
+        coinTransactions..clear()..addAll(transactions.map<Map<String, dynamic>>((t) => {
+          'id': t['id'], 'recipient': t['to_user_id']?.toString() ?? '—',
+          'type': t['reason']?.toString() ?? 'transfer', 'amount': (t['amount'] as num).toInt(),
+          'balanceAfter': coins, 'time': t['created_at'].toString(),
+        }));
+      });
+    } catch (e) {
+      if (mounted) _message('تعذر تحميل بيانات الإدارة: $e');
+    }
   }
 
-  Future<void> _saveData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('owner_coins', coins);
-    await prefs.setString('admin_users', jsonEncode(users));
-    await prefs.setString('admin_hosts', jsonEncode(hosts));
-    await prefs.setString('admin_agencies', jsonEncode(agencies));
-    await prefs.setString('coin_transactions', jsonEncode(coinTransactions));
-  }
+
+
+  Future<void> _saveData() async {}
 
   @override
   Widget build(BuildContext context) {
@@ -642,7 +624,7 @@ class _AdminPanelState extends State<AdminPanel> {
                       Text(a['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       Text(a['manager'] + ' • ' + a['hosts'].toString() + ' مضيف', style: const TextStyle(color: Colors.white54, fontSize: 11)),
                     ])),
-                    Switch(value: a['status'], onChanged: (v) => setState(() => a['status'] = v); _saveData()),
+                    Switch(value: a['status'], onChanged: (v) { setState(() => a['status'] = v); _saveData(); }),
                   ],
                 ),
               )),
@@ -792,16 +774,13 @@ class _AdminPanelState extends State<AdminPanel> {
                   _message('قيمة الكوينز غير صالحة');
                   return;
                 }
-                setState(() {
-                  coins -= amount;
-                  final list = type == 'مضيف' ? hosts : type == 'وكالة' ? agencies : users;
-                  final item = list.firstWhere((x) => x['name'] == recipient);
-                  item['coins'] = (item['coins'] ?? 0) + amount;
-                  coinTransactions.add({'recipient': recipient, 'type': type, 'amount': amount, 'balanceAfter': coins, 'time': TimeOfDay.now().format(context)});
-                  _saveData();
-                });
-                Navigator.pop(context);
-                _message('تم تحويل $amount Coins إلى $recipient');
+                try {
+                  final recipientRow = users.firstWhere((u) => u['name'] == recipient);
+                  await Supabase.instance.client.rpc('transfer_coins', params: {
+                    'p_to_user_id': recipientRow['id'], 'p_amount': amount, 'p_reason': 'admin_transfer',
+                  });
+                  if (mounted) { Navigator.pop(context); await _loadData(); _message('تم تحويل $amount Coins إلى $recipient'); }
+                } catch (e) { _message('فشل التحويل: $e'); }
               },
               child: const Text('تحويل'),
             ),
@@ -857,7 +836,7 @@ class _AdminPanelState extends State<AdminPanel> {
         ),
         border: Border.all(color: gold2),
       ),
-      child: const Row(
+      child: Row(
         children: [
           CircleAvatar(
             radius: 27,
@@ -871,9 +850,9 @@ class _AdminPanelState extends State<AdminPanel> {
               children: [
                 Text('محفظة المالك', style: TextStyle(color: Colors.white70, fontSize: 12)),
                 SizedBox(height: 3),
-                Text('1,000,000 Coins', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+                Text('$coins Coins', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
                 SizedBox(height: 2),
-                Text('الرصيد الحالي: $coins Coins • مخصص للتوزيع على المستخدمين والوكلاء والمشترين', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                Text('الرصيد الحالي: $coins Coins • رصيد حقيقي من قاعدة البيانات', style: TextStyle(color: Colors.white54, fontSize: 10)),
               ],
             ),
           ),
