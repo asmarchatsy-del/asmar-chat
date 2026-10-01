@@ -1,21 +1,35 @@
-name: asmar_chat
-description: Asmar Chat voice application
-publish_to: "none"
+name: Build APK
 
-version: 1.0.0+1
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-environment:
-  sdk: ">=3.0.0 <4.0.0"
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-dependencies:
-  flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^4.0.0
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
 
-flutter:
-  uses-material-design: true
+      - name: Create Android
+        run: flutter create . --platforms=android
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: asmar-chat-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
