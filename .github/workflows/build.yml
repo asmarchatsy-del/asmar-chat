@@ -10,10 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: asmar_chat
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,10 +19,16 @@ jobs:
         with:
           channel: stable
 
+      - name: Create Android project files
+        working-directory: asmar_chat
+        run: flutter create --project-name asmar_chat --platforms=android .
+
       - name: Get dependencies
+        working-directory: asmar_chat
         run: flutter pub get
 
       - name: Build APK
+        working-directory: asmar_chat
         run: flutter build apk --release
 
       - name: Upload APK
