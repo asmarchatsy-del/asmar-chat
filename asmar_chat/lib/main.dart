@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'admin_panel.dart';
-import 'room.dart';
-
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
 const bg = Color(0xFF090604);
@@ -14,7 +11,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: 'https://jojxsqsgmpaggfnnyuyy.supabase.co',
-    anonKey: 'ضع_مفتاح_النشر_الذي_نسخته_من_Supabase_هنا',
+    anonKey: 'sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL',
   );
 
   runApp(const AsmarApp());
@@ -211,16 +208,7 @@ class Home extends StatelessWidget {
                         ),
                         const Spacer(),
                         FilledButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const Room(
-                                  name: 'سهرات أسمر',
-                                ),
-                              ),
-                            );
-                          },
+                          onPressed: () {},
                           icon: const Icon(Icons.mic),
                           label: const Text('ابدأ الدردشة الصوتية'),
                           style: const ButtonStyle(
@@ -281,4 +269,332 @@ class RoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const
+    const icons = [
+      Icons.local_fire_department,
+      Icons.people,
+      Icons.workspace_premium,
+      Icons.nightlight,
+      Icons.groups,
+    ];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFF4C3019),
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 29,
+            backgroundColor: const Color(0xFF422511),
+            child: Icon(
+              icons[index % icons.length],
+              color: gold,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'مضيف • هدايا • دردشة صوتية',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.chevron_left,
+            color: gold,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Discover extends StatelessWidget {
+  const Discover({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('اكتشف'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          FeatureCard(
+            icon: Icons.local_fire_department,
+            title: 'الغرف الرائجة',
+            subtitle: 'اكتشف أكثر الغرف نشاطاً',
+          ),
+          FeatureCard(
+            icon: Icons.mic,
+            title: 'المضيفون',
+            subtitle: 'تعرف على المضيفين',
+          ),
+          FeatureCard(
+            icon: Icons.workspace_premium,
+            title: 'VIP',
+            subtitle: 'مميزات وتجربة VIP',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FeatureCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const FeatureCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFF4C3019),
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 27,
+            backgroundColor: const Color(0xFF422511),
+            child: Icon(icon, color: gold),
+          ),
+          const SizedBox(width: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Wallet extends StatelessWidget {
+  const Wallet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('المحفظة'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF6B2C0B),
+                  Color(0xFF160A06),
+                ],
+              ),
+              border: Border.all(color: gold2),
+            ),
+            child: const Column(
+              children: [
+                Icon(
+                  Icons.account_balance_wallet,
+                  color: gold,
+                  size: 45,
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'رصيدك',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  '0',
+                  style: TextStyle(
+                    color: gold,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  'عملة',
+                  style: TextStyle(color: Colors.white54),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          _WalletButton(
+            title: 'إرسال هدية',
+            icon: Icons.card_giftcard,
+          ),
+          _WalletButton(
+            title: 'شحن الرصيد',
+            icon: Icons.add_circle_outline,
+          ),
+          _WalletButton(
+            title: 'سجل العمليات',
+            icon: Icons.history,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WalletButton extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _WalletButton({
+    required this.title,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        tileColor: card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(
+            color: Color(0xFF4C3019),
+          ),
+        ),
+        leading: Icon(icon, color: gold),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.chevron_left,
+          color: gold,
+        ),
+      ),
+    );
+  }
+}
+
+class Profile extends StatelessWidget {
+  const Profile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('حسابي'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          SizedBox(height: 15),
+          CircleAvatar(
+            radius: 48,
+            backgroundColor: Color(0xFF422511),
+            child: Icon(
+              Icons.person,
+              color: gold,
+              size: 55,
+            ),
+          ),
+          SizedBox(height: 12),
+          Center(
+            child: Text(
+              'زائر أسمر',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          SizedBox(height: 5),
+          Center(
+            child: Text(
+              'حساب جديد',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          SizedBox(height: 25),
+          FeatureCard(
+            icon: Icons.login,
+            title: 'تسجيل الدخول',
+            subtitle: 'الدخول إلى حسابك',
+          ),
+          FeatureCard(
+            icon: Icons.edit,
+            title: 'الملف الشخصي',
+            subtitle: 'تعديل بيانات الحساب',
+          ),
+          FeatureCard(
+            icon: Icons.settings,
+            title: 'الإعدادات',
+            subtitle: 'إعدادات التطبيق',
+          ),
+          FeatureCard(
+            icon: Icons.admin_panel_settings,
+            title: 'لوحة الإدارة',
+            subtitle: 'إدارة التطبيق',
+          ),
+        ],
+      ),
+    );
+  }
+}
