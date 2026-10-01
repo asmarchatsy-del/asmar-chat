@@ -127,3 +127,33 @@ using (true);
 -- Coin transfers and role changes must NOT be performed by the client.
 -- Implement them in a Supabase Edge Function using a transactional server-side
 -- operation and authorization checks. Do not expose a service-role key in Flutter.
+
+-- Automatically create a USER profile and zero-balance wallet for every new Auth user.
+-- Roles are never taken from client metadata; every new account starts as USER.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, username, display_name, role)
+  values (
+    new.id,
+    null,
+    coalesce(new.raw_user_meta_data ->> 'display_name', ''),
+    'USER'
+  )
+  on conflict (id) do nothing;
+
+  insert into public.wallets (user_id, balance)
+  values (new.id, 0)
+  on conflict (user_id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute procedure public.handle_new_user();
