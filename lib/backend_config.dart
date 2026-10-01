@@ -1,24 +1,19 @@
 import 'package:flutter/foundation.dart';
 
-/// Runtime configuration for the real Asmar Chat backend.
-///
-/// Pass these at build/run time; never commit service-role secrets.
-/// Example:
-/// flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_PUBLISHABLE_KEY=...
+/// Production configuration for the Asmar Chat Supabase backend.
+/// The publishable key is intended for client apps; never put a Supabase
+/// secret/service-role key in this file.
 class BackendConfig {
-  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const supabaseUrl = 'https://jojxsqsgmpaggfnnyuyy.supabase.co';
   static const supabasePublishableKey =
-      String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
+      'sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL';
 
   static bool get isConfigured =>
       supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
 
   static void validate() {
     if (!isConfigured) {
-      debugPrint(
-        'Asmar Chat: Supabase is not configured. '
-        'Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY.',
-      );
+      debugPrint('Asmar Chat: Supabase backend is not configured.');
     }
   }
 }
