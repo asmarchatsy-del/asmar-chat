@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'backend_config.dart';
 import 'admin_panel.dart';
 import 'room.dart';
 
@@ -7,7 +9,12 @@ const gold2 = Color(0xFFB77921);
 const bg = Color(0xFF090604);
 const card = Color(0xFF1B0E08);
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: BackendConfig.supabaseUrl,
+    publishableKey: BackendConfig.supabasePublishableKey,
+  );
   runApp(const AsmarApp());
 }
 
@@ -28,7 +35,193 @@ class AsmarApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: const Shell(),
+      home: const AuthGate(),
+    );
+  }
+}
+
+
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final supabase = Supabase.instance.client;
+    return StreamBuilder<AuthState>(
+      stream: supabase.auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        if (supabase.auth.currentSession != null) {
+          return const Shell();
+        }
+        return const LoginPage();
+      },
+    );
+  }
+}
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final email = TextEditingController();
+  final password = TextEditingController();
+  final displayName = TextEditingController();
+  bool signUp = false;
+  bool loading = false;
+  String? error;
+
+  Future<void> submit() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final auth = Supabase.instance.client.auth;
+      if (signUp) {
+        await auth.signUp(
+          email: email.text.trim(),
+          password: password.text,
+          data: {'display_name': displayName.text.trim()},
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم إنشاء الحساب. تحقق من بريدك إذا طُلب ذلك.')),
+          );
+        }
+      } else {
+        await auth.signInWithPassword(
+          email: email.text.trim(),
+          password: password.text,
+        );
+      }
+    } on AuthException catch (e) {
+      setState(() => error = e.message);
+    } catch (e) {
+      setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    displayName.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: Card(
+                  color: card,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const CircleAvatar(
+                          radius: 38,
+                          backgroundColor: Color(0xFF4A2B11),
+                          child: Icon(Icons.shield, color: gold, size: 40),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'ASMAR CHAT',
+                          style: TextStyle(
+                            color: gold,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          signUp ? 'إنشاء حساب جديد' : 'تسجيل الدخول',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        if (signUp) ...[
+                          const SizedBox(height: 18),
+                          TextField(
+                            controller: displayName,
+                            decoration: const InputDecoration(
+                              labelText: 'اسم العرض',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: email,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'البريد الإلكتروني',
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: password,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'كلمة المرور',
+                            prefixIcon: Icon(Icons.lock_outline),
+                          ),
+                        ),
+                        if (error != null) ...[
+                          const SizedBox(height: 12),
+                          Text(error!, style: const TextStyle(color: Colors.redAccent)),
+                        ],
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: loading ? null : submit,
+                            style: const ButtonStyle(
+                              backgroundColor: WidgetStatePropertyAll(gold2),
+                            ),
+                            child: loading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : Text(signUp ? 'إنشاء الحساب' : 'دخول'),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: loading ? null : () => setState(() {
+                            signUp = !signUp;
+                            error = null;
+                          }),
+                          child: Text(
+                            signUp
+                                ? 'لدي حساب — تسجيل الدخول'
+                                : 'ليس لدي حساب — إنشاء حساب',
+                            style: const TextStyle(color: gold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
