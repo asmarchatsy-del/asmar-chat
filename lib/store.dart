@@ -126,6 +126,7 @@ class _FramePreview extends StatelessWidget {
       'diamond' => const [Color(0xFFE9F7FF), Color(0xFF79BFFF)],
       'fire' => const [Color(0xFFFFD36A), Color(0xFFFF3D00)],
       'vip' => const [Color(0xFFE6C66A), Color(0xFF7D3C98)],
+      'svip' => const [Color(0xFFFFFFFF), Color(0xFF7B2CFF)],
       _ => const [Color(0xFFFFE08A), Color(0xFFB77921)],
     };
     return Container(
