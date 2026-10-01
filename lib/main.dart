@@ -394,10 +394,29 @@ class Profile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('حسابي')),
-      body: const Center(
-        child: Text(
-          'الملف الشخصي',
-          style: TextStyle(color: gold, fontSize: 28),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'الملف الشخصي',
+              style: TextStyle(color: gold, fontSize: 28, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminPanel()),
+                );
+              },
+              icon: const Icon(Icons.admin_panel_settings),
+              label: const Text('لوحة الإدارة'),
+              style: const ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(gold2),
+              ),
+            ),
+          ],
         ),
       ),
     );
