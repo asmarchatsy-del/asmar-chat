@@ -14,6 +14,7 @@ class AdminPanel extends StatefulWidget {
 
 class _AdminPanelState extends State<AdminPanel> {
   int selected = 0;
+  int coins = 1000000;
 
   final List<Map<String, dynamic>> rooms = [
     {
@@ -380,6 +381,42 @@ class _AdminPanelState extends State<AdminPanel> {
     );
   }
 
+  void _distributeCoins() {
+    final controller = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: card,
+        title: const Text('توزيع الكوينزات', style: TextStyle(color: gold)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'عدد الكوينزات',
+            labelStyle: TextStyle(color: Colors.white70),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final amount = int.tryParse(controller.text) ?? 0;
+              if (amount > 0 && amount <= coins) {
+                setState(() => coins -= amount);
+                Navigator.pop(dialogContext);
+                _message('تم تجهيز توزيع $amount Coins');
+              } else {
+                _message('أدخل مبلغًا صحيحًا ضمن الرصيد');
+              }
+            },
+            child: const Text('توزيع'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _ownerWallet() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -406,7 +443,7 @@ class _AdminPanelState extends State<AdminPanel> {
                 SizedBox(height: 3),
                 Text('1,000,000 Coins', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
                 SizedBox(height: 2),
-                Text('رصيد مخصص للتوزيع على المستخدمين والوكلاء والمشترين', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                Text('الرصيد الحالي: $coins Coins • مخصص للتوزيع على المستخدمين والوكلاء والمشترين', style: TextStyle(color: Colors.white54, fontSize: 10)),
               ],
             ),
           ),
