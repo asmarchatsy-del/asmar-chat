@@ -16,6 +16,8 @@ class _AdminPanelState extends State<AdminPanel> {
   int selected = 0;
   int coins = 1000000;
 
+  final List<Map<String, dynamic>> coinTransactions = [];
+
   final List<Map<String, dynamic>> users = [
     {'name': 'Asmar Owner', 'role': 'CEO', 'coins': 500000, 'online': true},
     {'name': 'مضيف أسمر', 'role': 'HOST', 'coins': 12000, 'online': true},
@@ -589,6 +591,50 @@ class _AdminPanelState extends State<AdminPanel> {
     );
   }
 
+  void _coinHistory() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      isScrollControlled: true,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * .72,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text('سجل تحويلات الكوينز', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              if (coinTransactions.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(30),
+                  child: Center(child: Text('لا توجد عمليات تحويل حتى الآن', style: TextStyle(color: Colors.white54))),
+                )
+              else
+                ...coinTransactions.reversed.map((t) => Container(
+                  margin: const EdgeInsets.only(bottom: 9),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(15), border: Border.all(color: const Color(0xFF4C3019))),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(backgroundColor: Color(0xFF422511), child: Icon(Icons.swap_horiz, color: gold)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(t['recipient'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text(t['type'] + ' • ' + t['time'], style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                        Text('الرصيد بعد العملية: ' + t['balanceAfter'].toString() + ' Coins', style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                      ])),
+                      Text('+' + t['amount'].toString(), style: const TextStyle(color: gold, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _transferCoins() {
     String type = 'مستخدم';
     String recipient = users.first['name'];
@@ -652,6 +698,7 @@ class _AdminPanelState extends State<AdminPanel> {
                   final list = type == 'مضيف' ? hosts : type == 'وكالة' ? agencies : users;
                   final item = list.firstWhere((x) => x['name'] == recipient);
                   item['coins'] = (item['coins'] ?? 0) + amount;
+                  coinTransactions.add({'recipient': recipient, 'type': type, 'amount': amount, 'balanceAfter': coins, 'time': TimeOfDay.now().format(context)});
                 });
                 Navigator.pop(context);
                 _message('تم تحويل $amount Coins إلى $recipient');
