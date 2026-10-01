@@ -388,6 +388,87 @@ class _AdminPanelState extends State<AdminPanel> {
     );
   }
 
+  String _roleLabel(String role) {
+    switch (role) {
+      case 'CEO': return 'CEO';
+      case 'SUPER_ADMIN': return 'SUPER ADMIN';
+      case 'MANAGER': return 'MANAGER';
+      case 'ADMIN': return 'ADMIN';
+      case 'HOST': return 'HOST';
+      case 'AGENT': return 'AGENT';
+      default: return 'USER';
+    }
+  }
+
+  List<String> _permissionsFor(String role) {
+    switch (role) {
+      case 'CEO': return ['إدارة كاملة', 'الكوينزات', 'المستخدمون', 'الغرف', 'المضيفون', 'الوكالات', 'الصلاحيات'];
+      case 'SUPER_ADMIN': return ['المستخدمون', 'الغرف', 'المضيفون', 'الوكالات', 'الإعدادات'];
+      case 'MANAGER': return ['المضيفون', 'الوكالات', 'الغرف'];
+      case 'ADMIN': return ['المستخدمون', 'الغرف'];
+      case 'HOST': return ['إدارة الغرفة', 'المضيفون'];
+      case 'AGENT': return ['الوكالات', 'المضيفون'];
+      default: return ['الدردشة'];
+    }
+  }
+
+  Widget _roleBadge(String role) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(colors: [Color(0xFFFFD36A), Color(0xFF9A5A12)]),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(_roleLabel(role), style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900)),
+  );
+
+  void _manageRoles() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      isScrollControlled: true,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * .78,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text('نظام الرتب والصلاحيات', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 6),
+              const Text('صلاحيات واجهة الإدارة الحالية — تحتاج حماية Backend عند ربط قاعدة البيانات.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 16),
+              ...['CEO','SUPER_ADMIN','MANAGER','ADMIN','HOST','AGENT','USER'].map((role) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF4C3019))),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      _roleBadge(role),
+                      const Spacer(),
+                      Text(role == 'CEO' ? 'صلاحيات كاملة' : _permissionsFor(role).length.toString() + ' صلاحيات', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                    ]),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _permissionsFor(role).map((p) => Chip(
+                        label: Text(p, style: const TextStyle(fontSize: 10)),
+                        backgroundColor: const Color(0xFF2A180D),
+                        side: BorderSide.none,
+                      )).toList(),
+                    ),
+                  ],
+                ),
+              )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _manageUsers() {
     showModalBottomSheet<void>(
       context: context,
