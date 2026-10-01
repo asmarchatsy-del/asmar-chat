@@ -157,3 +157,131 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
+
+
+-- Privileged access helpers. These functions read the caller's server-side role.
+create or replace function public.has_role(required_roles public.app_role[])
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_active = true
+      and role = any(required_roles)
+  );
+$$;
+
+create or replace function public.transfer_coins(
+  p_to_user_id uuid,
+  p_amount bigint,
+  p_reason text default 'admin_transfer'
+)
+returns public.coin_transactions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  caller_role public.app_role;
+  sender_balance bigint;
+  result_tx public.coin_transactions;
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated';
+  end if;
+
+  select role into caller_role
+  from public.profiles
+  where id = auth.uid() and is_active = true;
+
+  if caller_role is null or caller_role not in ('CEO','SUPER_ADMIN','MANAGER','ADMIN') then
+    raise exception 'insufficient permissions';
+  end if;
+
+  if p_amount <= 0 then
+    raise exception 'amount must be greater than zero';
+  end if;
+
+  if not exists (
+    select 1 from public.profiles
+    where id = p_to_user_id and is_active = true
+  ) then
+    raise exception 'recipient not found';
+  end if;
+
+  select balance into sender_balance
+  from public.wallets
+  where user_id = auth.uid()
+  for update;
+
+  if sender_balance is null or sender_balance < p_amount then
+    raise exception 'insufficient balance';
+  end if;
+
+  update public.wallets
+  set balance = balance - p_amount, updated_at = now()
+  where user_id = auth.uid();
+
+  update public.wallets
+  set balance = balance + p_amount, updated_at = now()
+  where user_id = p_to_user_id;
+
+  insert into public.coin_transactions(from_user_id, to_user_id, amount, reason)
+  values (auth.uid(), p_to_user_id, p_amount, p_reason)
+  returning * into result_tx;
+
+  return result_tx;
+end;
+$$;
+
+revoke all on function public.transfer_coins(uuid,bigint,text) from public;
+grant execute on function public.transfer_coins(uuid,bigint,text) to authenticated;
+
+drop policy if exists "wallet_select_privileged" on public.wallets;
+create policy "wallet_select_privileged"
+on public.wallets for select
+to authenticated
+using (
+  user_id = auth.uid()
+  or public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN']::public.app_role[])
+);
+
+drop policy if exists "profiles_update_privileged" on public.profiles;
+create policy "profiles_update_privileged"
+on public.profiles for update
+to authenticated
+using (
+  id = auth.uid()
+  or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])
+)
+with check (
+  id = auth.uid()
+  or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])
+);
+
+drop policy if exists "rooms_insert_privileged" on public.rooms;
+create policy "rooms_insert_privileged"
+on public.rooms for insert
+to authenticated
+with check (
+  owner_id = auth.uid()
+  or public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN']::public.app_role[])
+);
+
+drop policy if exists "rooms_update_privileged" on public.rooms;
+create policy "rooms_update_privileged"
+on public.rooms for update
+to authenticated
+using (
+  owner_id = auth.uid()
+  or public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN']::public.app_role[])
+)
+with check (
+  owner_id = auth.uid()
+  or public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN']::public.app_role[])
+);
