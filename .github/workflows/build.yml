@@ -1,38 +1,36 @@
 name: Build APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: asmar_chat
+
     steps:
-      - name: تحميل المشروع
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: تثبيت Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - name: إنشاء ملفات Android إذا لزم
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create . --project-name asmar_chat --platforms=android
-          fi
-
-      - name: تثبيت الحزم
+      - name: Get dependencies
         run: flutter pub get
 
-      - name: بناء APK
+      - name: Build APK
         run: flutter build apk --release
 
-      - name: رفع APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: asmar-chat-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: asmar_chat/build/app/outputs/flutter-apk/app-release.apk
