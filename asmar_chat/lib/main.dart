@@ -96,7 +96,7 @@ class _ShellState extends State<Shell> {
 class Home extends StatelessWidget {
   const Home({super.key});
 
-  final List<String> rooms = const [
+  static const rooms = [
     'سهرات أسمر',
     'لمة الأصدقاء',
     'VIP Lounge',
@@ -160,7 +160,6 @@ class Home extends StatelessWidget {
                 ),
               ),
             ),
-
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -226,7 +225,6 @@ class Home extends StatelessWidget {
                 ),
               ),
             ),
-
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(18, 20, 18, 10),
@@ -240,7 +238,6 @@ class Home extends StatelessWidget {
                 ),
               ),
             ),
-
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList.builder(
@@ -253,7 +250,6 @@ class Home extends StatelessWidget {
                 },
               ),
             ),
-
             const SliverToBoxAdapter(
               child: SizedBox(height: 20),
             ),
@@ -276,7 +272,7 @@ class RoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icons = [
+    const icons = [
       Icons.local_fire_department,
       Icons.people,
       Icons.workspace_premium,
@@ -350,4 +346,317 @@ class RoomCard extends StatelessWidget {
 }
 
 class Discover extends StatelessWidget {
-  const Discover({super.key
+  const Discover({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('اكتشف'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          FeatureCard(
+            icon: Icons.local_fire_department,
+            title: 'الغرف الرائجة',
+            subtitle: 'اكتشف أكثر الغرف نشاطاً',
+          ),
+          FeatureCard(
+            icon: Icons.mic,
+            title: 'المضيفون',
+            subtitle: 'تعرف على المضيفين',
+          ),
+          FeatureCard(
+            icon: Icons.workspace_premium,
+            title: 'VIP',
+            subtitle: 'مميزات وتجربة VIP',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FeatureCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const FeatureCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF4C3019)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 27,
+            backgroundColor: const Color(0xFF422511),
+            child: Icon(icon, color: gold),
+          ),
+          const SizedBox(width: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Wallet extends StatelessWidget {
+  const Wallet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('المحفظة'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF6B2C0B),
+                  Color(0xFF160A06),
+                ],
+              ),
+              border: Border.all(color: gold2),
+            ),
+            child: const Column(
+              children: [
+                Icon(
+                  Icons.account_balance_wallet,
+                  color: gold,
+                  size: 45,
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'رصيدك',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  '0',
+                  style: TextStyle(
+                    color: gold,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  'عملة',
+                  style: TextStyle(color: Colors.white54),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          _walletButton(
+            'إرسال هدية',
+            Icons.card_giftcard,
+          ),
+          _walletButton(
+            'شحن الرصيد',
+            Icons.add_circle_outline,
+          ),
+          _walletButton(
+            'سجل العمليات',
+            Icons.history,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _walletButton(String title, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        tileColor: card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF4C3019)),
+        ),
+        leading: Icon(icon, color: gold),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.chevron_left,
+          color: gold,
+        ),
+      ),
+    );
+  }
+}
+
+class Profile extends StatelessWidget {
+  const Profile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('حسابي'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const SizedBox(height: 15),
+          const CircleAvatar(
+            radius: 48,
+            backgroundColor: Color(0xFF422511),
+            child: Icon(
+              Icons.person,
+              color: gold,
+              size: 55,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Center(
+            child: Text(
+              'زائر أسمر',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          const Center(
+            child: Text(
+              'حساب جديد',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          const SizedBox(height: 25),
+          _profileItem(
+            context,
+            'تسجيل الدخول',
+            Icons.login,
+            () {
+              _showMessage(context, 'سيتم إضافة تسجيل الدخول لاحقاً');
+            },
+          ),
+          _profileItem(
+            context,
+            'الملف الشخصي',
+            Icons.edit,
+            () {
+              _showMessage(context, 'تعديل الملف الشخصي');
+            },
+          ),
+          _profileItem(
+            context,
+            'الإعدادات',
+            Icons.settings,
+            () {
+              _showMessage(context, 'الإعدادات');
+            },
+          ),
+          _profileItem(
+            context,
+            'لوحة الإدارة',
+            Icons.admin_panel_settings,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdminPanel(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileItem(
+    BuildContext context,
+    String title,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        onTap: onTap,
+        tileColor: card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF4C3019)),
+        ),
+        leading: CircleAvatar(
+          backgroundColor: const Color(0xFF422511),
+          child: Icon(icon, color: gold),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.chevron_left,
+          color: gold,
+        ),
+      ),
+    );
+  }
+
+  static void _showMessage(
+    BuildContext context,
+    String message,
+  ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: gold2,
+      ),
+    );
+  }
+}
