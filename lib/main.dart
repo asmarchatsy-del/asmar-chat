@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend_config.dart';
 import 'admin_panel.dart';
 import 'room.dart';
+import 'store.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -238,6 +239,7 @@ class _ShellState extends State<Shell> {
 
   final pages = const [
     Home(),
+    StorePage(),
     Discover(),
     Wallet(),
     Profile(),
@@ -263,6 +265,11 @@ class _ShellState extends State<Shell> {
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
               label: 'الرئيسية',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.shopping_bag_outlined),
+              selectedIcon: Icon(Icons.shopping_bag),
+              label: 'المتجر',
             ),
             NavigationDestination(
               icon: Icon(Icons.explore_outlined),
