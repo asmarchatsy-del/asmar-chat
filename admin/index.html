@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Asmar Chat — Admin</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="login" class="center"><div class="panel login"><h1>ASMAR CHAT</h1><p>لوحة الإدارة الخارجية</p>
+<input id="email" type="email" placeholder="البريد الإلكتروني"><input id="password" type="password" placeholder="كلمة المرور">
+<button onclick="login()">دخول الإدارة</button><div id="loginMsg"></div></div></div>
+<div id="app" class="hidden">
+<header><div><b>ASMAR CHAT</b><span>لوحة الإدارة</span></div><button class="ghost" onclick="logout()">تسجيل الخروج</button></header>
+<main><div id="stats" class="grid"></div>
+<nav><button onclick="showTab('store')">🛒 المتجر والأسعار</button><button onclick="showTab('users')">👥 المستخدمون</button><button onclick="showTab('rooms')">🎙️ الغرف</button><button onclick="showTab('wallets')">🪙 المحافظ</button></nav>
+<section id="store" class="tab"><h2>أسعار المتجر</h2><div id="frames" class="cards"></div><h2>حزم الكوينز</h2><div id="packages" class="cards"></div></section>
+<section id="users" class="tab hidden"><h2>المستخدمون</h2><div id="usersTable"></div></section>
+<section id="rooms" class="tab hidden"><h2>الغرف</h2><div id="roomsTable"></div></section>
+<section id="wallets" class="tab hidden"><h2>المحافظ</h2><div id="walletsTable"></div></section>
+</main></div>
+<script src="app.js"></script>
+</body></html>
