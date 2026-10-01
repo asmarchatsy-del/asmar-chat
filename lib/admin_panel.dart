@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -57,6 +60,45 @@ class _AdminPanelState extends State<AdminPanel> {
       'active': false,
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      coins = prefs.getInt('owner_coins') ?? coins;
+      _restoreList(users, prefs.getString('admin_users'));
+      _restoreList(hosts, prefs.getString('admin_hosts'));
+      _restoreList(agencies, prefs.getString('admin_agencies'));
+      _restoreList(coinTransactions, prefs.getString('coin_transactions'));
+    });
+  }
+
+  void _restoreList(List<Map<String, dynamic>> target, String? raw) {
+    if (raw == null) return;
+    try {
+      final data = jsonDecode(raw);
+      if (data is List) {
+        target
+          ..clear()
+          ..addAll(data.map((e) => Map<String, dynamic>.from(e as Map)));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('owner_coins', coins);
+    await prefs.setString('admin_users', jsonEncode(users));
+    await prefs.setString('admin_hosts', jsonEncode(hosts));
+    await prefs.setString('admin_agencies', jsonEncode(agencies));
+    await prefs.setString('coin_transactions', jsonEncode(coinTransactions));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -563,7 +605,7 @@ class _AdminPanelState extends State<AdminPanel> {
                   subtitle: Text(h['agency'] + ' • ' + h['coins'].toString() + ' Coins', style: const TextStyle(color: Colors.white54, fontSize: 11)),
                   trailing: Switch(
                     value: h['status'],
-                    onChanged: (v) { setState(() => h['status'] = v); Navigator.pop(context); _manageHosts(); },
+                    onChanged: (v) { setState(() => h['status'] = v); _saveData(); Navigator.pop(context); _manageHosts(); },
                   ),
                 ),
               )),
@@ -600,7 +642,7 @@ class _AdminPanelState extends State<AdminPanel> {
                       Text(a['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       Text(a['manager'] + ' • ' + a['hosts'].toString() + ' مضيف', style: const TextStyle(color: Colors.white54, fontSize: 11)),
                     ])),
-                    Switch(value: a['status'], onChanged: (v) => setState(() => a['status'] = v)),
+                    Switch(value: a['status'], onChanged: (v) => setState(() => a['status'] = v); _saveData()),
                   ],
                 ),
               )),
@@ -756,6 +798,7 @@ class _AdminPanelState extends State<AdminPanel> {
                   final item = list.firstWhere((x) => x['name'] == recipient);
                   item['coins'] = (item['coins'] ?? 0) + amount;
                   coinTransactions.add({'recipient': recipient, 'type': type, 'amount': amount, 'balanceAfter': coins, 'time': TimeOfDay.now().format(context)});
+                  _saveData();
                 });
                 Navigator.pop(context);
                 _message('تم تحويل $amount Coins إلى $recipient');
