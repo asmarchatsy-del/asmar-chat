@@ -286,171 +286,125 @@ class _ShellState extends State<Shell> {
   }
 }
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   const Home({super.key});
 
-  final List<String> rooms = const [
-    'سهرات أسمر',
-    'لمة الأصدقاء',
-    'VIP Lounge',
-    'نجوم الليل',
-    'مجلس العرب',
-    'المضيفين',
-    'دردشة عامة',
-    'الوكالات',
-    'أهل الخير',
-    'الاستراحة',
-  ];
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  late Future<List<Map<String, dynamic>>> _roomsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _roomsFuture = _loadRooms();
+  }
+
+  Future<List<Map<String, dynamic>>> _loadRooms() async {
+    final data = await Supabase.instance.client
+        .from('rooms')
+        .select('id,name,owner_id,is_active,livekit_room_name')
+        .eq('is_active', true)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  void _refreshRooms() {
+    setState(() => _roomsFuture = _loadRooms());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 23,
-                      backgroundColor: Color(0xFF4A2B11),
-                      child: Icon(Icons.shield, color: gold),
-                    ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Asmar Chat',
-                            style: TextStyle(
-                              color: gold,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Text(
-                            'مجتمع صوتي • غرف • هدايا • VIP',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.notifications_none),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.search),
-                    ),
-                  ],
+        child: RefreshIndicator(
+          onRefresh: () async => _refreshRooms(),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(radius: 23, backgroundColor: Color(0xFF4A2B11), child: Icon(Icons.shield, color: gold)),
+                      const SizedBox(width: 10),
+                      const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Asmar Chat', style: TextStyle(color: gold, fontSize: 24, fontWeight: FontWeight.w900)),
+                        Text('مجتمع صوتي • غرف • هدايا • VIP', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      ])),
+                      IconButton(onPressed: _refreshRooms, icon: const Icon(Icons.refresh)),
+                    ],
+                  ),
                 ),
               ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  height: 175,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF6B2C0B),
-                        Color(0xFF160A06),
-                      ],
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    height: 175,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      gradient: const LinearGradient(colors: [Color(0xFF6B2C0B), Color(0xFF160A06)]),
+                      border: Border.all(color: gold2),
                     ),
-                    border: Border.all(color: gold2),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(22),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'أهلاً بك في',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                        const Text(
-                          'ASMAR CHAT',
-                          style: TextStyle(
-                            color: gold,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(22),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('أهلاً بك في', style: TextStyle(color: Colors.white70)),
+                        const Text('ASMAR CHAT', style: TextStyle(color: gold, fontSize: 32, fontWeight: FontWeight.w900)),
                         const SizedBox(height: 6),
-                        const Text(
-                          'ادخل غرفتك المفضلة وتحدث مع الأصدقاء.',
-                          style: TextStyle(
-                            color: Colors.white60,
-                            fontSize: 12,
-                          ),
-                        ),
+                        const Text('الغرف النشطة من قاعدة البيانات الحقيقية.', style: TextStyle(color: Colors.white60, fontSize: 12)),
                         const Spacer(),
                         FilledButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const Room(
-                                  name: 'سهرات أسمر',
-                                ),
-                              ),
-                            );
+                          onPressed: () async {
+                            final rooms = await _roomsFuture;
+                            if (!context.mounted || rooms.isEmpty) return;
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => Room(name: rooms.first['name'].toString(), roomId: rooms.first['id'].toString())));
                           },
                           icon: const Icon(Icons.mic),
-                          label: const Text('ابدأ الدردشة الصوتية'),
-                          style: const ButtonStyle(
-                            backgroundColor:
-                                WidgetStatePropertyAll(gold2),
-                          ),
+                          label: const Text('دخول أول غرفة'),
+                          style: const ButtonStyle(backgroundColor: WidgetStatePropertyAll(gold2)),
                         ),
-                      ],
+                      ]),
                     ),
                   ),
                 ),
               ),
-            ),
-
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(18, 20, 18, 10),
-                child: Text(
-                  'الغرف النشطة',
-                  style: TextStyle(
-                    color: gold,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                  ),
+              const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(18, 20, 18, 10), child: Text('الغرف النشطة', style: TextStyle(color: gold, fontSize: 21, fontWeight: FontWeight.w900)))),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _roomsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(30), child: Center(child: CircularProgressIndicator())));
+                    }
+                    if (snapshot.hasError) {
+                      return SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(20), child: Text('تعذر تحميل الغرف: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent))));
+                    }
+                    final rooms = snapshot.data ?? [];
+                    if (rooms.isEmpty) {
+                      return const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(30), child: Center(child: Text('لا توجد غرف نشطة حاليًا', style: TextStyle(color: Colors.white54)))));
+                    }
+                    return SliverList.builder(
+                      itemCount: rooms.length,
+                      itemBuilder: (context, index) {
+                        final room = rooms[index];
+                        return RoomCard(
+                          name: room['name'].toString(),
+                          roomId: room['id'].toString(),
+                          index: index,
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
-            ),
-
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList.builder(
-                itemCount: rooms.length,
-                itemBuilder: (context, index) {
-                  return RoomCard(
-                    name: rooms[index],
-                    index: index,
-                  );
-                },
-              ),
-            ),
-
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 20),
-            ),
-          ],
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            ],
+          ),
         ),
       ),
     );
@@ -459,84 +413,30 @@ class Home extends StatelessWidget {
 
 class RoomCard extends StatelessWidget {
   final String name;
+  final String roomId;
   final int index;
-
-  const RoomCard({
-    super.key,
-    required this.name,
-    required this.index,
-  });
+  const RoomCard({super.key, required this.name, required this.roomId, required this.index});
 
   @override
   Widget build(BuildContext context) {
-    final icons = [
-      Icons.local_fire_department,
-      Icons.people,
-      Icons.workspace_premium,
-      Icons.nightlight,
-      Icons.groups,
-    ];
-
+    final icons = [Icons.local_fire_department, Icons.people, Icons.workspace_premium, Icons.nightlight, Icons.groups];
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => Room(name: name),
-          ),
-        );
-      },
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => Room(name: name, roomId: roomId))),
       borderRadius: BorderRadius.circular(18),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: card,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: const Color(0xFF4C3019),
-          ),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 29,
-              backgroundColor: const Color(0xFF422511),
-              child: Icon(
-                icons[index % icons.length],
-                color: gold,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    'مضيف • هدايا • دردشة صوتية',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_left,
-              color: gold,
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFF4C3019))),
+        child: Row(children: [
+          CircleAvatar(radius: 29, backgroundColor: const Color(0xFF422511), child: Icon(icons[index % icons.length], color: gold)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(name, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 5),
+            const Text('مضيف • هدايا • دردشة صوتية', style: TextStyle(color: Colors.white54, fontSize: 10)),
+          ])),
+          const Icon(Icons.chevron_left, color: gold),
+        ]),
       ),
     );
   }
