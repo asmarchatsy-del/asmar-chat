@@ -20,7 +20,7 @@ create policy "frame_items_select_active" on public.frame_items for select to au
 drop policy if exists "user_frames_select_self" on public.user_frames;
 create policy "user_frames_select_self" on public.user_frames for select to authenticated using (user_id = auth.uid());
 insert into public.frame_items (name, price, style_key) values
-('الإطار الذهبي',500,'gold'),('إطار الماس',1500,'diamond'),('إطار النار',2500,'fire'),('إطار VIP',5000,'vip')
+('الإطار الذهبي',500,'gold'),('إطار الماس',1500,'diamond'),('إطار النار',2500,'fire'),('إطار VIP',5000,'vip'),('إطار SVIP',10000,'svip')
 on conflict (name) do nothing;
 create or replace function public.purchase_frame(p_frame_id uuid)
 returns public.user_frames language plpgsql security definer set search_path=public as $$
