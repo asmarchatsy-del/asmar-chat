@@ -16,6 +16,13 @@ class _AdminPanelState extends State<AdminPanel> {
   int selected = 0;
   int coins = 1000000;
 
+  final List<Map<String, dynamic>> users = [
+    {'name': 'Asmar Owner', 'role': 'CEO', 'coins': 500000, 'online': true},
+    {'name': 'مضيف أسمر', 'role': 'HOST', 'coins': 12000, 'online': true},
+    {'name': 'محمد', 'role': 'AGENT', 'coins': 8500, 'online': false},
+    {'name': 'VIP User', 'role': 'USER', 'coins': 3200, 'online': true},
+  ];
+
   final List<Map<String, dynamic>> rooms = [
     {
       'name': 'سهرات أسمر',
@@ -378,6 +385,43 @@ class _AdminPanelState extends State<AdminPanel> {
           true,
         ),
       ],
+    );
+  }
+
+  void _manageUsers() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      isScrollControlled: true,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * .72,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text('إدارة المستخدمين', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              ...users.map((u) => Container(
+                margin: const EdgeInsets.only(bottom: 9),
+                decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(15), border: Border.all(color: const Color(0xFF4C3019))),
+                child: ListTile(
+                  leading: CircleAvatar(backgroundColor: const Color(0xFF422511), child: Icon(u['online'] ? Icons.person : Icons.person_off, color: gold)),
+                  title: Text(u['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: Text('${u['role']} • ${u['coins']} Coins', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) => _message(value == 'role' ? 'تغيير صلاحية ${u['name']}' : 'إجراءات الحساب: ${u['name']}'),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'role', child: Text('تغيير الصلاحية')),
+                      PopupMenuItem(value: 'account', child: Text('إجراءات الحساب')),
+                    ],
+                  ),
+                ),
+              )),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
