@@ -589,6 +589,81 @@ class _AdminPanelState extends State<AdminPanel> {
     );
   }
 
+  void _transferCoins() {
+    String type = 'مستخدم';
+    String recipient = users.first['name'];
+    final amountController = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: card,
+          title: const Text('توزيع الكوينزات', style: TextStyle(color: gold, fontWeight: FontWeight.w900)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: type,
+                dropdownColor: card,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'نوع المستلم'),
+                items: const ['مستخدم','مضيف','وكيل','وكالة'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) {
+                  if (v == null) return;
+                  setDialogState(() {
+                    type = v;
+                    final list = type == 'مضيف' ? hosts : type == 'وكالة' ? agencies : users;
+                    recipient = list.first['name'];
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
+              Builder(builder: (_) {
+                final list = type == 'مضيف' ? hosts : type == 'وكالة' ? agencies : users;
+                return DropdownButtonFormField<String>(
+                  value: recipient,
+                  dropdownColor: card,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: 'المستلم'),
+                  items: list.map<DropdownMenuItem<String>>((x) => DropdownMenuItem<String>(value: x['name'], child: Text(x['name']))).toList(),
+                  onChanged: (v) => setDialogState(() => recipient = v ?? recipient),
+                );
+              }),
+              const SizedBox(height: 12),
+              TextField(
+                controller: amountController,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'عدد الكوينز'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+            FilledButton(
+              onPressed: () {
+                final amount = int.tryParse(amountController.text) ?? 0;
+                if (amount <= 0 || amount > coins) {
+                  _message('قيمة الكوينز غير صالحة');
+                  return;
+                }
+                setState(() {
+                  coins -= amount;
+                  final list = type == 'مضيف' ? hosts : type == 'وكالة' ? agencies : users;
+                  final item = list.firstWhere((x) => x['name'] == recipient);
+                  item['coins'] = (item['coins'] ?? 0) + amount;
+                });
+                Navigator.pop(context);
+                _message('تم تحويل $amount Coins إلى $recipient');
+              },
+              child: const Text('تحويل'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _distributeCoins() {
     final controller = TextEditingController();
     showDialog<void>(
