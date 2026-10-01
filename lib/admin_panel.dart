@@ -23,6 +23,18 @@ class _AdminPanelState extends State<AdminPanel> {
     {'name': 'VIP User', 'role': 'USER', 'coins': 3200, 'online': true},
   ];
 
+  final List<Map<String, dynamic>> hosts = [
+    {'name': 'مضيف أسمر', 'agency': 'وكالة أسمر', 'status': true, 'coins': 12000},
+    {'name': 'ليان', 'agency': 'وكالة سوريا', 'status': true, 'coins': 9800},
+    {'name': 'نور', 'agency': 'وكالة النجوم', 'status': false, 'coins': 6500},
+  ];
+
+  final List<Map<String, dynamic>> agencies = [
+    {'name': 'وكالة أسمر', 'manager': 'MANAGER', 'hosts': 12, 'status': true},
+    {'name': 'وكالة سوريا', 'manager': 'AGENT', 'hosts': 8, 'status': true},
+    {'name': 'وكالة النجوم', 'manager': 'AGENT', 'hosts': 5, 'status': false},
+  ];
+
   final List<Map<String, dynamic>> rooms = [
     {
       'name': 'سهرات أسمر',
@@ -459,6 +471,77 @@ class _AdminPanelState extends State<AdminPanel> {
                         side: BorderSide.none,
                       )).toList(),
                     ),
+                  ],
+                ),
+              )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _manageHosts() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      isScrollControlled: true,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * .75,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text('إدارة المضيفين', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              ...hosts.map((h) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF4C3019))),
+                child: ListTile(
+                  leading: CircleAvatar(backgroundColor: const Color(0xFF422511), child: Icon(h['status'] ? Icons.mic : Icons.mic_off, color: gold)),
+                  title: Text(h['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: Text(h['agency'] + ' • ' + h['coins'].toString() + ' Coins', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                  trailing: Switch(
+                    value: h['status'],
+                    onChanged: (v) { setState(() => h['status'] = v); Navigator.pop(context); _manageHosts(); },
+                  ),
+                ),
+              )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _manageAgencies() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      isScrollControlled: true,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * .7,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text('إدارة الوكالات', style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              ...agencies.map((a) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF4C3019))),
+                child: Row(
+                  children: [
+                    const CircleAvatar(backgroundColor: Color(0xFF422511), child: Icon(Icons.business, color: gold)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(a['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Text(a['manager'] + ' • ' + a['hosts'].toString() + ' مضيف', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                    ])),
+                    Switch(value: a['status'], onChanged: (v) => setState(() => a['status'] = v)),
                   ],
                 ),
               )),
