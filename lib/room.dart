@@ -118,8 +118,32 @@ class _RoomState extends State<Room> {
     );
   }
 
+  Future<void> _joinVoice() async {
+    if (joiningVoice || _voiceRoom != null) return;
+    setState(() => joiningVoice = true);
+    try {
+      final roomData = await Supabase.instance.client
+          .from('rooms').select('livekit_room_name').eq('id', widget.roomId).single();
+      final livekitRoom = (roomData['livekit_room_name'] ?? widget.roomId).toString();
+      final response = await Supabase.instance.client.functions.invoke(
+        'livekit-token', body: {'room': livekitRoom});
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final url = data['url'].toString();
+      final token = data['token'].toString();
+      final room = lk.Room();
+      await room.connect(url, token);
+      await room.localParticipant?.setMicrophoneEnabled(true);
+      if (!mounted) { await room.disconnect(); return; }
+      setState(() { _voiceRoom = room; microphoneOn = true; joiningVoice = false; });
+    } catch (e) {
+      if (mounted) { setState(() => joiningVoice = false); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر دخول الصوت: $e'))); }
+    }
+  }
+
   Future<void> _toggleMicrophone() async {
     if (_voiceRoom == null) {
+      await _joinVoice();
+      return;
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الصوت الحقيقي يحتاج LiveKit Token من الخادم الآمن. الدردشة النصية تعمل الآن.')));
       return;
     }
@@ -241,7 +265,7 @@ class _RoomState extends State<Room> {
         color: const Color(0xFF100805),
         child: Row(
           children: [
-            IconButton(onPressed: _toggleMicrophone, icon: Icon(microphoneOn ? Icons.mic : Icons.mic_off, color: gold)),
+            IconButton(onPressed: joiningVoice ? null : _toggleMicrophone, icon: Icon(joiningVoice ? Icons.hourglass_top : (microphoneOn ? Icons.mic : Icons.mic_off), color: gold)),
             IconButton(onPressed: () {}, icon: const Icon(Icons.card_giftcard, color: gold)),
             Expanded(
               child: TextField(
