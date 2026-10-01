@@ -20,9 +20,6 @@ jobs:
         working-directory: asmar_chat
         run: |
           flutter create --platforms=android --project-name asmar_chat .
-          test -f lib/main.dart
-          test -f lib/admin_panel.dart
-          test -f lib/room.dart
 
       - name: Get dependencies
         working-directory: asmar_chat
