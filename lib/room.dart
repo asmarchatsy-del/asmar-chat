@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:livekit_client/livekit_client.dart';
+import 'package:livekit_client/livekit_client.dart' as lk;
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -28,7 +28,7 @@ class _RoomState extends State<Room> {
 
   final List<Map<String, dynamic>> messages = [];
   StreamSubscription<List<Map<String, dynamic>>>? _messageSub;
-  Room? _voiceRoom;
+  lk.Room? _voiceRoom;
   bool microphoneOn = false;
   bool joiningVoice = false;
 
@@ -59,7 +59,7 @@ class _RoomState extends State<Room> {
     super.dispose();
   }
 
-  void sendMessage() {
+  Future<void> sendMessage() async {
     final text = messageController.text.trim();
 
     if (text.isEmpty) return;
