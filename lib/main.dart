@@ -175,15 +175,19 @@ class Shell extends StatefulWidget {
 }
 class _ShellState extends State<Shell> {
   int index=0;
-  final pages=<Widget>[const Home(), const Discover(), const Wallet(), const Profile()];
+  final pages=<Widget>[const Home(), const MessagesPage(), const MomentsPage(), const Profile()];
   @override Widget build(BuildContext context)=>Scaffold(
     body:GlobalGiftBanner(child:IndexedStack(index:index,children:pages)),
-    bottomNavigationBar:NavigationBar(selectedIndex:index,onDestinationSelected:(i)=>setState(()=>index=i),destinations:const[
-      NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'الرئيسية'),
-      NavigationDestination(icon:Icon(Icons.explore_outlined),selectedIcon:Icon(Icons.explore),label:'اكتشف'),
-      NavigationDestination(icon:Icon(Icons.account_balance_wallet_outlined),selectedIcon:Icon(Icons.account_balance_wallet),label:'المحفظة'),
-      NavigationDestination(icon:Icon(Icons.person_outline),selectedIcon:Icon(Icons.person),label:'حسابي'),
-    ]),
+    bottomNavigationBar:NavigationBar(
+      selectedIndex:index,
+      onDestinationSelected:(i)=>setState(()=>index=i),
+      destinations:const[
+        NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'الرئيسية'),
+        NavigationDestination(icon:Icon(Icons.forum_outlined),selectedIcon:Icon(Icons.forum),label:'الرسائل'),
+        NavigationDestination(icon:Icon(Icons.auto_awesome_outlined),selectedIcon:Icon(Icons.auto_awesome),label:'لحظات'),
+        NavigationDestination(icon:Icon(Icons.person_outline),selectedIcon:Icon(Icons.person),label:'أنا'),
+      ],
+    ),
   );
 }
 
