@@ -328,6 +328,11 @@ class _AdminPanelState extends State<AdminPanel> {
           _manageHosts,
         ),
         _action(
+          'إدارة السحب ووكلاء الشحن',
+          Icons.account_balance,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancePage())),
+        ),
+        _action(
           'إدارة الوكالات',
           Icons.business,
           _manageAgencies,
