@@ -880,3 +880,414 @@ $$;
 grant execute on function public.private_conversations() to authenticated;
 grant execute on function public.mark_private_messages_read(uuid) to authenticated;
 
+
+-- ===== 014_profile_media_ids.sql =====
+-- Profile media policy and human-friendly alphanumeric IDs.
+alter table public.profiles add column if not exists public_id text;
+alter table public.profiles add column if not exists avatar_is_animated boolean not null default false;
+alter table public.profiles alter column public_id set default upper(substr(md5(gen_random_uuid()::text),1,8));
+
+update public.profiles
+set public_id=upper(substr(md5(id::text||gen_random_uuid()::text),1,8))
+where public_id is null;
+
+create unique index if not exists profiles_public_id_unique on public.profiles(public_id);
+
+create or replace function public.enforce_avatar_policy()
+returns trigger language plpgsql security definer set search_path=public as $$
+declare v integer;
+begin
+  if new.avatar_is_animated and (tg_op='INSERT' or new.avatar_url is distinct from old.avatar_url or new.avatar_is_animated is distinct from old.avatar_is_animated) then
+    select coalesce(nullif(regexp_replace(vip_level,'[^0-9]','','g'),'')::integer,0) into v
+    from profiles where id=coalesce(new.id,auth.uid());
+    if not (
+      coalesce(v,0) >= 7
+      or public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN']::public.app_role[])
+    ) then
+      raise exception 'animated avatars require VIP7 or higher or admin access';
+    end if;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists profile_avatar_policy on public.profiles;
+create trigger profile_avatar_policy before insert or update of avatar_url,avatar_is_animated on public.profiles
+for each row execute function public.enforce_avatar_policy();
+
+-- Human-friendly IDs are accepted anywhere the app previously accepted profile UUIDs.
+create or replace function public.send_friend_request(p_receiver text) returns uuid language plpgsql security definer set search_path=public as $$
+declare r uuid; rid uuid;
+begin
+ if auth.uid() is null then raise exception 'not authenticated'; end if;
+ select id into r from profiles where id::text=p_receiver or public_id=upper(trim(p_receiver)) or username=p_receiver limit 1;
+ if r is null then raise exception 'user not found'; end if;
+ if r=auth.uid() then raise exception 'cannot add yourself'; end if;
+ if exists(select 1 from friendships where user_id=auth.uid() and friend_id=r) then raise exception 'already friends'; end if;
+ select id into rid from friend_requests where sender_id=auth.uid() and receiver_id=r and status='pending' limit 1;
+ if rid is not null then return rid; end if;
+ insert into friend_requests(sender_id,receiver_id) values(auth.uid(),r) returning id into rid;
+ insert into notifications(user_id,type,title,body,data) values(r,'friend_request','👥 طلب صداقة جديد','لديك طلب صداقة جديد',jsonb_build_object('request_id',rid,'sender_id',auth.uid()));
+ return rid;
+end; $$;
+grant execute on function public.send_friend_request(text) to authenticated;
+
+-- Gift recipients can also be found by the public alphanumeric ID.
+drop function if exists public.send_gift(uuid,text,text);
+create or replace function public.send_gift(p_room_id uuid,p_recipient_id text,p_gift_id text) returns public.gift_transactions language plpgsql security definer set search_path=public as $$
+declare g public.gifts; s bigint; r uuid; t public.gift_transactions;
+begin
+ if auth.uid() is null then raise exception 'not authenticated'; end if;
+ select * into g from gifts where id=p_gift_id and is_active=true;
+ if g.id is null then raise exception 'gift not found'; end if;
+ select id into r from profiles where id::text=p_recipient_id or public_id=upper(trim(p_recipient_id)) or username=p_recipient_id limit 1;
+ if r is null then raise exception 'recipient not found'; end if;
+ if r=auth.uid() then raise exception 'cannot gift yourself'; end if;
+ select balance into s from wallets where user_id=auth.uid() for update;
+ if s is null or s<g.price then raise exception 'insufficient coins'; end if;
+ update wallets set balance=balance-g.price,updated_at=now() where user_id=auth.uid();
+ insert into wallets(user_id,balance) values(r,g.price) on conflict(user_id) do update set balance=wallets.balance+excluded.balance,updated_at=now();
+ insert into coin_transactions(from_user_id,to_user_id,amount,reason) values(auth.uid(),r,g.price,'gift:'||g.id);
+ insert into gift_transactions(room_id,sender_id,recipient_id,gift_id,amount) values(p_room_id,auth.uid(),r,g.id,g.price) returning * into t;
+ return t;
+end; $$;
+revoke all on function public.send_gift(uuid,text,text) from public;
+grant execute on function public.send_gift(uuid,text,text) to authenticated;
+
+create or replace function public.get_my_public_id() returns text language sql stable security definer set search_path=public as $$
+ select public_id from profiles where id=auth.uid();
+$$;
+grant execute on function public.get_my_public_id() to authenticated;
+
+
+-- ===== 015_avatar_storage.sql =====
+-- Avatar storage bucket and secure upload policies.
+insert into storage.buckets(id,name,public) values('avatars','avatars',true) on conflict(id) do update set public=true;
+create policy "avatar_upload_own" on storage.objects for insert to authenticated with check(bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text);
+create policy "avatar_update_own" on storage.objects for update to authenticated using(bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text) with check(bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text);
+create policy "avatar_delete_own" on storage.objects for delete to authenticated using(bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text);
+
+
+-- ===== 016_profile_badges_verification.sql =====
+-- Appearance-only profile badges + admin account verification.
+alter table public.profiles
+  add column if not exists activity_admin_badge boolean not null default false,
+  add column if not exists customer_service_badge boolean not null default false,
+  add column if not exists is_verified boolean not null default false;
+
+create index if not exists profiles_badges_idx
+  on public.profiles(activity_admin_badge, customer_service_badge, is_verified);
+
+drop policy if exists "admins_manage_profile_badges" on public.profiles;
+create policy "admins_manage_profile_badges"
+on public.profiles
+for update to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+grant select on public.profiles to authenticated;
+
+
+-- ===== 017_room_backgrounds.sql =====
+-- Room and seat background rentals.
+alter table public.rooms
+  add column if not exists room_background_url text,
+  add column if not exists room_background_expires_at timestamptz,
+  add column if not exists seats_background_url text,
+  add column if not exists seats_background_expires_at timestamptz;
+
+create table if not exists public.room_background_purchases (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references public.rooms(id) on delete cascade,
+  buyer_id uuid not null references public.profiles(id),
+  background_type text not null check(background_type in ('room','seats')),
+  duration_days integer not null check(duration_days in (7,30)),
+  price bigint not null check(price in (10000,35000)),
+  background_url text not null,
+  starts_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.room_background_purchases enable row level security;
+
+create policy "room_background_purchases_select_owner"
+on public.room_background_purchases for select to authenticated
+using (buyer_id=auth.uid() or exists (
+  select 1 from public.rooms r where r.id=room_id and r.owner_id=auth.uid()
+));
+
+insert into storage.buckets(id,name,public)
+values('room-backgrounds','room-backgrounds',true)
+on conflict(id) do update set public=true;
+
+create policy "room_background_upload_own"
+on storage.objects for insert to authenticated
+with check (
+  bucket_id='room-backgrounds'
+  and (storage.foldername(name))[1]=auth.uid()::text
+);
+
+create policy "room_background_update_own"
+on storage.objects for update to authenticated
+using (
+  bucket_id='room-backgrounds'
+  and (storage.foldername(name))[1]=auth.uid()::text
+)
+with check (
+  bucket_id='room-backgrounds'
+  and (storage.foldername(name))[1]=auth.uid()::text
+);
+
+create policy "room_background_delete_own"
+on storage.objects for delete to authenticated
+using (
+  bucket_id='room-backgrounds'
+  and (storage.foldername(name))[1]=auth.uid()::text
+);
+
+create or replace function public.purchase_room_background(
+  p_room_id uuid,
+  p_background_type text,
+  p_background_url text,
+  p_duration_days integer
+) returns public.room_background_purchases
+language plpgsql security definer set search_path=public
+as $$
+declare
+  r public.rooms;
+  w bigint;
+  price_value bigint;
+  expiry timestamptz;
+  purchase public.room_background_purchases;
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  if p_background_type not in ('room','seats') then raise exception 'invalid background type'; end if;
+  if p_duration_days not in (7,30) then raise exception 'invalid duration'; end if;
+  if coalesce(trim(p_background_url),'')='' then raise exception 'background url required'; end if;
+
+  select * into r from public.rooms where id=p_room_id for update;
+  if r.id is null then raise exception 'room not found'; end if;
+  if r.owner_id <> auth.uid() and not public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN']::public.app_role[]) then
+    raise exception 'only room owner or admin can change background';
+  end if;
+
+  price_value := case when p_duration_days=7 then 10000 else 35000 end;
+  select balance into w from public.wallets where user_id=auth.uid() for update;
+  if w is null or w < price_value then raise exception 'insufficient coins'; end if;
+
+  expiry := now() + make_interval(days => p_duration_days);
+  update public.wallets
+    set balance=balance-price_value, updated_at=now()
+    where user_id=auth.uid();
+
+  insert into public.coin_transactions(from_user_id,to_user_id,amount,reason)
+  values(auth.uid(),auth.uid(),price_value,
+         'room_background:'||p_background_type||':'||p_duration_days||'d');
+
+  if p_background_type='room' then
+    update public.rooms set room_background_url=p_background_url, room_background_expires_at=expiry where id=p_room_id;
+  else
+    update public.rooms set seats_background_url=p_background_url, seats_background_expires_at=expiry where id=p_room_id;
+  end if;
+
+  insert into public.room_background_purchases(
+    room_id,buyer_id,background_type,duration_days,price,background_url,expires_at
+  ) values (
+    p_room_id,auth.uid(),p_background_type,p_duration_days,price_value,p_background_url,expiry
+  ) returning * into purchase;
+
+  return purchase;
+end;
+$$;
+
+revoke all on function public.purchase_room_background(uuid,text,text,integer) from public;
+grant execute on function public.purchase_room_background(uuid,text,text,integer) to authenticated;
+
+
+-- ===== 018_deluxe_gifts.sql =====
+-- Deluxe gift catalog, admin controls, and public gift ticker.
+alter table public.gifts
+  add column if not exists category text not null default 'normal',
+  add column if not exists banner_enabled boolean not null default false,
+  add column if not exists banner_min_price bigint not null default 4000,
+  add column if not exists luck_min_win bigint not null default 3000;
+
+create table if not exists public.gift_public_banners(
+  id uuid primary key default gen_random_uuid(),
+  gift_id text not null references public.gifts(id) on delete cascade,
+  amount bigint not null,
+  created_at timestamptz not null default now()
+);
+alter table public.gift_public_banners enable row level security;
+drop policy if exists gift_public_banners_select on public.gift_public_banners;
+create policy gift_public_banners_select on public.gift_public_banners
+for select to authenticated using (true);
+
+do $$ begin
+  alter publication supabase_realtime add table public.gift_public_banners;
+exception when duplicate_object then null; when undefined_object then null; end $$;
+
+insert into public.gifts(id,name,emoji,price,category,banner_enabled) values
+('rose','وردة','🌹',100,'normal',false),
+('heart','قلب','❤️',500,'love',false),
+('kiss','قبلة','💋',1000,'love',false),
+('love_letter','رسالة حب','💌',4000,'love',true),
+('love_ring','خاتم حب','💍',10000,'love',true),
+('love_couple','ثنائي الحب','💞',50000,'love',true),
+('diamond','ماسة','💎',2500,'luxury',false),
+('crown','تاج ملكي','👑',10000,'luxury',true),
+('royal_car','سيارة ملكية','🚘',50000,'luxury',true),
+('gold_castle','قصر ذهبي','🏰',100000,'luxury',true),
+('gold_dragon','تنين ذهبي','🐉',250000,'luxury',true),
+('royal_throne','عرش ملكي','👑',500000,'luxury',true),
+('asmar_kingdom','مملكة Asmar','🏯',1000000,'luxury',true),
+('cp','CP','🫶',4000,'cp',true),
+('cp_royal','CP ملكي','💎',25000,'cp',true),
+('brother','علاقة أخوة','🤝',4000,'brotherhood',true),
+('brother_gold','أخوة ذهبية','🫂',25000,'brotherhood',true),
+('brother_royal','رابطة إخوة ملكية','🛡️',100000,'brotherhood',true),
+('luck_10','حظ 10','🍀',10,'luck',false),
+('luck_50','حظ 50','🍀',50,'luck',false),
+('luck_100','حظ 100','🍀',100,'luck',false),
+('luck_500','حظ 500','🎰',500,'luck',false),
+('luck_1000','حظ 1,000','🎰',1000,'luck',false),
+('luck_3000','حظ 3,000','✨',3000,'luck',false),
+('luck_5000','حظ 5,000','✨',5000,'luck',true),
+('dragon','تنين','🐉',10000,'normal',true),
+('lion','أسد','🦁',25000,'normal',true),
+('supernova','سوبر نوفا','🌌',100000,'luxury',true)
+on conflict(id) do update set
+ name=excluded.name,emoji=excluded.emoji,price=excluded.price,category=excluded.category,banner_enabled=excluded.banner_enabled;
+
+create or replace function public.send_gift(p_room_id uuid,p_recipient_id text,p_gift_id text)
+returns public.gift_transactions language plpgsql security definer set search_path=public as $$
+declare g public.gifts; s bigint; r uuid; t public.gift_transactions;
+begin
+ if auth.uid() is null then raise exception 'not authenticated'; end if;
+ select * into g from gifts where id=p_gift_id and is_active=true;
+ if g.id is null then raise exception 'gift not found'; end if;
+ select id into r from profiles where id::text=p_recipient_id or username=p_recipient_id or public_id=p_recipient_id limit 1;
+ if r is null then raise exception 'recipient not found'; end if;
+ if r=auth.uid() then raise exception 'cannot gift yourself'; end if;
+ select balance into s from wallets where user_id=auth.uid() for update;
+ if s is null or s<g.price then raise exception 'insufficient coins'; end if;
+ update wallets set balance=balance-g.price,updated_at=now() where user_id=auth.uid();
+ insert into wallets(user_id,balance) values(r,g.price) on conflict(user_id) do update set balance=wallets.balance+g.price,updated_at=now();
+ insert into coin_transactions(from_user_id,to_user_id,amount,reason) values(auth.uid(),r,g.price,'gift:'||g.id);
+ insert into gift_transactions(room_id,sender_id,recipient_id,gift_id,amount) values(p_room_id,auth.uid(),r,g.id,g.price) returning * into t;
+ if g.banner_enabled and g.price >= greatest(g.banner_min_price,4000) then
+   insert into gift_public_banners(gift_id,amount) values(g.id,g.price);
+ end if;
+ return t;
+end; $$;
+
+create or replace function public.admin_update_gift(
+ p_id text,p_name text,p_emoji text,p_price bigint,p_category text,p_is_active boolean,
+ p_banner_enabled boolean,p_banner_min_price bigint,p_luck_min_win bigint
+) returns public.gifts language plpgsql security definer set search_path=public as $$
+declare g public.gifts;
+begin
+ if auth.uid() is null or not public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]) then raise exception 'not authorized'; end if;
+ if p_price < 1 or p_banner_min_price < 0 or p_luck_min_win < 0 then raise exception 'invalid values'; end if;
+ update public.gifts set name=p_name,emoji=p_emoji,price=p_price,category=p_category,is_active=p_is_active,
+   banner_enabled=p_banner_enabled,banner_min_price=p_banner_min_price,luck_min_win=p_luck_min_win
+ where id=p_id returning * into g;
+ if g.id is null then raise exception 'gift not found'; end if;
+ return g;
+end; $$;
+revoke all on function public.admin_update_gift(text,text,text,bigint,text,boolean,boolean,bigint,bigint) from public;
+grant execute on function public.admin_update_gift(text,text,text,bigint,text,boolean,boolean,bigint,bigint) to authenticated;
+
+
+-- ===== 019_global_chat.sql =====
+create table if not exists public.global_chat_messages(
+ id uuid primary key default gen_random_uuid(),
+ sender_id uuid not null references auth.users(id) on delete cascade,
+ message text not null check (char_length(trim(message)) between 1 and 1000),
+ created_at timestamptz not null default now()
+);
+create index if not exists global_chat_messages_created_idx on public.global_chat_messages(created_at desc);
+alter table public.global_chat_messages enable row level security;
+drop policy if exists global_chat_select on public.global_chat_messages;
+create policy global_chat_select on public.global_chat_messages for select to authenticated using (true);
+drop policy if exists global_chat_insert on public.global_chat_messages;
+create policy global_chat_insert on public.global_chat_messages for insert to authenticated with check (sender_id=auth.uid());
+do $$ begin alter publication supabase_realtime add table public.global_chat_messages; exception when duplicate_object then null; when undefined_object then null; end $$;
+grant select,insert on public.global_chat_messages to authenticated;
+
+
+-- ===== 019_global_chat_200_coins.sql =====
+-- Global public chat: 200 coins per sent message
+create table if not exists public.global_chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid not null references auth.users(id) on delete cascade,
+  message text not null check (char_length(trim(message)) between 1 and 1000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists global_chat_messages_created_at_idx
+  on public.global_chat_messages(created_at desc);
+
+alter table public.global_chat_messages enable row level security;
+
+drop policy if exists "authenticated_read_global_chat" on public.global_chat_messages;
+create policy "authenticated_read_global_chat"
+on public.global_chat_messages for select
+to authenticated
+using (true);
+
+create or replace function public.send_global_chat_message(p_message text)
+returns public.global_chat_messages
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_message text := trim(p_message);
+  v_row public.global_chat_messages;
+  v_balance bigint;
+begin
+  if v_user is null then
+    raise exception 'NOT_AUTHENTICATED';
+  end if;
+
+  if char_length(v_message) < 1 or char_length(v_message) > 1000 then
+    raise exception 'INVALID_MESSAGE';
+  end if;
+
+  select coin_balance into v_balance
+  from public.wallets
+  where user_id = v_user
+  for update;
+
+  if coalesce(v_balance, 0) < 200 then
+    raise exception 'INSUFFICIENT_COINS';
+  end if;
+
+  update public.wallets
+  set coin_balance = coin_balance - 200
+  where user_id = v_user;
+
+  insert into public.coin_transactions(user_id, amount, transaction_type, description)
+  values (v_user, -200, 'global_chat', 'رسالة دردشة عامة');
+
+  insert into public.global_chat_messages(sender_id, message)
+  values (v_user, v_message)
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+revoke all on function public.send_global_chat_message(text) from public;
+grant execute on function public.send_global_chat_message(text) to authenticated;
+
+alter table public.global_chat_messages replica identity full;
+do $$
+begin
+  alter publication supabase_realtime add table public.global_chat_messages;
+exception when duplicate_object then
+  null;
+end $$;
+
