@@ -3,7 +3,7 @@ async function loadBadges(){
   if(!root)return;
   root.innerHTML='<div class="panel">جاري تحميل المستخدمين...</div>';
   const {data,error}=await db.from('profiles')
-    .select('id,display_name,username,public_id,role,activity_admin_badge,customer_service_badge,is_verified')
+    .select('id,display_name,username,role,activity_admin_badge,customer_service_badge,is_verified')
     .order('created_at',{ascending:false});
   if(error){root.innerHTML='<div class="panel">خطأ: '+badgeEsc(error.message)+'</div>';return;}
   const rows=data||[];
@@ -12,7 +12,7 @@ async function loadBadges(){
       const name=p.display_name||p.username||'مستخدم';
       return '<tr>'+
         '<td>'+badgeEsc(name)+'</td>'+
-        '<td>'+badgeEsc(p.public_id||'—')+'</td>'+
+        '<td>'+badgeEsc(p.id||'—')+'</td>'+
         '<td>'+badgeEsc(p.role||'USER')+'</td>'+
         '<td><input id="ba_'+p.id+'" type="checkbox" '+(p.activity_admin_badge?'checked':'')+'></td>'+
         '<td><input id="bc_'+p.id+'" type="checkbox" '+(p.customer_service_badge?'checked':'')+'></td>'+
