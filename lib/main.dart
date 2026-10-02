@@ -344,18 +344,89 @@ class RoomCard extends StatelessWidget {
 class Discover extends StatelessWidget {
   const Discover({super.key});
 
+  static const games = <Map<String, String>>[
+    {'name': 'CRANK', 'icon': '⚙️'},
+    {'name': 'FRANKEN STARS', 'icon': '⭐'},
+    {'name': 'DRAGON TIGER', 'icon': '🐉'},
+    {'name': 'FOOTBALL', 'icon': '⚽'},
+    {'name': 'RACING', 'icon': '🏎️'},
+    {'name': 'GREEDY WOLF', 'icon': '🐺'},
+    {'name': 'LAVA SLOT', 'icon': '🌋'},
+    {'name': 'PLINKO', 'icon': '🎯'},
+    {'name': 'SWEET PARTY', 'icon': '🍭'},
+    {'name': 'FRUIT BLAST', 'icon': '🍉'},
+    {'name': 'ALI BABA', 'icon': '🕌'},
+    {'name': 'SPEED WIN', 'icon': '🏁'},
+    {'name': 'GOLDEN TEMPLE', 'icon': '🏯'},
+    {'name': 'SUPER ELEMENTS', 'icon': '⚡'},
+    {'name': 'ROYAL FISHING', 'icon': '🎣'},
+    {'name': 'CANDY BURST', 'icon': '🍬'},
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'اكتشف',
-          style: TextStyle(
-            color: gold,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('الألعاب', style: TextStyle(color: gold, fontWeight: FontWeight.w900)),
+        centerTitle: true,
+      ),
+      body: GridView.builder(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 10,
+          childAspectRatio: .72,
         ),
+        itemCount: games.length,
+        itemBuilder: (context, i) {
+          final game = games[i];
+          return InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(game['name']! + ' — سيتم فتح اللعبة عند ربطها')),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF3A1D0D), Color(0xFF120805)],
+                ),
+                border: Border.all(color: Color(0xFF6A421A)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Color(0xFF241207),
+                      border: Border.all(color: Color(0xFFB77921)),
+                    ),
+                    child: Center(
+                      child: Text(game['icon']!, style: const TextStyle(fontSize: 26)),
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Text(
+                      game['name']!,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
