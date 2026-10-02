@@ -46,6 +46,7 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
   Future<void> _action(String name) async {
     final client = Supabase.instance.client;
     try {
+      if ((name == 'الوكالات' || name == 'متابعة الوكالات') && ['CEO','SUPER_ADMIN','MANAGER','BD'].contains(role)) { await _openAgency(); return; }
       if (name == 'VIP 1 → VIP 6' && role == 'SUPER_ADMIN') {
         final target = await showDialog<String>(
           context: context,
@@ -83,6 +84,26 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         SnackBar(content: Text('تعذر تنفيذ العملية: $e')),
       );
     }
+  }
+
+  Future<void> _openAgency() async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('فتح وكالة'),
+          content: TextField(controller: controller, decoration: const InputDecoration(labelText: 'اسم الوكالة')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('فتح')),
+          ],
+        );
+      },
+    );
+    if (name == null || name.isEmpty) return;
+    await Supabase.instance.client.rpc('agency_open', params: {'p_name': name, 'p_manager_id': null, 'p_bd_id': null});
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم فتح الوكالة بنجاح')));
   }
 
   @override
