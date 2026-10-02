@@ -21,6 +21,19 @@ jobs:
       - name: Generate Android project
         run: flutter create --platforms=android --project-name asmar_chat --org com.asmar.chat --no-pub .
 
+      - name: Set Android app display name
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          s = p.read_text()
+          s, n = re.subn(r'(<application\b[^>]*\bandroid:label=")[^"]*(")', r'\1Asmar Chat\2', s, count=1)
+          if n != 1:
+              raise SystemExit('Could not set Android application label')
+          p.write_text(s)
+          PY
+
       - name: Configure Supabase Android callback
         run: |
           python3 - <<'PY'
