@@ -1155,7 +1155,7 @@ class _ProfileState extends State<Profile> {
                           _MiddleAction(
                             icon: Icons.wallet,
                             label: 'محفظة',
-                            onTap: () => _info('المحفظة'),
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage())),
                           ),
                         ],
                       ),
