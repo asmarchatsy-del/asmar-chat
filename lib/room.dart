@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
 import 'country_flag.dart';
 import 'rank_frame.dart';
+import 'gifts.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -271,7 +272,7 @@ class _RoomState extends State<Room> {
         child: Row(
           children: [
             IconButton(onPressed: joiningVoice ? null : _toggleMicrophone, icon: Icon(joiningVoice ? Icons.hourglass_top : (microphoneOn ? Icons.mic : Icons.mic_off), color: gold)),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.card_giftcard, color: gold)),
+            IconButton(onPressed: () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => GiftSheet(roomId: widget.roomId)), icon: const Icon(Icons.card_giftcard, color: gold)),
             Expanded(
               child: TextField(
                 controller: messageController,
