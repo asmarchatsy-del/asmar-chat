@@ -1,39 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-class GiftItem{final String id,name,emoji;final int price;const GiftItem({required this.id,required this.name,required this.emoji,required this.price});}
-const gifts=<GiftItem>[GiftItem(id:'rose',name:'وردة',emoji:'🌹',price:100),GiftItem(id:'heart',name:'قلب',emoji:'❤️',price:500),GiftItem(id:'diamond',name:'ماسة',emoji:'💎',price:1000),GiftItem(id:'crown',name:'تاج',emoji:'👑',price:5000),GiftItem(id:'dragon',name:'تنين',emoji:'🐉',price:10000),GiftItem(id:'lion',name:'أسد',emoji:'🦁',price:25000)];
 
-class GiftStatsPage extends StatefulWidget {
-  const GiftStatsPage({super.key});
-  @override State<GiftStatsPage> createState()=>_GiftStatsPageState();
+class GiftItem {
+  final String id, name, emoji;
+  final int price;
+  const GiftItem({required this.id, required this.name, required this.emoji, required this.price});
 }
-class _GiftStatsPageState extends State<GiftStatsPage>{
-  Map<String,dynamic>? stats; List<Map<String,dynamic>> top=[]; bool loading=true;
-  @override void initState(){super.initState(); _load();}
-  Future<void> _load() async { try { final c=Supabase.instance.client; final u=c.auth.currentUser; if(u==null)return; final a=await c.rpc('gift_stats'); final b=await c.rpc('top_gift_receivers',params:{'p_limit':20}); if(mounted)setState((){stats=Map<String,dynamic>.from((a as List).first);top=List<Map<String,dynamic>>.from(b as List);loading=false;}); } catch(e){if(mounted)setState(()=>loading=false);}}
-  @override Widget build(BuildContext context)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(backgroundColor:const Color(0xFF090604),appBar:AppBar(backgroundColor:const Color(0xFF100805),foregroundColor:Colors.white,title:const Text('إحصائيات الهدايا 🎁',style:TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.w900))),body:loading?const Center(child:CircularProgressIndicator()):RefreshIndicator(onRefresh:_load,child:ListView(padding:const EdgeInsets.all(16),children:[if(stats!=null)GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,crossAxisSpacing:10,mainAxisSpacing:10,children:[_stat('الهدايا المرسلة',stats!['sent_count']),_stat('كوينز مرسلة',stats!['sent_coins']),_stat('الهدايا المستلمة',stats!['received_count']),_stat('كوينز مستلمة',stats!['received_coins'])]),const SizedBox(height:20),const Text('🏆 أكثر المستلمين',style:TextStyle(color:Color(0xFFFFD36A),fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:10),...List.generate(top.length,(i){final x=top[i];return Container(margin:const EdgeInsets.only(bottom:9),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:const Color(0xFF1B0E08),borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFF6A421A))),child:Row(children:[CircleAvatar(backgroundColor:const Color(0xFF422511),child:Text('${i+1}',style:const TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.w900))),const SizedBox(width:10),Expanded(child:Text(x['username']?.toString()??'مستخدم',style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800))),Text('${x['received_coins']} 🪙',style:const TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.w900))]));})])));
-  Widget _stat(String title,dynamic value)=>Container(decoration:BoxDecoration(color:const Color(0xFF1B0E08),borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFF6A421A))),padding:const EdgeInsets.all(14),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(title,style:const TextStyle(color:Colors.white70,fontSize:12)),const SizedBox(height:6),Text(value?.toString()??'0',style:const TextStyle(color:Color(0xFFFFD36A),fontSize:20,fontWeight:FontWeight.w900))]));
-}
+const gifts = <GiftItem>[
+  GiftItem(id:'rose',name:'وردة',emoji:'🌹',price:100),
+  GiftItem(id:'heart',name:'قلب',emoji:'❤️',price:500),
+  GiftItem(id:'diamond',name:'ماسة',emoji:'💎',price:1000),
+  GiftItem(id:'crown',name:'تاج',emoji:'👑',price:5000),
+  GiftItem(id:'dragon',name:'تنين',emoji:'🐉',price:10000),
+  GiftItem(id:'lion',name:'أسد',emoji:'🦁',price:25000),
+];
 
 class GiftHistoryPage extends StatelessWidget {
   const GiftHistoryPage({super.key});
   @override Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
-    return Directionality(textDirection: TextDirection.rtl, child: Scaffold(
-      backgroundColor: const Color(0xFF090604),
-      appBar: AppBar(backgroundColor: const Color(0xFF100805), foregroundColor: Colors.white, title: const Text('سجل الهدايا 🎁', style: TextStyle(color: Color(0xFFFFD36A), fontWeight: FontWeight.w900))),
-      body: user == null ? const Center(child: Text('يجب تسجيل الدخول', style: TextStyle(color: Colors.white))) : StreamBuilder<List<Map<String,dynamic>>>(
-        stream: Supabase.instance.client.from('gift_transactions').stream(primaryKey: ['id']).order('created_at', ascending: false),
-        builder: (context, snap) {
-          if (snap.hasError) return Center(child: Text('تعذر تحميل السجل: ${snap.error}', style: const TextStyle(color: Colors.white)));
-          final rows=(snap.data ?? []).where((x)=>x['sender_id']==user.id || x['recipient_id']==user.id).toList();
-          if(rows.isEmpty) return const Center(child: Text('لا توجد هدايا بعد 🎁', style: TextStyle(color: Colors.white70)));
-          return ListView.builder(padding: const EdgeInsets.all(16), itemCount: rows.length, itemBuilder: (_,i){ final x=rows[i]; final mine=x['sender_id']==user.id; return Container(margin: const EdgeInsets.only(bottom:10), padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: const Color(0xFF1B0E08), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF6A421A))), child: Row(children:[const Text('🎁',style:TextStyle(fontSize:32)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(mine?'أرسلت هدية':'استلمت هدية',style:const TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.w900)),Text('هدية: '+x['gift_id'].toString(),style:const TextStyle(color:Colors.white)),Text(x['amount'].toString()+' 🪙',style:const TextStyle(color:Colors.white70))]))]); });
-        },
-      ),
-    ));
+    return Scaffold(backgroundColor: const Color(0xFF090604), appBar: AppBar(backgroundColor: const Color(0xFF100805), foregroundColor: Colors.white, title: const Text('سجل الهدايا 🎁', style: TextStyle(color: Color(0xFFFFD36A), fontWeight: FontWeight.w900))), body: user == null ? const Center(child: Text('يجب تسجيل الدخول')) : StreamBuilder<List<Map<String,dynamic>>>(stream: Supabase.instance.client.from('gift_transactions').stream(primaryKey:['id']).order('created_at',ascending:false).limit(100), builder:(context,snap){
+      if(snap.hasError) return Center(child: Text('تعذر تحميل السجل: ' + snap.error.toString()));
+      final rows=(snap.data??[]).where((x)=>x['sender_id']==user.id || x['recipient_id']==user.id).toList();
+      if(rows.isEmpty) return const Center(child: Text('لا توجد هدايا بعد 🎁',style:TextStyle(color:Colors.white70)));
+      return ListView.builder(padding:const EdgeInsets.all(16),itemCount:rows.length,itemBuilder:(context,i){final x=rows[i];final mine=x['sender_id']==user.id;return Container(margin:const EdgeInsets.only(bottom:10),padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:const Color(0xFF1B0E08),borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFF6A421A))),child:Row(children:[const Text('🎁',style:TextStyle(fontSize:32)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(mine?'أرسلت هدية':'استلمت هدية',style:const TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.w900)),Text('هدية: '+x['gift_id'].toString(),style:const TextStyle(color:Colors.white)),Text(x['amount'].toString()+' 🪙',style:const TextStyle(color:Colors.white70))]))]));});
+    });
   }
 }
 
-class GiftSheet extends StatefulWidget{final String roomId;final void Function(GiftItem gift)? onSent;const GiftSheet({super.key,required this.roomId,this.onSent});@override State<GiftSheet> createState()=>_GiftSheetState();}
-class _GiftSheetState extends State<GiftSheet>{String? recipient;int balance=0;@override void initState(){super.initState();_load();}Future<void> _load()async{final u=Supabase.instance.client.auth.currentUser;if(u==null)return;final r=await Supabase.instance.client.from('wallets').select('balance').eq('user_id',u.id).maybeSingle();if(mounted)setState(()=>balance=(r?['balance'] as num?)?.toInt()??0);}Future<void> _send(GiftItem g)async{final target=recipient;if(target==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('اختر مستلم الهدية')));return;}try{await Supabase.instance.client.rpc('send_gift',params:{'p_room_id':widget.roomId,'p_recipient_id':target,'p_gift_id':g.id});await _load();if(mounted){widget.onSent?.call(g);Navigator.pop(context);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم إرسال '+g.emoji+' '+g.name+' 🔥')));}}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إرسال الهدية: $e')));}}@override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Container(padding:const EdgeInsets.all(16),decoration:const BoxDecoration(color:Color(0xFF120805),borderRadius:BorderRadius.vertical(top:Radius.circular(24))),child:Column(mainAxisSize:MainAxisSize.min,children:[Row(children:[const Text('الهدايا 🎁',style:TextStyle(color:Color(0xFFFFD36A),fontSize:20,fontWeight:FontWeight.w900)),IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const GiftStatsPage())),icon:const Icon(Icons.emoji_events,color:Color(0xFFFFD36A))),IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const GiftHistoryPage())),icon:const Icon(Icons.history,color:Color(0xFFFFD36A))),const Spacer(),Text(balance.toString()+' 🪙',style:const TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.bold))]),const SizedBox(height:10),TextField(onChanged:(v)=>setState(()=>recipient=v.trim().isEmpty?null:v.trim()),decoration:const InputDecoration(labelText:'ID أو اسم المستخدم للمستلم',prefixIcon:Icon(Icons.person_search))),const SizedBox(height:12),GridView.builder(shrinkWrap:true,itemCount:gifts.length,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:3,childAspectRatio:.9,crossAxisSpacing:8,mainAxisSpacing:8),itemBuilder:(_,i){final g=gifts[i];return InkWell(onTap:()=>_send(g),child:Container(decoration:BoxDecoration(color:const Color(0xFF241207),borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFF6A421A))),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(g.emoji,style:const TextStyle(fontSize:34)),Text(g.name,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold,fontSize:11)),Text(g.price.toString()+' 🪙',style:const TextStyle(color:Color(0xFFFFD36A),fontSize:10))])));}),const SizedBox(height:8)]));}}
+class GiftSheet extends StatefulWidget {
+  final String roomId;
+  final void Function(GiftItem gift)? onSent;
+  const GiftSheet({super.key,required this.roomId,this.onSent});
+  @override State<GiftSheet> createState()=>_GiftSheetState();
+}
+class _GiftSheetState extends State<GiftSheet> {
+  String? recipient; int balance=0; bool sending=false;
+  @override void initState(){super.initState();_load();}
+  Future<void> _load() async { final u=Supabase.instance.client.auth.currentUser; if(u==null)return; try{final r=await Supabase.instance.client.from('wallets').select('balance').eq('user_id',u.id).maybeSingle(); if(mounted)setState(()=>balance=(r?['balance'] as num?)?.toInt()??0);}catch(_){} }
+  Future<void> _send(GiftItem gift) async {
+    final target=recipient; if(target==null||target.isEmpty)return;
+    if(sending)return; setState(()=>sending=true);
+    try { await Supabase.instance.client.rpc('send_gift',params:{'p_room_id':widget.roomId,'p_recipient_id':target,'p_gift_id':gift.id}); await _load(); if(mounted){widget.onSent?.call(gift);Navigator.pop(context);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم إرسال ${gift.emoji} ${gift.name} 🔥')));}}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إرسال الهدية: $e')));}
+    finally{if(mounted)setState(()=>sending=false);}
+  }
+  @override Widget build(BuildContext context)=>Directionality(textDirection:TextDirection.rtl,child:Container(padding:const EdgeInsets.all(16),decoration:const BoxDecoration(color:Color(0xFF120805),borderRadius:BorderRadius.vertical(top:Radius.circular(24))),child:Column(mainAxisSize:MainAxisSize.min,children:[
+    Row(children:[const Text('الهدايا 🎁',style:TextStyle(color:Color(0xFFFFD36A),fontSize:20,fontWeight:FontWeight.w900)),IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const GiftHistoryPage())),icon:const Icon(Icons.history,color:Color(0xFFFFD36A))),const Spacer(),Text(balance.toString()+' 🪙',style:const TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.bold))]),
+    const SizedBox(height:10),
+    TextField(onChanged:(v)=>setState(()=>recipient=v.trim().isEmpty?null:v.trim()),decoration:const InputDecoration(labelText:'ID أو اسم المستخدم للمستلم',prefixIcon:Icon(Icons.person_search))),
+    const SizedBox(height:12),
+    GridView.builder(shrinkWrap:true,itemCount:gifts.length,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:3,childAspectRatio:.9,crossAxisSpacing:8,mainAxisSpacing:8),itemBuilder:(_,i){final g=gifts[i];return InkWell(onTap:sending?null:()=>_send(g),child:Container(decoration:BoxDecoration(color:const Color(0xFF241207),borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFF6A421A))),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(g.emoji,style:const TextStyle(fontSize:34)),Text(g.name,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold,fontSize:11)),Text(g.price.toString()+' 🪙',style:const TextStyle(color:Color(0xFFFFD36A),fontSize:10))])));}),
+    const SizedBox(height:8),
+  ]));
+}
