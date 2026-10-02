@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend_config.dart';
 import 'admin_panel.dart';
@@ -20,6 +21,7 @@ import 'gift_banner.dart';
 import 'global_chat.dart';
 import 'messages.dart';
 import 'rocket_levels.dart';
+import 'wallet.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -228,16 +230,35 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _loginWithGoogle() async {
     setState(() { loading = true; error = null; });
     try {
-      final ok = await Supabase.instance.client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: kIsWeb ? Uri.base.origin : 'io.supabase.flutter://login-callback/',
-        authScreenLaunchMode: LaunchMode.externalApplication,
-      );
-      if (!ok && mounted) {
-        setState(() => error = 'تعذر فتح تسجيل الدخول بواسطة Google');
+      if (kIsWeb) {
+        await Supabase.instance.client.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: Uri.base.origin,
+          authScreenLaunchMode: LaunchMode.externalApplication,
+        );
+      } else {
+        const webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+        if (webClientId.isEmpty) {
+          throw Exception('GOOGLE_WEB_CLIENT_ID is not configured');
+        }
+        final google = GoogleSignIn.instance;
+        await google.initialize(serverClientId: webClientId);
+        final account = await google.authenticate();
+        final auth = account.authentication;
+        final authorization = await account.authorizationClient.authorizationForScopes(const <String>[]);
+        final idToken = auth.idToken;
+        final accessToken = authorization.accessToken;
+        if (idToken == null || accessToken == null) {
+          throw Exception('Google tokens were not returned');
+        }
+        await Supabase.instance.client.auth.signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: idToken,
+          accessToken: accessToken,
+        );
       }
     } catch (e) {
-      if (mounted) setState(() => error = 'تسجيل Google غير مفعّل حاليًا');
+      if (mounted) setState(() => error = 'تعذر تسجيل الدخول بواسطة Google. تأكد من إعداد Google OAuth وSHA-256 للتطبيق.');
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -857,24 +878,7 @@ class MomentsPage extends StatelessWidget {
   }
 }
 
-class Wallet extends StatelessWidget {
-  const Wallet({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('المحفظة')),
-      body: const Center(
-        child: Text(
-          'المحفظة',
-          style: TextStyle(color: gold, fontSize: 28),
-        ),
-      ),
-    );
-  }
-}
-
-class Profile extends StatefulWidget {
+class Wallet extends StatelessWidget {\n  const Wallet({super.key});\n  @override Widget build(BuildContext context) => const WalletPage();\n}\n\nclass Profile extends StatefulWidget {
   const Profile({super.key});
 
   @override
