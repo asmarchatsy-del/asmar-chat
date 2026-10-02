@@ -61,6 +61,7 @@ class _StorePageState extends State<StorePage> {
       child: Scaffold(
         backgroundColor: _bg,
         appBar: AppBar(
+          actions: [IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const VipPage())),icon:const Icon(Icons.workspace_premium,color:_gold))],
           title: const Text('متجر الإطارات', style: TextStyle(fontWeight: FontWeight.w900)),
           actions: [Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
