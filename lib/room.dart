@@ -35,6 +35,15 @@ class _RoomState extends State<Room> {
   lk.Room? _voiceRoom;
   bool microphoneOn = false;
   bool joiningVoice = false;
+  Map<String, dynamic>? _giftOverlay;
+
+  void _showGiftAnimation(Map<String, dynamic> gift) {
+    if (!mounted) return;
+    setState(() => _giftOverlay = gift);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _giftOverlay = null);
+    });
+  }
 
   @override
   void initState() {
@@ -105,8 +114,10 @@ class _RoomState extends State<Room> {
             ),
           ],
         ),
-        body: Column(
+        body: Stack(
           children: [
+            Column(
+              children: [
             _roomHeader(),
             Expanded(
               child: ListView.builder(
@@ -118,6 +129,30 @@ class _RoomState extends State<Room> {
               ),
             ),
             _bottomBar(),
+              ],
+            ),
+            if (_giftOverlay != null)
+              Center(
+                child: AnimatedScale(
+                  scale: 1,
+                  duration: const Duration(milliseconds: 350),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 45),
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: const Color(0xF0150905),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: gold, width: 2),
+                      boxShadow: const [BoxShadow(color: Color(0x99FFD36A), blurRadius: 30)],
+                    ),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text(_giftOverlay!['emoji']?.toString() ?? '🎁', style: const TextStyle(fontSize: 72)),
+                      Text('هدية ' + (_giftOverlay!['name']?.toString() ?? ''), style: const TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.w900)),
+                      Text((_giftOverlay!['amount']?.toString() ?? '0') + ' 🪙', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ]),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -272,7 +307,7 @@ class _RoomState extends State<Room> {
         child: Row(
           children: [
             IconButton(onPressed: joiningVoice ? null : _toggleMicrophone, icon: Icon(joiningVoice ? Icons.hourglass_top : (microphoneOn ? Icons.mic : Icons.mic_off), color: gold)),
-            IconButton(onPressed: () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => GiftSheet(roomId: widget.roomId)), icon: const Icon(Icons.card_giftcard, color: gold)),
+            IconButton(onPressed: () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => GiftSheet(roomId: widget.roomId, onSent: (g) => _showGiftAnimation({'emoji': g.emoji, 'name': g.name, 'amount': g.price})), icon: const Icon(Icons.card_giftcard, color: gold)),
             Expanded(
               child: TextField(
                 controller: messageController,
