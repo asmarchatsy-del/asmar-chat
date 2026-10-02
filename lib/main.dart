@@ -365,6 +365,7 @@ class _ProfileState extends State<Profile> {
           final username = profile['username']?.toString() ?? 'مستخدم';
           final country = profile['country_code']?.toString();
           final vip = profile['vip_level']?.toString();
+          final publicId = profile['public_id']?.toString() ?? '---';
 
           return Center(
             child: SingleChildScrollView(
@@ -390,13 +391,11 @@ class _ProfileState extends State<Profile> {
                     CountryFlag(code: country, size: 22),
                     const SizedBox(width: 7),
                     Text(
-                    username,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
+                      username,
+                      style: const TextStyle(color: Colors.white,fontSize: 20,fontWeight: FontWeight.w900),
                     ),
-                    ),
+                    const SizedBox(width: 8),
+                    Text('ID: $publicId',style: const TextStyle(color: gold,fontSize: 11,fontWeight: FontWeight.w800)),
                   ]),
                   const SizedBox(height: 5),
                   DropdownButton<String>(
