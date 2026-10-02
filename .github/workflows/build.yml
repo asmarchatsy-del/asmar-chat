@@ -18,27 +18,21 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Create Android platform
+      - name: Generate Android project
+        run: flutter create --platforms=android --project-name asmar_chat --org com.asmar.chat --no-pub .
+
+      - name: Configure Supabase Android callback
         run: |
-          rm -rf /tmp/asmar_flutter_template
-          flutter create --platforms=android --project-name asmar_chat --no-pub /tmp/asmar_flutter_template
-          cp -R /tmp/asmar_flutter_template/android ./android
           python3 - <<'PY'
           from pathlib import Path
-          p = Path("android/app/src/main/AndroidManifest.xml")
+          p = Path('android/app/src/main/AndroidManifest.xml')
           s = p.read_text()
-          deep_link = '''
-              <intent-filter>
-                  <action android:name="android.intent.action.VIEW" />
-                  <category android:name="android.intent.category.DEFAULT" />
-                  <category android:name="android.intent.category.BROWSABLE" />
-                  <data android:scheme="io.supabase.flutter" android:host="login-callback" />
-              </intent-filter>'''
-          if "io.supabase.flutter" not in s:
-              marker = "</activity>"
+          deep_link = '''\n            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="io.supabase.flutter" android:host="login-callback" />\n            </intent-filter>'''
+          if 'io.supabase.flutter' not in s:
+              marker = '</activity>'
               if marker not in s:
-                  raise SystemExit("Android activity block not found")
-              s = s.replace(marker, deep_link + "\n        " + marker, 1)
+                  raise SystemExit('Android activity block not found')
+              s = s.replace(marker, deep_link + '\n        ' + marker, 1)
               p.write_text(s)
           PY
 
