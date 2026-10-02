@@ -334,15 +334,17 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: isCreate ? _createAccount : _loginWithEmail,
                     ),
                     const SizedBox(height: 12),
-                    if (!isCreate) ...[
-                      const Row(children: [
-                        Expanded(child: Divider(color: Color(0xFF4C3019))),
-                        Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('أو', style: TextStyle(color: Colors.white54))),
-                        Expanded(child: Divider(color: Color(0xFF4C3019))),
-                      ]),
-                      const SizedBox(height: 12),
-                      _actionButton(label: 'تسجيل الدخول باستخدام Google', icon: Icons.g_mobiledata, onPressed: _loginWithGoogle),
-                    ],
+                    const Row(children: [
+                      Expanded(child: Divider(color: Color(0xFF4C3019))),
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('أو', style: TextStyle(color: Colors.white54))),
+                      Expanded(child: Divider(color: Color(0xFF4C3019))),
+                    ]),
+                    const SizedBox(height: 12),
+                    _actionButton(
+                      label: isCreate ? 'إنشاء حساب باستخدام Google' : 'تسجيل الدخول باستخدام Google',
+                      icon: Icons.g_mobiledata,
+                      onPressed: _loginWithGoogle,
+                    ),
                   ],
                   if (error != null) ...[
                     const SizedBox(height: 14),
