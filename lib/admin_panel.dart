@@ -387,10 +387,8 @@ class _AdminPanelState extends State<AdminPanel> {
               Switch(
                 value: room['active'],
                 activeColor: gold,
-                onChanged: (value) {
-                  setState(() {
-                    room['active'] = value;
-                  });
+                onChanged: (value) async {
+                  try { await Supabase.instance.client.rpc('admin_set_room_active', params: {'p_room_id': room['id'], 'p_active': value}); if (mounted) { setState(() => room['active'] = value); _message('تم تحديث حالة الغرفة'); } } catch (e) { _message('فشل تحديث الغرفة: $e'); }
                 },
               ),
             ],
@@ -659,10 +657,10 @@ class _AdminPanelState extends State<AdminPanel> {
                   title: Text(u['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   subtitle: Text('${u['role']} • ${u['coins']} Coins', style: const TextStyle(color: Colors.white54, fontSize: 11)),
                   trailing: PopupMenuButton<String>(
-                    onSelected: (value) => _message(value == 'role' ? 'تغيير صلاحية ${u['name']}' : 'إجراءات الحساب: ${u['name']}'),
+                    onSelected: (value) async { if (value == 'role') await _changeRole(u); if (value == 'active') await _toggleUser(u); },
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'role', child: Text('تغيير الصلاحية')),
-                      PopupMenuItem(value: 'account', child: Text('إجراءات الحساب')),
+                      PopupMenuItem(value: 'active', child: Text('تفعيل / تعطيل')),
                     ],
                   ),
                 ),
@@ -673,6 +671,10 @@ class _AdminPanelState extends State<AdminPanel> {
       ),
     );
   }
+
+  Future<void> _toggleUser(Map<String,dynamic> u) async { try { final next = !(u['online'] == true); await Supabase.instance.client.rpc('admin_set_user_active', params: {'p_user_id': u['id'], 'p_active': next}); await _loadData(); _message(next ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب'); } catch (e) { _message('فشل تحديث الحساب: $e'); } }
+
+  Future<void> _changeRole(Map<String,dynamic> u) async { final roles = ['USER','HOST','AGENT','ADMIN','BD','MANAGER','SUPER_ADMIN']; String selected = (u['role'] ?? 'USER').toString(); final value = await showDialog<String>(context: context, builder: (ctx)=>AlertDialog(backgroundColor: card,title: Text('تغيير رتبة '+u['name'].toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w900)),content: StatefulBuilder(builder:(ctx,setState)=>DropdownButtonFormField<String>(value: roles.contains(selected) ? selected : 'USER',dropdownColor: card,items: roles.map((r)=>DropdownMenuItem(value:r,child:Text(r))).toList(),onChanged:(v){if(v!=null){selected=v;setState((){});}})),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,selected),child:const Text('حفظ'))],)); if(value==null || value==u['role']) return; try { await Supabase.instance.client.rpc('admin_set_user_role', params: {'p_user_id':u['id'],'p_role':value}); await _loadData(); _message('تم تغيير الرتبة إلى '+value); } catch(e){_message('فشل تغيير الرتبة: $e');} }
 
   void _coinHistory() {
     showModalBottomSheet<void>(
@@ -778,8 +780,8 @@ class _AdminPanelState extends State<AdminPanel> {
                 }
                 try {
                   final recipientRow = users.firstWhere((u) => u['name'] == recipient);
-                  await Supabase.instance.client.rpc('transfer_coins', params: {
-                    'p_to_user_id': recipientRow['id'], 'p_amount': amount, 'p_reason': 'admin_transfer',
+                  await Supabase.instance.client.rpc('admin_transfer_coins', params: {
+                    'p_to_user_id': recipientRow['id'], 'p_amount': amount, 'p_reason': 'owner_transfer',
                   });
                   if (mounted) { Navigator.pop(context); await _loadData(); _message('تم تحويل $amount Coins إلى $recipient'); }
                 } catch (e) { _message('فشل التحويل: $e'); }
