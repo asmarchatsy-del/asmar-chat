@@ -339,7 +339,7 @@ class _ProfileState extends State<Profile> {
     try {
       final row = await Supabase.instance.client
           .from('profiles')
-          .select('username,role,country_code')
+          .select('username,role,country_code,vip_level')
           .eq('id', user.id)
           .maybeSingle();
       return Map<String, dynamic>.from(
@@ -361,6 +361,7 @@ class _ProfileState extends State<Profile> {
           final role = profile['role']?.toString() ?? 'USER';
           final username = profile['username']?.toString() ?? 'مستخدم';
           final country = profile['country_code']?.toString();
+          final vip = profile['vip_level']?.toString();
 
           return Center(
             child: SingleChildScrollView(
@@ -374,6 +375,7 @@ class _ProfileState extends State<Profile> {
                     ),
                   RankFrame(
                     role: role,
+                    vipLevel: vip,
                     size: 88,
                     child: const CircleAvatar(
                       backgroundColor: Color(0xFF120A06),
@@ -403,7 +405,7 @@ class _ProfileState extends State<Profile> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    role == 'AGENT' ? 'COIN SELLER' : role,
+                    vip != null && vip.isNotEmpty ? vip : (role == 'AGENT' ? 'COIN SELLER' : role),
                     style: const TextStyle(
                       color: gold,
                       fontSize: 12,
