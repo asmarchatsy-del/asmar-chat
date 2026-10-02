@@ -10,8 +10,13 @@ create table if not exists public.profiles(
  created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
  activity_admin_badge boolean not null default false,customer_service_badge boolean not null default false,is_verified boolean not null default false);
 alter table public.profiles add column if not exists vip_level text;
+alter table public.profiles add column if not exists activity_admin_badge boolean not null default false;
+alter table public.profiles add column if not exists customer_service_badge boolean not null default false;
+alter table public.profiles add column if not exists is_verified boolean not null default false;
 create table if not exists public.wallets(user_id uuid primary key references public.profiles(id) on delete cascade,balance bigint not null default 0 check(balance>=0),updated_at timestamptz not null default now());
+alter table public.wallets add column if not exists updated_at timestamptz not null default now();
 create table if not exists public.coin_transactions(id uuid primary key default gen_random_uuid(),from_user_id uuid references public.profiles(id),to_user_id uuid references public.profiles(id),amount bigint not null check(amount>0),reason text not null default 'transfer',created_at timestamptz not null default now());
+alter table public.coin_transactions add column if not exists reason text not null default 'transfer';
 create table if not exists public.agencies(id uuid primary key default gen_random_uuid(),name text not null unique,manager_id uuid references public.profiles(id),bd_id uuid references public.profiles(id),owner_id uuid references public.profiles(id),is_active boolean not null default true,created_at timestamptz not null default now());
 create table if not exists public.rooms(id uuid primary key default gen_random_uuid(),name text not null,owner_id uuid references public.profiles(id),livekit_room_name text unique,is_active boolean not null default true,created_at timestamptz not null default now());
 create table if not exists public.frame_items(id uuid primary key default gen_random_uuid(),name text not null unique,style_key text not null,price bigint not null default 0 check(price>=0),is_active boolean not null default true,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
