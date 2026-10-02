@@ -9,6 +9,7 @@ import 'rank_frame.dart';
 import 'vip.dart';
 import 'country_flag.dart';
 import 'notifications.dart';
+import 'friends.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -428,6 +429,11 @@ class _ProfileState extends State<Profile> {
                       ]);
                     },
                   ),
+                  SizedBox(width:double.infinity,child:OutlinedButton.icon(
+                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const FriendsPage())),
+                    icon:const Icon(Icons.people_alt,color:gold),label:const Text('الأصدقاء وطلبات الصداقة'),
+                  )),
+                  const SizedBox(height: 12),
                   const SizedBox(height: 28),
                   const Text(
                     'الملف الشخصي',
