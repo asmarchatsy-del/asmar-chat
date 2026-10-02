@@ -48,23 +48,25 @@ end; $$;
 grant execute on function public.send_friend_request(text) to authenticated;
 
 -- Gift recipients can also be found by the public alphanumeric ID.
-create or replace function public.send_gift(p_room_id uuid,p_recipient_id text,p_gift_id text) returns uuid language plpgsql security definer set search_path=public as $$
-declare r uuid; g gifts%rowtype; sender_balance bigint; tx uuid;
+drop function if exists public.send_gift(uuid,text,text);
+create or replace function public.send_gift(p_room_id uuid,p_recipient_id text,p_gift_id text) returns public.gift_transactions language plpgsql security definer set search_path=public as $$
+declare g public.gifts; s bigint; r uuid; t public.gift_transactions;
 begin
  if auth.uid() is null then raise exception 'not authenticated'; end if;
+ select * into g from gifts where id=p_gift_id and is_active=true;
+ if g.id is null then raise exception 'gift not found'; end if;
  select id into r from profiles where id::text=p_recipient_id or public_id=upper(trim(p_recipient_id)) or username=p_recipient_id limit 1;
  if r is null then raise exception 'recipient not found'; end if;
  if r=auth.uid() then raise exception 'cannot gift yourself'; end if;
- select * into g from gifts where id=p_gift_id and is_active=true;
- if g.id is null then raise exception 'gift not found'; end if;
- select balance into sender_balance from wallets where user_id=auth.uid() for update;
- if coalesce(sender_balance,0)<g.price then raise exception 'insufficient balance'; end if;
+ select balance into s from wallets where user_id=auth.uid() for update;
+ if s is null or s<g.price then raise exception 'insufficient coins'; end if;
  update wallets set balance=balance-g.price,updated_at=now() where user_id=auth.uid();
  insert into wallets(user_id,balance) values(r,g.price) on conflict(user_id) do update set balance=wallets.balance+excluded.balance,updated_at=now();
- insert into coin_transactions(from_user_id,to_user_id,amount,reason) values(auth.uid(),r,g.price,'gift');
- insert into gift_transactions(room_id,sender_id,recipient_id,gift_id,amount) values(p_room_id,auth.uid(),r,g.id,g.price) returning id into tx;
- return tx;
+ insert into coin_transactions(from_user_id,to_user_id,amount,reason) values(auth.uid(),r,g.price,'gift:'||g.id);
+ insert into gift_transactions(room_id,sender_id,recipient_id,gift_id,amount) values(p_room_id,auth.uid(),r,g.id,g.price) returning * into t;
+ return t;
 end; $$;
+revoke all on function public.send_gift(uuid,text,text) from public;
 grant execute on function public.send_gift(uuid,text,text) to authenticated;
 
 create or replace function public.get_my_public_id() returns text language sql stable security definer set search_path=public as $$
