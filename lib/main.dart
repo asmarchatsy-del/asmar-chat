@@ -6,6 +6,7 @@ import 'room.dart';
 import 'store.dart';
 import 'agent_recharge.dart';
 import 'rank_frame.dart';
+import 'vip.dart';
 import 'country_flag.dart';
 
 const gold = Color(0xFFFFD36A);
