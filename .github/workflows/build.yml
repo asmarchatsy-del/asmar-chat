@@ -21,6 +21,9 @@ jobs:
       - name: Generate Android project
         run: flutter create --platforms=android --project-name asmar_chat --org com.asmar.chat --no-pub .
 
+      - name: Apply Asmar Chat logo and branding
+        run: python3 tool/apply_branding.py
+
       - name: Set Android app display name
         run: |
           python3 - <<'PY'
