@@ -81,11 +81,21 @@ jobs:
         if: steps.analyze.outcome == 'failure'
         run: exit 1
 
+      - name: Check native Google configuration
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "Missing repository variable GOOGLE_WEB_CLIENT_ID"; exit 1; }
+
       - name: Build universal APK
-        run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+        run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64 --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
 
       - name: Build App Bundle
-        run: flutter build appbundle --release
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+        run: flutter build appbundle --release --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
 
       - name: Verify universal APK
         run: |
