@@ -247,7 +247,7 @@ class _LoginPageState extends State<LoginPage> {
         final auth = account.authentication;
         final authorization = await account.authorizationClient.authorizationForScopes(const <String>[]);
         final idToken = auth.idToken;
-        final accessToken = authorization.accessToken;
+        final accessToken = authorization?.accessToken;
         if (idToken == null || accessToken == null) {
           throw Exception('Google tokens were not returned');
         }
@@ -878,7 +878,13 @@ class MomentsPage extends StatelessWidget {
   }
 }
 
-class Wallet extends StatelessWidget {\n  const Wallet({super.key});\n  @override Widget build(BuildContext context) => const WalletPage();\n}\n\nclass Profile extends StatefulWidget {
+class Wallet extends StatelessWidget {
+  const Wallet({super.key});
+  @override
+  Widget build(BuildContext context) => const WalletPage();
+}
+
+class Profile extends StatefulWidget {
   const Profile({super.key});
 
   @override
