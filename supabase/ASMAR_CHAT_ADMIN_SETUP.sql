@@ -240,11 +240,7 @@ using(
   or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])
   or (
     public.has_role(array['MANAGER','BD','ADMIN']::public.app_role[])
-    and (
-      role='HOST'
-      or role='AGENT'
-      or role='USER'
-    )
+    and role in ('HOST','AGENT','USER')
   )
   or (
     public.has_role(array['AGENT']::public.app_role[])
@@ -252,86 +248,54 @@ using(
   )
 );
 
-drop policy if exists host_earnings_manager_scope on public.host_earnings;
-
--- Prevent non-CEO roles from changing commission settings through table access.
 drop policy if exists commission_settings_owner on public.agency_commission_settings;
 create policy commission_settings_owner on public.agency_commission_settings
 for all to authenticated
 using(public.has_role(array['CEO']::public.app_role[]))
 with check(public.has_role(array['CEO']::public.app_role[]));
 
--- Managers/BDs/Admins may read agencies, but only the RPCs can mutate assignments.
-drop policy if exists agencies_admin on public.agencies;
-create policy agencies_admin on public.agencies
-for all to authenticated
-using(public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]))
-with check(public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]));
-
--- Tighten host assignment scope for ADMIN to agencies that are explicitly linked to them.
 alter table public.agencies add column if not exists admin_id uuid references public.profiles(id);
 create index if not exists agencies_admin_id_idx on public.agencies(admin_id);
 
-create or replace function public.agency_assign_host(p_host_id uuid,p_agency_id uuid) returns boolean
-language plpgsql security definer set search_path=public as $$
-declare actor_role public.app_role; host_role public.app_role;
-begin
- select role into actor_role from public.profiles where id=auth.uid() and is_active;
- select role into host_role from public.profiles where id=p_host_id and is_active;
- if actor_role is null or host_role <> 'HOST' then raise exception 'not authorized'; end if;
+drop policy if exists agencies_read on public.agencies;
+create policy agencies_read on public.agencies
+for select to authenticated
+using(
+ public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])
+ or (public.has_role(array['MANAGER']::public.app_role[]) and manager_id=auth.uid())
+ or (public.has_role(array['BD']::public.app_role[]) and bd_id=auth.uid())
+ or (public.has_role(array['ADMIN']::public.app_role[]) and admin_id=auth.uid())
+ or (public.has_role(array['AGENT']::public.app_role[]) and owner_id=auth.uid())
+);
 
- if actor_role='AGENT' then
-   if not exists(select 1 from public.agencies a where a.id=p_agency_id and a.is_active and a.owner_id=auth.uid()) then
-     raise exception 'agency not owned by agent';
-   end if;
- elsif actor_role='CEO' then
-   null;
- elsif actor_role='SUPER_ADMIN' then
-   if not exists(select 1 from public.agencies a where a.id=p_agency_id and a.is_active) then raise exception 'agency not found'; end if;
- elsif actor_role='MANAGER' then
-   if not exists(select 1 from public.agencies a where a.id=p_agency_id and a.is_active and a.manager_id=auth.uid()) then raise exception 'agency outside scope'; end if;
- elsif actor_role='BD' then
-   if not exists(select 1 from public.agencies a where a.id=p_agency_id and a.is_active and a.bd_id=auth.uid()) then raise exception 'agency outside scope'; end if;
- elsif actor_role='ADMIN' then
-   if not exists(select 1 from public.agencies a where a.id=p_agency_id and a.is_active and a.admin_id=auth.uid()) then raise exception 'agency outside scope'; end if;
- else
-   raise exception 'not authorized';
- end if;
+drop policy if exists agencies_admin on public.agencies;
+create policy agencies_admin on public.agencies
+for all to authenticated
+using(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
 
- update public.profiles
- set agency_id=p_agency_id,agency_joined_at=now(),updated_at=now()
- where id=p_host_id;
- return true;
-end $$;
+drop policy if exists commission_ledger_read on public.agency_commission_ledger;
+create policy commission_ledger_read on public.agency_commission_ledger
+for select to authenticated
+using(
+ public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])
+ or exists(select 1 from public.agencies a where a.id=agency_commission_ledger.agency_id and (
+   (public.has_role(array['MANAGER']::public.app_role[]) and a.manager_id=auth.uid())
+   or (public.has_role(array['BD']::public.app_role[]) and a.bd_id=auth.uid())
+   or (public.has_role(array['ADMIN']::public.app_role[]) and a.admin_id=auth.uid())
+ ))
+);
 
-grant execute on function public.agency_assign_host(uuid,uuid) to authenticated;
+-- Keep SECURITY DEFINER RPCs inaccessible to anonymous callers.
+do $$declare r record; begin
+ for r in
+   select p.proname,pg_get_function_identity_arguments(p.oid) args
+   from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public' and p.prosecdef
+ loop
+   execute format('revoke execute on function public.%I(%s) from anon',r.proname,r.args);
+ end loop;
+end$$;
 
--- CEO-only role changes; prevents client-side privilege escalation.
-create or replace function public.admin_set_user_role(p_user_id uuid,p_role public.app_role)
-returns boolean language plpgsql security definer set search_path=public as $$
-begin
- if not public.has_role(array['CEO']::public.app_role[]) then raise exception 'not authorized'; end if;
- if p_user_id=auth.uid() and p_role<>'CEO' then raise exception 'owner cannot demote self'; end if;
- update public.profiles set role=p_role,updated_at=now() where id=p_user_id;
- return found;
-end $$;
-grant execute on function public.admin_set_user_role(uuid,public.app_role) to authenticated;
-
--- CEO-only owner wallet transfer. Records every operation.
-create or replace function public.admin_transfer_coins(p_to_user_id uuid,p_amount bigint,p_reason text default 'owner_transfer')
-returns bigint language plpgsql security definer set search_path=public as $$
-declare new_balance bigint; owner_balance bigint;
-begin
- if not public.has_role(array['CEO']::public.app_role[]) then raise exception 'not authorized'; end if;
- if p_amount<=0 then raise exception 'amount must be positive'; end if;
- insert into public.wallets(user_id,balance) values(p_to_user_id,0) on conflict do nothing;
- update public.wallets set balance=balance-p_amount,updated_at=now()
- where user_id=auth.uid() and balance>=p_amount returning balance into owner_balance;
- if owner_balance is null then raise exception 'owner insufficient balance'; end if;
- update public.wallets set balance=balance+p_amount,updated_at=now()
- where user_id=p_to_user_id returning balance into new_balance;
- insert into public.coin_transactions(from_user_id,to_user_id,amount,reason)
- values(auth.uid(),p_to_user_id,p_amount,coalesce(nullif(trim(p_reason),''),'owner_transfer'));
- return new_balance;
-end $$;
-grant execute on function public.admin_transfer_coins(uuid,bigint,text) to authenticated;
+revoke execute on function public.rls_auto_enable() from authenticated;
+revoke execute on function public.transfer_coins(uuid,uuid,bigint) from authenticated;
