@@ -44,256 +44,82 @@ class AsmarApp extends StatelessWidget {
 
 
 
+class LaunchPromotion extends StatefulWidget {
+  const LaunchPromotion({super.key});
+  @override
+  State<LaunchPromotion> createState() => _LaunchPromotionState();
+}
+class _LaunchPromotionState extends State<LaunchPromotion> {
+  late Future<Map<String, dynamic>?> _future;
+  @override
+  void initState(){ super.initState(); _future=_loadPromotion(); }
+  Future<Map<String,dynamic>?> _loadPromotion() async {
+    final now=DateTime.now().toIso8601String();
+    final rows=await Supabase.instance.client.from('app_promotions')
+      .select('id,title,subtitle,image_url,first_place,second_place,third_place,first_prize,second_prize,third_prize,button_text')
+      .eq('is_active',true).lte('starts_at',now).or('ends_at.is.null,ends_at.gte.$now')
+      .order('created_at',ascending:false).limit(1);
+    if(rows.isEmpty)return null;
+    return Map<String,dynamic>.from(rows.first);
+  }
+  void _enter(){Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const Shell()));}
+  @override Widget build(BuildContext context){
+    return Scaffold(backgroundColor:const Color(0xFF050302),body:SafeArea(child:FutureBuilder<Map<String,dynamic>?>(
+      future:_future,builder:(context,snapshot){
+        if(snapshot.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator(color:gold));
+        final p=snapshot.data;
+        if(p==null)return Center(child:FilledButton(onPressed:_enter,child:const Text('دخول إلى Asmar Chat')));
+        return Stack(children:[
+          if((p['image_url']??'').toString().isNotEmpty)Positioned.fill(child:Image.network(p['image_url'].toString(),fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink())),
+          Positioned.fill(child:DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.black.withOpacity(.12),Colors.black.withOpacity(.76),Colors.black.withOpacity(.97)])))),
+          SingleChildScrollView(padding:const EdgeInsets.fromLTRB(20,18,20,28),child:Column(children:[
+            Align(alignment:Alignment.topLeft,child:IconButton(onPressed:_enter,icon:const Icon(Icons.close,color:Colors.white70))),
+            const SizedBox(height:12),
+            const Text('ASMAR CHAT',style:TextStyle(color:gold,fontSize:30,fontWeight:FontWeight.w900,letterSpacing:2)),
+            const SizedBox(height:16),
+            Text(p['title']?.toString()??'حدث الشحن',textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontSize:28,fontWeight:FontWeight.w900)),
+            if((p['subtitle']??'').toString().isNotEmpty) ...[const SizedBox(height:8),Text(p['subtitle'].toString(),textAlign:TextAlign.center,style:const TextStyle(color:Colors.white70,fontSize:14))],
+            const SizedBox(height:22),
+            _PrizeCard(place:p['first_place']?.toString()??'المركز الأول',prize:p['first_prize']?.toString()??'الجائزة الأولى',icon:Icons.emoji_events,large:true),
+            const SizedBox(height:10),
+            Row(children:[
+              Expanded(child:_PrizeCard(place:p['second_place']?.toString()??'المركز الثاني',prize:p['second_prize']?.toString()??'الجائزة الثانية',icon:Icons.workspace_premium)),
+              const SizedBox(width:10),
+              Expanded(child:_PrizeCard(place:p['third_place']?.toString()??'المركز الثالث',prize:p['third_prize']?.toString()??'الجائزة الثالثة',icon:Icons.military_tech)),
+            ]),
+            const SizedBox(height:22),
+            SizedBox(width:double.infinity,height:52,child:FilledButton.icon(onPressed:_enter,icon:const Icon(Icons.rocket_launch),label:Text(p['button_text']?.toString()??'شارك الآن'),style:const ButtonStyle(backgroundColor:WidgetStatePropertyAll(gold2)))),
+          ]))
+        ]);
+      },
+    )));
+  }
+}
+class _PrizeCard extends StatelessWidget{
+  final String place,prize; final IconData icon; final bool large;
+  const _PrizeCard({required this.place,required this.prize,required this.icon,this.large=false});
+  @override Widget build(BuildContext context)=>Container(
+    padding:EdgeInsets.all(large?20:14),
+    decoration:BoxDecoration(borderRadius:BorderRadius.circular(22),gradient:const LinearGradient(colors:[Color(0xFF2A160A),Color(0xFF0E0704)]),border:Border.all(color:gold2,width:1.2),boxShadow:const[BoxShadow(color:Color(0x55000000),blurRadius:18,offset:Offset(0,8))]),
+    child:Row(children:[
+      Container(width:large?58:46,height:large?58:46,decoration:const BoxDecoration(shape:BoxShape.circle,gradient:LinearGradient(colors:[gold,gold2])),child:Icon(icon,color:Colors.black,size:large?31:24)),
+      const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text(place,style:TextStyle(color:gold,fontSize:large?18:14,fontWeight:FontWeight.w900)),
+        const SizedBox(height:4),Text(prize,maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:Colors.white,fontSize:large?15:12,fontWeight:FontWeight.bold))
+      ]))
+    ])
+  );
+}
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final supabase = Supabase.instance.client;
-    return StreamBuilder<AuthState>(
-      stream: supabase.auth.onAuthStateChange,
-      builder: (context, snapshot) {
-        if (supabase.auth.currentSession != null) {
-          return const Shell();
-        }
-        return const LoginPage();
-      },
-    );
-  }
-}
-
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final email = TextEditingController();
-  final password = TextEditingController();
-  final displayName = TextEditingController();
-  bool signUp = false;
-  bool loading = false;
-  String? error;
-
-  Future<void> submit() async {
-    setState(() {
-      loading = true;
-      error = null;
+  @override Widget build(BuildContext context){
+    final supabase=Supabase.instance.client;
+    return StreamBuilder<AuthState>(stream:supabase.auth.onAuthStateChange,builder:(context,snapshot){
+      if(supabase.auth.currentSession!=null)return const LaunchPromotion();
+      return const LoginPage();
     });
-    try {
-      final auth = Supabase.instance.client.auth;
-      if (signUp) {
-        await auth.signUp(
-          email: email.text.trim(),
-          password: password.text,
-          data: {'display_name': displayName.text.trim()},
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم إنشاء الحساب. تحقق من بريدك إذا طُلب ذلك.')),
-          );
-        }
-      } else {
-        await auth.signInWithPassword(
-          email: email.text.trim(),
-          password: password.text,
-        );
-      }
-    } on AuthException catch (e) {
-      setState(() => error = e.message);
-    } catch (e) {
-      setState(() => error = e.toString());
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
-  }
-
-  @override
-  void dispose() {
-    email.dispose();
-    password.dispose();
-    displayName.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Card(
-                  color: card,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        const CircleAvatar(
-                          radius: 38,
-                          backgroundColor: Color(0xFF4A2B11),
-                          child: Icon(Icons.shield, color: gold, size: 40),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'ASMAR CHAT',
-                          style: TextStyle(
-                            color: gold,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          signUp ? 'إنشاء حساب جديد' : 'تسجيل الدخول',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        if (signUp) ...[
-                          const SizedBox(height: 18),
-                          TextField(
-                            controller: displayName,
-                            decoration: const InputDecoration(
-                              labelText: 'اسم العرض',
-                              prefixIcon: Icon(Icons.person_outline),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: email,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            labelText: 'البريد الإلكتروني',
-                            prefixIcon: Icon(Icons.email_outlined),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: password,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'كلمة المرور',
-                            prefixIcon: Icon(Icons.lock_outline),
-                          ),
-                        ),
-                        if (error != null) ...[
-                          const SizedBox(height: 12),
-                          Text(error!, style: const TextStyle(color: Colors.redAccent)),
-                        ],
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: loading ? null : submit,
-                            style: const ButtonStyle(
-                              backgroundColor: WidgetStatePropertyAll(gold2),
-                            ),
-                            child: loading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : Text(signUp ? 'إنشاء الحساب' : 'دخول'),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: loading ? null : () => setState(() {
-                            signUp = !signUp;
-                            error = null;
-                          }),
-                          child: Text(
-                            signUp
-                                ? 'لدي حساب — تسجيل الدخول'
-                                : 'ليس لدي حساب — إنشاء حساب',
-                            style: const TextStyle(color: gold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
-
-class Shell extends StatefulWidget {
-  const Shell({super.key});
-
-  @override
-  State<Shell> createState() => _ShellState();
-}
-
-class _ShellState extends State<Shell> {
-  int tab = 0;
-
-  final pages = const [
-    Home(),
-    StorePage(),
-    Discover(),
-    Wallet(),
-    Profile(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        body: pages[tab],
-        bottomNavigationBar: NavigationBar(
-          backgroundColor: const Color(0xFF100805),
-          indicatorColor: const Color(0xFF4A2C12),
-          selectedIndex: tab,
-          onDestinationSelected: (value) {
-            setState(() {
-              tab = value;
-            });
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'الرئيسية',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.shopping_bag_outlined),
-              selectedIcon: Icon(Icons.shopping_bag),
-              label: 'المتجر',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.explore_outlined),
-              selectedIcon: Icon(Icons.explore),
-              label: 'اكتشف',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              selectedIcon: Icon(Icons.account_balance_wallet),
-              label: 'المحفظة',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'حسابي',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class Home extends StatefulWidget {
   const Home({super.key});
 
