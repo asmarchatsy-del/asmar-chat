@@ -46,7 +46,7 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
   Future<void> _action(String name) async {
     final client = Supabase.instance.client;
     try {
-      if ((name == 'الوكالات' || name == 'متابعة الوكالات') && ['CEO','SUPER_ADMIN','MANAGER','BD'].contains(role)) { await _openAgency(); return; }
+      if ((name == 'الوكالات' || name == 'متابعة الوكالات') && ['CEO','SUPER_ADMIN','MANAGER','BD'].contains(role)) { await _showAgencies(); return; }
       if (name == 'VIP 1 → VIP 6' && role == 'SUPER_ADMIN') {
         final target = await showDialog<String>(
           context: context,
@@ -84,6 +84,47 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         SnackBar(content: Text('تعذر تنفيذ العملية: $e')),
       );
     }
+  }
+
+  Future<void> _showAgencies() async {
+    final rows = await Supabase.instance.client
+        .from('agencies')
+        .select('id,name,manager_id,bd_id,opened_by,created_by_role,is_active,created_at')
+        .order('created_at', ascending: false);
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: _bg,
+      isScrollControlled: true,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * .75,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text('الوكالات', style: TextStyle(color: _gold, fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              if ((rows as List).isEmpty)
+                const Padding(padding: EdgeInsets.all(24), child: Text('لا توجد وكالات حالياً', style: TextStyle(color: Colors.white70)))
+              else
+                ...rows.map((a) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _gold2)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text((a['name'] ?? 'وكالة').toString(), style: const TextStyle(color: _gold, fontSize: 17, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 6),
+                    Text('الدور المنشئ: ${a['created_by_role'] ?? '—'}', style: const TextStyle(color: Colors.white70)),
+                    Text('Manager: ${a['manager_id'] ?? '—'}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                    Text('BD: ${a['bd_id'] ?? '—'}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                  ]),
+                )),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _openAgency() async {
