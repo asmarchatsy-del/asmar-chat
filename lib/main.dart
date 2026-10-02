@@ -504,9 +504,11 @@ class _ProfileState extends State<Profile> {
           .select('username,role,country_code,vip_level,public_id,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified')
           .eq('id', user.id)
           .maybeSingle();
-      return Map<String, dynamic>.from(
+      final data = Map<String, dynamic>.from(
         row ?? {'role': 'USER', 'username': user.email ?? 'مستخدم'},
       );
+      data['role'] = (data['role'] ?? 'USER').toString().toUpperCase();
+      return data;
     } catch (_) {
       return {'role': 'USER', 'username': user.email ?? 'مستخدم'};
     }
