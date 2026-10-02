@@ -9,6 +9,12 @@ create table if not exists public.profiles(
  role public.app_role not null default 'USER',is_active boolean not null default true,
  created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
  activity_admin_badge boolean not null default false,customer_service_badge boolean not null default false,is_verified boolean not null default false);
+create sequence if not exists public.user_public_id_seq start with 257305;
+alter table public.profiles add column if not exists public_id text;
+alter sequence public.user_public_id_seq owned by public.profiles.public_id;
+alter table public.profiles alter column public_id set default nextval('public.user_public_id_seq')::text;
+update public.profiles set public_id=case when upper(coalesce(username,''))='ASMAR' or role='CEO' then 'ASMAR' else nextval('public.user_public_id_seq')::text end where public_id is null;
+create unique index if not exists profiles_public_id_unique on public.profiles(public_id);
 alter table public.profiles add column if not exists vip_level text;
 alter table public.profiles add column if not exists activity_admin_badge boolean not null default false;
 alter table public.profiles add column if not exists customer_service_badge boolean not null default false;
@@ -360,3 +366,23 @@ revoke all on function public.get_my_host_earnings() from anon;
 revoke all on function public.has_role(public.app_role[]) from anon;
 revoke all on function public.record_agency_work(uuid,bigint) from anon;
 revoke all on function public.record_host_earning(uuid,bigint) from anon;
+
+
+-- Public user IDs: sequential from 257305, editable by CEO; ASMAR is reserved for the owner account.
+create or replace function public.admin_set_public_id(p_user_id uuid,p_public_id text)
+returns public.profiles language plpgsql security invoker set search_path=public as $$
+declare v_role public.app_role; v_value text; v_profile public.profiles;
+begin
+ select role into v_role from public.profiles where id=auth.uid();
+ if v_role is distinct from 'CEO' then raise exception 'Only CEO can change public IDs'; end if;
+ v_value:=upper(trim(p_public_id));
+ if v_value is null or v_value='' then raise exception 'Public ID cannot be empty'; end if;
+ if length(v_value)>32 then raise exception 'Public ID too long'; end if;
+ if not (v_value ~ '^[A-Z0-9_]+$') then raise exception 'Public ID may contain only letters, numbers and underscore'; end if;
+ if p_user_id=(select id from public.profiles where role='CEO' limit 1) and v_value<>'ASMAR' then raise exception 'ASMAR owner ID is reserved'; end if;
+ update public.profiles set public_id=v_value,updated_at=now() where id=p_user_id returning * into v_profile;
+ if not found then raise exception 'User not found'; end if;
+ return v_profile;
+end$$;
+revoke all on function public.admin_set_public_id(uuid,text) from public,anon;
+grant execute on function public.admin_set_public_id(uuid,text) to authenticated;
