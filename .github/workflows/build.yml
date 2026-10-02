@@ -24,13 +24,6 @@ jobs:
           flutter create --platforms=android --project-name asmar_chat --no-pub /tmp/asmar_flutter_template
           cp -R /tmp/asmar_flutter_template/android ./android
 
-      - name: Install Asmar Chat launcher icon
-        run: |
-          mkdir -p android/app/src/main/res/drawable
-          tr -d '[:space:]' < tooling/app_icon.webp.b64 | base64 --decode --ignore-garbage > android/app/src/main/res/drawable/app_icon.webp
-          test -s android/app/src/main/res/drawable/app_icon.webp
-          sed -i 's#@mipmap/ic_launcher#@drawable/app_icon#g' android/app/src/main/AndroidManifest.xml
-
       - name: Remove generated sample test
         run: rm -f test/widget_test.dart
 
