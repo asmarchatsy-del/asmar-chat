@@ -6,11 +6,9 @@ root = Path('.')
 assets = root / 'assets'
 assets.mkdir(exist_ok=True)
 
-# Materialize the user-provided Asmar Chat logo from the repository-safe text asset.
 logo = base64.b64decode((assets / 'asmar_logo.b64').read_text().strip())
 (assets / 'asmar_logo.jpg').write_bytes(logo)
 
-# Register the logo as a Flutter asset without changing the existing dependency set.
 pub = root / 'pubspec.yaml'
 s = pub.read_text()
 if 'assets/asmar_logo.jpg' not in s:
@@ -20,7 +18,6 @@ if 'assets/asmar_logo.jpg' not in s:
     s = s.replace(marker, marker + '  assets:\n    - assets/asmar_logo.jpg\n', 1)
     pub.write_text(s)
 
-# Add the supplied logo to the login screen, clipped into a circle.
 main = root / 'lib' / 'main.dart'
 s = main.read_text()
 login_start = s.find('class LoginPage extends StatefulWidget')
@@ -35,11 +32,9 @@ if 'assets/asmar_logo.jpg' not in s[login_start:]:
     s = s[:pos] + logo_widget + s[pos:]
     main.write_text(s)
 
-# Use the same supplied artwork as the Android launcher icon and ensure the
-# human-readable application name is Asmar Chat.
 manifest = root / 'android' / 'app' / 'src' / 'main' / 'AndroidManifest.xml'
 ms = manifest.read_text()
-app_match = re.search(r'<application\\b[^>]*>', ms, re.S)
+app_match = re.search(r'<application\b[^>]*>', ms, re.S)
 if not app_match:
     raise SystemExit('Android application tag not found')
 app = app_match.group(0)
