@@ -4,6 +4,7 @@ import 'backend_config.dart';
 import 'admin_panel.dart';
 import 'room.dart';
 import 'store.dart';
+import 'agent_recharge.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -515,6 +516,17 @@ class Profile extends StatelessWidget {
               style: const ButtonStyle(
                 backgroundColor: WidgetStatePropertyAll(gold2),
               ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AgentRechargePage()),
+                );
+              },
+              icon: const Icon(Icons.currency_exchange),
+              label: const Text('وكيل الشحن'),
             ),
           ],
         ),
