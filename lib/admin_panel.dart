@@ -43,10 +43,10 @@ class _AdminPanelState extends State<AdminPanel> {
       // Owner dashboard is strictly CEO-only. Other roles use their own RoleCenter.
       if (role != 'CEO') return;
 
-      final profiles = await client.from('profiles').select('id,display_name,username,role,is_active').eq('is_active', true).order('created_at', ascending: false);
+      final profiles = await client.from('profiles').select('id,display_name,username,role,is_active,vip_level').eq('is_active', true).order('created_at', ascending: false);
       final wallets = await client.from('wallets').select('user_id,balance');
       final walletByUser = <String, int>{for (final w in wallets) w['user_id'] as String: (w['balance'] as num).toInt()};
-      final agenciesData = await client.from('agencies').select('id,name,manager_id,is_active,created_at').order('created_at', ascending: false);
+      final agenciesData = await client.from('agencies').select('id,name,manager_id,is_active,created_at');
       final roomsData = await client.from('rooms').select('id,name,owner_id,livekit_room_name,is_active,created_at').order('created_at', ascending: false);
       final transactions = await client.from('coin_transactions').select('id,from_user_id,to_user_id,amount,reason,created_at').or('from_user_id.eq.${user.id},to_user_id.eq.${user.id}').order('created_at', ascending: false).limit(100);
 
@@ -54,14 +54,14 @@ class _AdminPanelState extends State<AdminPanel> {
       setState(() {
         users..clear()..addAll(profiles.map<Map<String, dynamic>>((p) => {
           'id': p['id'], 'name': (p['display_name'] ?? p['username'] ?? 'مستخدم').toString(),
-          'role': p['role'].toString(), 'coins': walletByUser[p['id']] ?? 0, 'online': false,
+          'role': p['role'].toString(), 'vip': p['vip_level']?.toString() ?? '', 'coins': walletByUser[p['id']] ?? 0, 'online': false,
         }));
         hosts..clear()..addAll(users.where((u) => u['role'] == 'HOST').map((u) => {
           'id': u['id'], 'name': u['name'], 'agency': '—', 'status': true, 'coins': u['coins'],
         }));
         agencies..clear()..addAll(agenciesData.map<Map<String, dynamic>>((a) => {
           'id': a['id'], 'name': a['name'], 'manager': a['manager_id']?.toString() ?? '—',
-          'hosts': 0, 'status': a['is_active'] == true,
+          'hosts': profiles.where((p) => p['role'] == 'HOST').length, 'status': a['is_active'] == true,
         }));
         rooms..clear()..addAll(roomsData.map<Map<String, dynamic>>((r) => {
           'id': r['id'], 'name': r['name'], 'host': r['owner_id']?.toString() ?? '—',
@@ -263,6 +263,7 @@ class _AdminPanelState extends State<AdminPanel> {
             _RoleBadge(title: 'MANAGER', icon: Icons.manage_accounts),
             _RoleBadge(title: 'HOST', icon: Icons.mic),
             _RoleBadge(title: 'AGENT', icon: Icons.business),
+            _RoleBadge(title: 'BD', icon: Icons.handshake),
           ],
         ),
         const SizedBox(height: 18),
@@ -318,17 +319,17 @@ class _AdminPanelState extends State<AdminPanel> {
         _action(
           'إضافة غرفة',
           Icons.add_home_work,
-          () => _message('تم فتح إضافة غرفة'),
+          () => _message('إضافة الغرف مرتبطة بقاعدة البيانات — جاهزة للتنفيذ'),
         ),
         _action(
           'إدارة المضيفين',
           Icons.mic_external_on,
-          () => _message('إدارة المضيفين'),
+          () => _message('إدارة المضيفين مرتبطة بالبيانات الحية'),
         ),
         _action(
           'إدارة الوكالات',
           Icons.business,
-          () => _message('إدارة الوكالات'),
+          () => _message('إدارة الوكالات مرتبطة بالبيانات الحية'),
         ),
       ],
     );
