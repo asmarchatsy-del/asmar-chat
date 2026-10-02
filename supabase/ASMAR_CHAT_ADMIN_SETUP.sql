@@ -9,6 +9,7 @@ create table if not exists public.profiles(
  role public.app_role not null default 'USER',is_active boolean not null default true,
  created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
  activity_admin_badge boolean not null default false,customer_service_badge boolean not null default false,is_verified boolean not null default false);
+alter table public.profiles add column if not exists vip_level text;
 create table if not exists public.wallets(user_id uuid primary key references public.profiles(id) on delete cascade,balance bigint not null default 0 check(balance>=0),updated_at timestamptz not null default now());
 create table if not exists public.coin_transactions(id uuid primary key default gen_random_uuid(),from_user_id uuid references public.profiles(id),to_user_id uuid references public.profiles(id),amount bigint not null check(amount>0),reason text not null default 'transfer',created_at timestamptz not null default now());
 create table if not exists public.agencies(id uuid primary key default gen_random_uuid(),name text not null unique,manager_id uuid references public.profiles(id),bd_id uuid references public.profiles(id),owner_id uuid references public.profiles(id),is_active boolean not null default true,created_at timestamptz not null default now());
@@ -43,6 +44,8 @@ drop policy if exists policy_read on public.asmar_policy;create policy policy_re
 drop policy if exists promo_read on public.app_promotions;create policy promo_read on public.app_promotions for select to authenticated using(is_active or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
 drop policy if exists promo_admin on public.app_promotions;create policy promo_admin on public.app_promotions for all to authenticated using(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])) with check(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
 
+drop policy if exists agencies_read on public.agencies;create policy agencies_read on public.agencies for select to authenticated using(is_active or public.has_role(array['CEO','SUPER_ADMIN','MANAGER','BD']::public.app_role[]));
+drop policy if exists agencies_admin on public.agencies;create policy agencies_admin on public.agencies for all to authenticated using(public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[])) with check(public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]));
 grant select on public.profiles,public.agencies,public.wallets,public.rooms,public.frame_items,public.coin_packages,public.vip_levels,public.gifts,public.rocket_levels,public.asmar_policy,public.app_promotions to authenticated;
 
 insert into public.frame_items(name,style_key,price) values('الإطار الذهبي','gold',500),('إطار الماس','diamond',1500),('إطار النار','fire',2500),('إطار VIP','vip',5000),('إطار SVIP','svip',10000) on conflict(name) do nothing;
