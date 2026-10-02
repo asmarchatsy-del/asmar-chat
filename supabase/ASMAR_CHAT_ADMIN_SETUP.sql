@@ -341,3 +341,22 @@ end$$;
 
 revoke execute on function public.agency_assign_agent(uuid,uuid) from anon;
 revoke execute on function public.agency_assign_admin(uuid,uuid) from anon;
+
+-- Explicitly block anonymous execution of privileged RPCs
+revoke all on function public.admin_adjust_wallet(uuid,bigint) from anon;
+revoke all on function public.admin_grant_vip(uuid,text) from anon;
+revoke all on function public.admin_is_authorized() from anon;
+revoke all on function public.admin_set_commission_settings(numeric,numeric,numeric,numeric,numeric,numeric) from anon;
+revoke all on function public.admin_set_room_active(uuid,boolean) from anon;
+revoke all on function public.admin_set_user_active(uuid,boolean) from anon;
+revoke all on function public.admin_set_user_role(uuid,public.app_role) from anon;
+revoke all on function public.admin_transfer_coins(uuid,bigint,text) from anon;
+revoke all on function public.agency_assign_admin(uuid,uuid) from anon;
+revoke all on function public.agency_assign_agent(uuid,uuid) from anon;
+revoke all on function public.agency_assign_host(uuid,uuid) from anon;
+revoke all on function public.agency_open(text,uuid,uuid) from anon;
+revoke all on function public.agent_recharge(text,bigint) from anon;
+revoke all on function public.get_my_host_earnings() from anon;
+revoke all on function public.has_role(public.app_role[]) from anon;
+revoke all on function public.record_agency_work(uuid,bigint) from anon;
+revoke all on function public.record_host_earning(uuid,bigint) from anon;
