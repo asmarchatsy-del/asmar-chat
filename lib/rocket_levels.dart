@@ -71,5 +71,5 @@ class _RocketLevelsState extends State<RocketLevels> {
     Text(a,style:const TextStyle(color:Colors.white70,fontSize:9),textAlign:TextAlign.center),
     if(icon!=null)Icon(icon,color:a.contains('TOP 1')||icon==Icons.monetization_on?Colors.amber:Colors.white54,size:20),
     if(b.isNotEmpty)Text(b,style:const TextStyle(color:Colors.white38,fontSize:8)),
-  ]));
+  ])));
 }
