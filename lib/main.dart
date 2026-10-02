@@ -339,7 +339,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(width: 10),
             Text(
-              isCreate ? 'إنشاء حساب باستخدام Google' : 'تسجيل الدخول باستخدام Google',
+              mode == _AuthMode.create ? 'إنشاء حساب باستخدام Google' : 'تسجيل الدخول باستخدام Google',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
             ),
           ],
