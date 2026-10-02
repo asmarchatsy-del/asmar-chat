@@ -12,6 +12,7 @@ import 'notifications.dart';
 import 'friends.dart';
 import 'private_conversations.dart';
 import 'avatar_picker.dart';
+import 'profile_badges.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -343,7 +344,7 @@ class _ProfileState extends State<Profile> {
     try {
       final row = await Supabase.instance.client
           .from('profiles')
-          .select('username,role,country_code,vip_level')
+          .select('username,role,country_code,vip_level,public_id,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified')
           .eq('id', user.id)
           .maybeSingle();
       return Map<String, dynamic>.from(
@@ -387,15 +388,6 @@ class _ProfileState extends State<Profile> {
                     onSaved: () => setState(() { _profileFuture = _loadProfile(); }),
                   ),
                   const SizedBox(height: 10),
-                  AvatarPickerButton(
-                    avatarUrl: profile['avatar_url']?.toString(),
-                    isAnimated: profile['avatar_is_animated'] == true,
-                    vipLevel: vip,
-                    role: role,
-                    publicId: publicId,
-                    onSaved: () => setState(() { _profileFuture = _loadProfile(); }),
-                  ),
-                  const SizedBox(height: 10),
                   RankFrame(
                     role: role,
                     vipLevel: vip,
@@ -424,6 +416,8 @@ class _ProfileState extends State<Profile> {
                     items: countryNames.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[CountryFlag(code:e.key,size:20),const SizedBox(width:8),Text(e.value)]))).toList(),
                     onChanged: (v) async { if(v==null) return; final user=Supabase.instance.client.auth.currentUser; if(user==null)return; await Supabase.instance.client.from('profiles').update({'country_code':v}).eq('id',user.id); if(mounted)setState(()=>_profileFuture=_loadProfile()); },
                   ),
+                  const SizedBox(height: 7),
+                  ProfileBadges(activityAdmin: profile['activity_admin_badge'] == true, customerService: profile['customer_service_badge'] == true, verified: profile['is_verified'] == true),
                   const SizedBox(height: 5),
                   Text(
                     vip != null && vip.isNotEmpty ? vip : (role == 'AGENT' ? 'COIN SELLER' : role),
