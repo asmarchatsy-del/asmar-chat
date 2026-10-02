@@ -80,7 +80,7 @@ class _RoomState extends State<Room> {
   Future<void> _loadMessages() async {
     final rows = await Supabase.instance.client.from('room_messages').select('id,user_id,message,created_at').eq('room_id', widget.roomId).order('created_at');
     final list=List<Map<String,dynamic>>.from(rows); final ids=list.map((m)=>m['user_id'].toString()).toSet().toList();
-    if(ids.isNotEmpty){final ps=await Supabase.instance.client.from('profiles').select('id,username,role,country_code,vip_level').inFilter('id',ids); profiles.addEntries(List<Map<String,dynamic>>.from(ps).map((p)=>MapEntry(p['id'].toString(),p)));}
+    if(ids.isNotEmpty){final ps=await Supabase.instance.client.from('profiles').select('id,username,role,country_code,vip_level,avatar_url,avatar_is_animated').inFilter('id',ids); profiles.addEntries(List<Map<String,dynamic>>.from(ps).map((p)=>MapEntry(p['id'].toString(),p)));}
     if (mounted) setState(() => messages..clear()..addAll(list));
   }
 
@@ -297,11 +297,12 @@ class _RoomState extends State<Room> {
           RankFrame(role: profile?['role']?.toString()??'USER', vipLevel: profile?['vip_level']?.toString(), size: 40, showLabel: false, child: CircleAvatar(
             radius: 18,
             backgroundColor: Color(0xFF422511),
-            child: Icon(
-              Icons.person,
-              color: gold,
-              size: 20,
-            ),
+            backgroundImage: (profile?['avatar_url']?.toString() ?? '').isNotEmpty
+                ? NetworkImage(profile!['avatar_url'].toString())
+                : null,
+            child: (profile?['avatar_url']?.toString() ?? '').isEmpty
+                ? const Icon(Icons.person, color: gold, size: 20)
+                : null,
           ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children:[
