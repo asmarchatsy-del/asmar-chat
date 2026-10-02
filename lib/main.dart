@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend_config.dart';
 import 'admin_panel.dart';
+import 'role_centers.dart';
 import 'room.dart';
 import 'store.dart';
 import 'agent_recharge.dart';
@@ -830,16 +831,29 @@ class _ProfileState extends State<Profile> {
                             ),
                           ),
                         ),
-                        _ProfileMenuTile(
-                          'لوحة الإدارة',
-                          Icons.admin_panel_settings_outlined,
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AdminPanel(),
+                        if (['CEO', 'SUPER_ADMIN', 'MANAGER', 'BD', 'ADMIN', 'AGENT', 'HOST'].contains(role))
+                          _ProfileMenuTile(
+                            role == 'CEO'
+                                ? '👑 لوحة Chat الرئيسية'
+                                : role == 'SUPER_ADMIN'
+                                    ? '🛡️ مركز Super Admin'
+                                    : role == 'MANAGER'
+                                        ? '👨‍💼 مركز Manager'
+                                        : role == 'BD'
+                                            ? '💼 مركز BD'
+                                            : role == 'ADMIN'
+                                                ? '🛡️ مركز Admin'
+                                                : role == 'AGENT'
+                                                    ? '🏢 مركز الوكيل'
+                                                    : '🎙️ مركز المضيف',
+                            Icons.admin_panel_settings_outlined,
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RoleCenterPage(role: role),
+                              ),
                             ),
                           ),
-                        ),
                         _ProfileMenuTile(
                           'وكيل الشحن',
                           Icons.currency_exchange,
