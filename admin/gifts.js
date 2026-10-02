@@ -1,13 +1,28 @@
 async function loadGifts(){
  const root=document.getElementById('giftsTable'); if(!root)return;
  root.innerHTML='<div class="panel">جاري تحميل الهدايا...</div>';
- const {data,error}=await db.from('store_items').select('id,name,category,price_coins,image,description,rarity,is_active,is_lucky,banner_enabled,lucky_min_win_coins,gift_type').order('price_coins');
+ const {data,error}=await db.from('gifts').select('id,name,emoji,price,category,banner_enabled,banner_min_price,luck_min_win,is_active').order('price');
  if(error){root.innerHTML='<div class="panel">خطأ: '+escGift(error.message)+'</div>';return;}
- root.innerHTML=(data||[]).map(g=>'<div class="card gift-admin"><h3>🎁 '+escGift(g.name)+'</h3><small>'+escGift(g.category||'NORMAL')+' · '+escGift(g.gift_type||'NORMAL')+'</small><input id="gn_'+g.id+'" value="'+escGift(g.name)+'" placeholder="اسم الهدية"><input id="gp_'+g.id+'" type="number" min="0" value="'+Number(g.price_coins||0)+'" placeholder="السعر بالكوين"><input id="gc_'+g.id+'" value="'+escGift(g.category||'NORMAL')+'" placeholder="الفئة"><input id="gi_'+g.id+'" value="'+escGift(g.image||'')+'" placeholder="رابط صورة الهدية"><textarea id="gd_'+g.id+'" placeholder="الوصف">'+escGift(g.description||'')+'</textarea><input id="gr_'+g.id+'" value="'+escGift(g.rarity||'NORMAL')+'" placeholder="الندرة"><select id="gt_'+g.id+'"><option value="NORMAL" '+(g.gift_type==='NORMAL'?'selected':'')+'>هدية عادية</option><option value="LUCKY" '+(g.gift_type==='LUCKY'?'selected':'')+'>هدية حظ</option><option value="CP" '+(g.gift_type==='CP'?'selected':'')+'>CP</option><option value="LOVE" '+(g.gift_type==='LOVE'?'selected':'')+'>علاقة حب</option><option value="SIBLINGS" '+(g.gift_type==='SIBLINGS'?'selected':'')+'>علاقة أخوة</option></select><label><input id="ga_'+g.id+'" type="checkbox" '+(g.is_active?'checked':'')+'> فعالة</label><label><input id="gl_'+g.id+'" type="checkbox" '+(g.is_lucky?'checked':'')+'> هدية حظ</label><label><input id="gb_'+g.id+'" type="checkbox" '+(g.banner_enabled?'checked':'')+'> تظهر في شريط الإهداء</label><input id="gm_'+g.id+'" type="number" min="0" value="'+Number(g.lucky_min_win_coins||3000)+'" placeholder="حد ظهور الحظ بالكوين"><button onclick="saveGiftAdmin(\''+g.id+'\')">حفظ الهدية</button></div>').join('');
+ root.innerHTML=(data||[]).map(g=>'<div class="card gift-admin"><h3>'+escGift(g.emoji||'🎁')+' '+escGift(g.name)+'</h3><small>'+escGift(g.category||'normal')+' · ID: '+escGift(g.id)+'</small><input id="gn_'+g.id+'" value="'+escGift(g.name)+'" placeholder="اسم الهدية"><input id="ge_'+g.id+'" value="'+escGift(g.emoji||'🎁')+'" placeholder="الإيموجي"><input id="gp_'+g.id+'" type="number" min="1" value="'+Number(g.price||1)+'" placeholder="السعر بالكوين"><input id="gc_'+g.id+'" value="'+escGift(g.category||'normal')+'" placeholder="الفئة"><label><input id="ga_'+g.id+'" type="checkbox" '+(g.is_active?'checked':'')+'> فعالة</label><label><input id="gb_'+g.id+'" type="checkbox" '+(g.banner_enabled?'checked':'')+'> تظهر في شريط الإهداء</label><input id="gm_'+g.id+'" type="number" min="0" value="'+Number(g.banner_min_price||4000)+'" placeholder="حد الشريط بالكوين"><input id="gl_'+g.id+'" type="number" min="0" value="'+Number(g.luck_min_win||3000)+'" placeholder="حد الحظ بالكوين"><button onclick="saveGiftAdmin(\''+g.id+'\')">حفظ الهدية</button></div>').join('');
 }
 async function saveGiftAdmin(id){
- const type=document.getElementById('gt_'+id).value;
- const payload={p_id:id,p_name:document.getElementById('gn_'+id).value.trim(),p_category:document.getElementById('gc_'+id).value.trim()||'NORMAL',p_price_coins:Number(document.getElementById('gp_'+id).value),p_image:document.getElementById('gi_'+id).value.trim()||null,p_description:document.getElementById('gd_'+id).value.trim()||null,p_rarity:document.getElementById('gr_'+id).value.trim()||'NORMAL',p_is_active:document.getElementById('ga_'+id).checked,p_is_lucky:document.getElementById('gl_'+id).checked,p_banner_enabled:document.getElementById('gb_'+id).checked,p_lucky_min_win_coins:Number(document.getElementById('gm_'+id).value)||0,p_gift_type:type};
- const {error}=await db.rpc('admin_update_gift',payload); if(error){alert(error.message);return;} alert('تم حفظ الهدية بنجاح'); await loadGifts();
+ const price=Number(document.getElementById('gp_'+id).value);
+ const bannerMin=Number(document.getElementById('gm_'+id).value);
+ const luckMin=Number(document.getElementById('gl_'+id).value);
+ if(!Number.isFinite(price)||price<1||bannerMin<0||luckMin<0){alert('قيم الهدية غير صحيحة');return;}
+ const payload={
+   p_id:id,
+   p_name:document.getElementById('gn_'+id).value.trim(),
+   p_emoji:document.getElementById('ge_'+id).value.trim()||'🎁',
+   p_price:price,
+   p_category:document.getElementById('gc_'+id).value.trim()||'normal',
+   p_is_active:document.getElementById('ga_'+id).checked,
+   p_banner_enabled:document.getElementById('gb_'+id).checked,
+   p_banner_min_price:bannerMin,
+   p_luck_min_win:luckMin
+ };
+ const {error}=await db.rpc('admin_update_gift',payload);
+ if(error){alert('تعذر حفظ الهدية: '+error.message);return;}
+ alert('تم حفظ الهدية بنجاح'); await loadGifts();
 }
-function escGift(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[m]))}
+function escGift(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
