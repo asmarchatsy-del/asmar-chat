@@ -1,7 +1,7 @@
 create extension if not exists pgcrypto;
-do $$begin create type public.app_role as enum('CEO','SUPER_ADMIN','MANAGER','ADMIN','HOST','AGENT','USER'); exception when duplicate_object then null; end$;
+do $$begin create type public.app_role as enum('CEO','SUPER_ADMIN','MANAGER','ADMIN','HOST','AGENT','USER'); exception when duplicate_object then null; end$$;
 
-do $begin alter type public.app_role add value if not exists 'BD'; exception when duplicate_object then null; end$;
+do $$begin alter type public.app_role add value if not exists 'BD'; exception when duplicate_object then null; end$$;
 
 create table if not exists public.profiles(
  id uuid primary key references auth.users(id) on delete cascade,
@@ -24,7 +24,7 @@ create table if not exists public.app_promotions(id uuid primary key default gen
 
 alter table public.profiles enable row level security;alter table public.agencies enable row level security;alter table public.wallets enable row level security;alter table public.rooms enable row level security;alter table public.frame_items enable row level security;alter table public.coin_packages enable row level security;alter table public.vip_levels enable row level security;alter table public.gifts enable row level security;alter table public.rocket_levels enable row level security;alter table public.asmar_policy enable row level security;alter table public.app_promotions enable row level security;
 
-create or replace function public.has_role(required_roles public.app_role[]) returns boolean language sql stable security definer set search_path=public as $$select exists(select 1 from public.profiles where id=auth.uid() and is_active and role=any(required_roles))$;
+create or replace function public.has_role(required_roles public.app_role[]) returns boolean language sql stable security definer set search_path=public as $$select exists(select 1 from public.profiles where id=auth.uid() and is_active and role=any(required_roles))$$;
 
 drop policy if exists profiles_self on public.profiles;create policy profiles_self on public.profiles for select to authenticated using(id=auth.uid() or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
 drop policy if exists profiles_admin_update on public.profiles;create policy profiles_admin_update on public.profiles for update to authenticated using(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])) with check(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
@@ -222,7 +222,7 @@ create or replace function public.get_my_host_earnings() returns table(total_sou
 language sql security definer set search_path=public as $$
  select coalesce(sum(source_amount),0)::bigint,coalesce(sum(host_amount),0)::bigint,count(*)::bigint
  from public.host_earnings where host_id=auth.uid();
-$;
+$$;
 grant execute on function public.get_my_host_earnings() to authenticated;
 
 
