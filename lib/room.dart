@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
+import 'country_flag.dart';
+import 'rank_frame.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -27,6 +29,7 @@ class _RoomState extends State<Room> {
       TextEditingController();
 
   final List<Map<String, dynamic>> messages = [];
+  final Map<String, Map<String,dynamic>> profiles = {};
   StreamSubscription<List<Map<String, dynamic>>>? _messageSub;
   lk.Room? _voiceRoom;
   bool microphoneOn = false;
@@ -48,7 +51,9 @@ class _RoomState extends State<Room> {
 
   Future<void> _loadMessages() async {
     final rows = await Supabase.instance.client.from('room_messages').select('id,user_id,message,created_at').eq('room_id', widget.roomId).order('created_at');
-    if (mounted) setState(() => messages..clear()..addAll(List<Map<String, dynamic>>.from(rows)));
+    final list=List<Map<String,dynamic>>.from(rows); final ids=list.map((m)=>m['user_id'].toString()).toSet().toList();
+    if(ids.isNotEmpty){final ps=await Supabase.instance.client.from('profiles').select('id,username,role,country_code').inFilter('id',ids); profiles.addEntries(List<Map<String,dynamic>>.from(ps).map((p)=>MapEntry(p['id'].toString(),p)));}
+    if (mounted) setState(() => messages..clear()..addAll(list));
   }
 
   @override
@@ -107,7 +112,7 @@ class _RoomState extends State<Room> {
                 padding: const EdgeInsets.all(16),
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
-                  return _message(messages[index]['message'].toString());
+                  final m=messages[index]; return _message(m['message'].toString(),profiles[m['user_id'].toString()]);
                 },
               ),
             ),
@@ -215,13 +220,13 @@ class _RoomState extends State<Room> {
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
-          ),
+          ])),
         ],
       ),
     );
   }
 
-  Widget _message(String text) {
+  Widget _message(String text, Map<String,dynamic>? profile) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -234,7 +239,7 @@ class _RoomState extends State<Room> {
       ),
       child: Row(
         children: [
-          const CircleAvatar(
+          RankFrame(role: profile?['role']?.toString()??'USER', size: 40, showLabel: false, child: CircleAvatar(
             radius: 18,
             backgroundColor: Color(0xFF422511),
             child: Icon(
@@ -244,9 +249,9 @@ class _RoomState extends State<Room> {
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children:[
+            Row(children:[CountryFlag(code: profile?['country_code']?.toString(),size:18),const SizedBox(width:5),Text(profile?['username']?.toString()??'مستخدم',style:const TextStyle(color:gold,fontSize:11,fontWeight:FontWeight.w800))]),
+            const SizedBox(height:3), Text(text,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
