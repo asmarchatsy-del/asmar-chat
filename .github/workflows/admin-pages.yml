@@ -34,6 +34,9 @@ jobs:
           cp admin/index.html _site/index.html
           cp admin/app.js _site/app.js
           cp admin/style.css _site/style.css
+          cp admin/badges.js _site/badges.js
+          cp admin/gifts.js _site/gifts.js
+          cp admin/rocket_levels.js _site/rocket_levels.js
           touch _site/.nojekyll
 
       - name: Configure Pages
