@@ -15,6 +15,7 @@ import 'avatar_picker.dart';
 import 'profile_badges.dart';
 import 'gift_banner.dart';
 import 'global_chat.dart';
+import 'messages.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -268,35 +269,6 @@ class _HomeState extends State<Home> {
                           style: const ButtonStyle(backgroundColor: WidgetStatePropertyAll(gold2)),
                         ),
                       ]),
-                    ),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalChatPage())),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFF3A1D0D), Color(0xFF120805)]),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: gold2),
-                      ),
-                      child: const Row(
-                        children: [
-                          CircleAvatar(backgroundColor: gold, child: Icon(Icons.public, color: Colors.black)),
-                          SizedBox(width: 12),
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('الدردشة العامة', style: TextStyle(color: gold, fontWeight: FontWeight.w900, fontSize: 16)),
-                            SizedBox(height: 3),
-                            Text('رسالة واحدة = 200 كوين 🪙', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                          ])),
-                          Icon(Icons.chevron_left, color: gold),
-                        ],
-                      ),
                     ),
                   ),
                 ),
@@ -606,8 +578,8 @@ class _ProfileState extends State<Profile> {
                   )),
                   const SizedBox(height: 12),
                   SizedBox(width:double.infinity,child:OutlinedButton.icon(
-                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const PrivateConversationsPage())),
-                    icon:const Icon(Icons.forum,color:gold),label:const Text('المحادثات الخاصة'),
+                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessagesPage())),
+                    icon:const Icon(Icons.forum,color:gold),label:const Text('الرسائل'),
                   )),
                   const SizedBox(height: 12),
                   const SizedBox(height: 28),
