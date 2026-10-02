@@ -123,3 +123,51 @@ begin
  return aid;
 end $$;
 grant execute on function public.agency_open(text,uuid,uuid) to authenticated;
+
+alter table public.profiles add column if not exists agency_id uuid references public.agencies(id);
+alter table public.profiles add column if not exists agency_joined_at timestamptz;
+create index if not exists profiles_agency_id_idx on public.profiles(agency_id);
+
+create or replace function public.agency_assign_host(p_host_id uuid,p_agency_id uuid) returns boolean
+language plpgsql security definer set search_path=public as $$
+declare actor_role public.app_role; host_role public.app_role;
+begin
+ select role into actor_role from public.profiles where id=auth.uid() and is_active;
+ select role into host_role from public.profiles where id=p_host_id;
+ if actor_role is null or host_role <> 'HOST' then raise exception 'not authorized'; end if;
+ if actor_role='AGENT' then
+   if not exists(select 1 from public.agencies a where a.id=p_agency_id and a.is_active and a.owner_id=auth.uid()) then raise exception 'agency not owned by agent'; end if;
+ elsif actor_role='CEO' then null;
+ elsif actor_role in ('SUPER_ADMIN','MANAGER','BD','ADMIN') then
+   if not exists(select 1 from public.agencies a where a.id=p_agency_id and a.is_active and
+     (actor_role='SUPER_ADMIN' or a.manager_id=auth.uid() or a.bd_id=auth.uid())) then raise exception 'agency outside scope'; end if;
+ else raise exception 'not authorized'; end if;
+ update public.profiles set agency_id=p_agency_id,agency_joined_at=now(),updated_at=now() where id=p_host_id;
+ return true;
+end $$;
+grant execute on function public.agency_assign_host(uuid,uuid) to authenticated;
+
+create or replace function public.record_agency_work(
+ p_agency_id uuid,p_source_amount bigint
+) returns uuid language plpgsql security definer set search_path=public as $$
+declare s public.agency_commission_settings%rowtype; a public.agencies%rowtype; wid uuid;
+begin
+ if p_source_amount<=0 then raise exception 'amount must be positive'; end if;
+ select * into a from public.agencies where id=p_agency_id and is_active;
+ if a.id is null then raise exception 'agency not found'; end if;
+ select * into s from public.agency_commission_settings where id=true;
+ insert into public.agency_commission_ledger(
+ agency_id,source_amount,app_share_amount,work_share_amount,owner_amount,super_admin_amount,manager_amount,bd_amount,admin_amount)
+ values(
+ a.id,p_source_amount,
+ round(p_source_amount*s.app_share_percent/100),
+ round(p_source_amount*(100-s.app_share_percent)/100),
+ round(p_source_amount*(100-s.app_share_percent)/100*s.owner_work_percent/100),
+ round(p_source_amount*(100-s.app_share_percent)/100*s.super_admin_work_percent/100),
+ round(p_source_amount*(100-s.app_share_percent)/100*s.manager_work_percent/100),
+ round(p_source_amount*(100-s.app_share_percent)/100*s.bd_work_percent/100),
+ round(p_source_amount*(100-s.app_share_percent)/100*s.admin_work_percent/100))
+ returning id into wid;
+ return wid;
+end $$;
+grant execute on function public.record_agency_work(uuid,bigint) to authenticated;
