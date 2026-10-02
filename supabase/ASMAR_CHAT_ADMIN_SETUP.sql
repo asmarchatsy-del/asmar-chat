@@ -171,3 +171,56 @@ begin
  return wid;
 end $$;
 grant execute on function public.record_agency_work(uuid,bigint) to authenticated;
+
+create table if not exists public.host_earnings(
+ id uuid primary key default gen_random_uuid(),
+ host_id uuid not null references public.profiles(id) on delete cascade,
+ agency_id uuid references public.agencies(id) on delete set null,
+ source_amount bigint not null check(source_amount>0),
+ host_amount bigint not null default 0 check(host_amount>=0),
+ created_at timestamptz not null default now()
+);
+create index if not exists host_earnings_host_idx on public.host_earnings(host_id,created_at desc);
+alter table public.host_earnings enable row level security;
+drop policy if exists host_earnings_read on public.host_earnings;
+create policy host_earnings_read on public.host_earnings for select to authenticated using(
+ host_id=auth.uid() or public.has_role(array['CEO','SUPER_ADMIN','MANAGER','BD','ADMIN']::public.app_role[])
+ or exists(select 1 from public.agencies a where a.id=host_earnings.agency_id and a.owner_id=auth.uid())
+);
+
+create or replace function public.admin_set_commission_settings(
+ p_app_share numeric,p_owner_work numeric,p_super_admin_work numeric,p_manager_work numeric,p_bd_work numeric,p_admin_work numeric
+) returns boolean language plpgsql security definer set search_path=public as $$
+declare total_work numeric;
+begin
+ if not public.has_role(array['CEO']::public.app_role[]) then raise exception 'not authorized'; end if;
+ total_work:=coalesce(p_owner_work,0)+coalesce(p_super_admin_work,0)+coalesce(p_manager_work,0)+coalesce(p_bd_work,0)+coalesce(p_admin_work,0);
+ if p_app_share<0 or p_app_share>100 or total_work<0 or total_work>100 then raise exception 'invalid commission percentages'; end if;
+ update public.agency_commission_settings set app_share_percent=p_app_share,owner_work_percent=p_owner_work,super_admin_work_percent=p_super_admin_work,manager_work_percent=p_manager_work,bd_work_percent=p_bd_work,admin_work_percent=p_admin_work,updated_at=now() where id=true;
+ return true;
+end $$;
+grant execute on function public.admin_set_commission_settings(numeric,numeric,numeric,numeric,numeric,numeric) to authenticated;
+
+create or replace function public.record_host_earning(p_host_id uuid,p_source_amount bigint) returns uuid
+language plpgsql security definer set search_path=public as $$
+declare h public.profiles%rowtype; a public.agencies%rowtype; eid uuid; host_amount bigint;
+begin
+ if p_source_amount<=0 then raise exception 'amount must be positive'; end if;
+ select * into h from public.profiles where id=p_host_id and is_active and role='HOST';
+ if h.id is null then raise exception 'host not found'; end if;
+ if auth.uid()<>p_host_id and not public.has_role(array['CEO','SUPER_ADMIN','MANAGER','BD','ADMIN']::public.app_role[]) then
+   raise exception 'not authorized';
+ end if;
+ select * into a from public.agencies where id=h.agency_id;
+ host_amount:=p_source_amount;
+ insert into public.host_earnings(host_id,agency_id,source_amount,host_amount) values(h.id,a.id,p_source_amount,host_amount) returning id into eid;
+ return eid;
+end $$;
+grant execute on function public.record_host_earning(uuid,bigint) to authenticated;
+
+create or replace function public.get_my_host_earnings() returns table(total_source bigint,total_earned bigint,entries bigint)
+language sql security definer set search_path=public as $$
+ select coalesce(sum(source_amount),0)::bigint,coalesce(sum(host_amount),0)::bigint,count(*)::bigint
+ from public.host_earnings where host_id=auth.uid();
+$$;
+grant execute on function public.get_my_host_earnings() to authenticated;
