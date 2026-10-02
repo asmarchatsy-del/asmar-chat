@@ -22,6 +22,7 @@ import 'global_chat.dart';
 import 'messages.dart';
 import 'rocket_levels.dart';
 import 'wallet.dart';
+import 'plinko_demo.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -1261,6 +1262,14 @@ class _ProfileState extends State<Profile> {
                               ),
                             ),
                           ),
+                        _ProfileMenuTile(
+                          '🎮 الألعاب التجريبية',
+                          Icons.sports_esports,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PlinkoDemoPage()),
+                          ),
+                        ),
                         _ProfileMenuTile(
                           'وكيل الشحن',
                           Icons.currency_exchange,
