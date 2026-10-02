@@ -137,8 +137,8 @@ class _AgentRechargePageState extends State<AgentRechargePage> {
           const SizedBox(height: 8),
           ...history.map((row) => ListTile(
             leading: const Icon(Icons.receipt_long),
-            title: Text('\${row['amount']} كوين'),
-            subtitle: Text('ID: \${row['recipient_id']}'),
+            title: Text(row['amount'].toString() + ' كوين'),
+            subtitle: Text('ID: ' + row['recipient_id'].toString()),
             trailing: Text(row['created_at'].toString().substring(0, 10)),
           )),
         ],
