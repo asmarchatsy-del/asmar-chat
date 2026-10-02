@@ -38,12 +38,12 @@ class _AdminPanelState extends State<AdminPanel> {
     final user = client.auth.currentUser;
     if (user == null) return;
     try {
-      final profile = await client.from('profiles').select('id,display_name,username,role,is_active').eq('id', user.id).maybeSingle();
+      final profile = await client.from('profiles').select('id,display_name,username,public_id,role,is_active').eq('id', user.id).maybeSingle();
       final role = (profile?['role'] as String? ?? 'USER').toUpperCase();
       // Owner dashboard is strictly CEO-only. Other roles use their own RoleCenter.
       if (role != 'CEO') return;
 
-      final profiles = await client.from('profiles').select('id,display_name,username,role,is_active,vip_level').order('created_at', ascending: false);
+      final profiles = await client.from('profiles').select('id,display_name,username,public_id,role,is_active,vip_level').order('created_at', ascending: false);
       final wallets = await client.from('wallets').select('user_id,balance');
       final walletByUser = <String, int>{for (final w in wallets) w['user_id'] as String: (w['balance'] as num).toInt()};
       final agenciesData = await client.from('agencies').select('id,name,manager_id,is_active,created_at');
@@ -53,7 +53,7 @@ class _AdminPanelState extends State<AdminPanel> {
       if (!mounted) return;
       setState(() {
         users..clear()..addAll(profiles.map<Map<String, dynamic>>((p) => {
-          'id': p['id'], 'name': (p['display_name'] ?? p['username'] ?? 'مستخدم').toString(),
+          'id': p['id'], 'publicId': (p['public_id'] ?? p['id']).toString(), 'name': (p['display_name'] ?? p['username'] ?? 'مستخدم').toString(),
           'role': p['role'].toString(), 'vip': p['vip_level']?.toString() ?? '', 'coins': walletByUser[p['id']] ?? 0, 'online': p['is_active'] == true, 'active': p['is_active'] == true,
         }));
         hosts..clear()..addAll(users.where((u) => u['role'] == 'HOST').map((u) => {
@@ -670,10 +670,11 @@ class _AdminPanelState extends State<AdminPanel> {
                 child: ListTile(
                   leading: CircleAvatar(backgroundColor: const Color(0xFF422511), child: Icon(u['online'] ? Icons.person : Icons.person_off, color: gold)),
                   title: Text(u['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  subtitle: Text('${u['role']} • ${u['coins']} Coins', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                  subtitle: Text('${u['publicId']} • ${u['role']} • ${u['coins']} Coins', style: const TextStyle(color: Colors.white54, fontSize: 11)),
                   trailing: PopupMenuButton<String>(
-                    onSelected: (value) async { if (value == 'role') await _changeRole(u); if (value == 'active') await _toggleUser(u); },
+                    onSelected: (value) async { if (value == 'role') await _changeRole(u); if (value == 'id') await _changePublicId(u); if (value == 'active') await _toggleUser(u); },
                     itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'id', child: Text('تغيير ID المستخدم')),
                       PopupMenuItem(value: 'role', child: Text('تغيير الصلاحية')),
                       PopupMenuItem(value: 'active', child: Text('تفعيل / تعطيل')),
                     ],
@@ -688,6 +689,36 @@ class _AdminPanelState extends State<AdminPanel> {
   }
 
   Future<void> _toggleUser(Map<String,dynamic> u) async { try { final next = !(u['active'] == true); await Supabase.instance.client.rpc('admin_set_user_active', params: {'p_user_id': u['id'], 'p_active': next}); await _loadData(); _message(next ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب'); } catch (e) { _message('فشل تحديث الحساب: $e'); } }
+
+  Future<void> _changePublicId(Map<String,dynamic> u) async {
+    final controller = TextEditingController(text: (u['publicId'] ?? '').toString());
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: card,
+        title: Text('تغيير ID • ${u['name']}', style: const TextStyle(color: gold, fontWeight: FontWeight.w900)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(labelText: 'ID الظاهر للمستخدم', hintText: 'مثال: 257305 أو ASMAR_1'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('حفظ')),
+        ],
+      ),
+    );
+    if (value == null || value.trim().isEmpty || value.trim().toUpperCase() == (u['publicId'] ?? '').toString().toUpperCase()) return;
+    try {
+      await Supabase.instance.client.rpc('admin_set_public_id', params: {'p_user_id': u['id'], 'p_public_id': value.trim()});
+      await _loadData();
+      _message('تم تغيير ID المستخدم إلى ${value.trim().toUpperCase()}');
+    } catch (e) {
+      _message('فشل تغيير ID: $e');
+    }
+  }
 
   Future<void> _changeRole(Map<String,dynamic> u) async { final roles = ['USER','HOST','AGENT','ADMIN','BD','MANAGER','SUPER_ADMIN']; String selected = (u['role'] ?? 'USER').toString(); final value = await showDialog<String>(context: context, builder: (ctx)=>AlertDialog(backgroundColor: card,title: Text('تغيير رتبة '+u['name'].toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w900)),content: StatefulBuilder(builder:(ctx,setState)=>DropdownButtonFormField<String>(value: roles.contains(selected) ? selected : 'USER',dropdownColor: card,items: roles.map((r)=>DropdownMenuItem(value:r,child:Text(r))).toList(),onChanged:(v){if(v!=null){selected=v;setState((){});}})),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,selected),child:const Text('حفظ'))],)); if(value==null || value==u['role']) return; try { await Supabase.instance.client.rpc('admin_set_user_role', params: {'p_user_id':u['id'],'p_role':value}); await _loadData(); _message('تم تغيير الرتبة إلى '+value); } catch(e){_message('فشل تغيير الرتبة: $e');} }
 
