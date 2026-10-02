@@ -21,7 +21,7 @@ jobs:
       - name: Create Android platform without touching app source
         run: |
           rm -rf /tmp/asmar_flutter_template
-          flutter create --platforms=android --project-name asmar_chat /tmp/asmar_flutter_template
+          flutter create --platforms=android --project-name asmar_chat --no-pub /tmp/asmar_flutter_template
           cp -R /tmp/asmar_flutter_template/android ./android
 
       - name: Remove generated sample test
