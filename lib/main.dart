@@ -128,6 +128,62 @@ class AuthGate extends StatelessWidget {
     });
   }
 }
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+  @override State<LoginPage> createState() => _LoginPageState();
+}
+class _LoginPageState extends State<LoginPage> {
+  final email = TextEditingController();
+  final password = TextEditingController();
+  bool loading = false;
+  String? error;
+  Future<void> _submit() async {
+    final e=email.text.trim(), p=password.text;
+    if(e.isEmpty || p.isEmpty){setState(()=>error='أدخل البريد وكلمة المرور');return;}
+    setState(()=>loading=true);
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(email:e,password:p);
+    } catch (_) {
+      try {
+        await Supabase.instance.client.auth.signUp(email:e,password:p);
+      } catch (e) {
+        if(mounted)setState(()=>error='تعذر تسجيل الدخول: $e');
+      }
+    } finally { if(mounted)setState(()=>loading=false); }
+  }
+  @override void dispose(){email.dispose();password.dispose();super.dispose();}
+  @override Widget build(BuildContext context)=>Scaffold(
+    backgroundColor:bg,
+    body:SafeArea(child:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
+      const Text('ASMAR CHAT',style:TextStyle(color:gold,fontSize:32,fontWeight:FontWeight.w900,letterSpacing:2)),
+      const SizedBox(height:8),const Text('تسجيل الدخول',style:TextStyle(color:Colors.white70,fontSize:16)),
+      const SizedBox(height:28),
+      TextField(controller:email,keyboardType:TextInputType.emailAddress,style:const TextStyle(color:Colors.white),decoration:const InputDecoration(labelText:'البريد الإلكتروني')),
+      const SizedBox(height:12),
+      TextField(controller:password,obscureText:true,style:const TextStyle(color:Colors.white),decoration:const InputDecoration(labelText:'كلمة المرور')),
+      if(error!=null)Padding(padding:const EdgeInsets.only(top:12),child:Text(error!,style:const TextStyle(color:Colors.redAccent))),
+      const SizedBox(height:20),
+      SizedBox(width:double.infinity,height:50,child:FilledButton(onPressed:loading?null:_submit,child:loading?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2)):const Text('دخول / إنشاء حساب'))),
+    ]))));
+}
+class Shell extends StatefulWidget {
+  const Shell({super.key});
+  @override State<Shell> createState()=>_ShellState();
+}
+class _ShellState extends State<Shell> {
+  int index=0;
+  final pages=const [Home(),Discover(),Wallet(),Profile()];
+  @override Widget build(BuildContext context)=>Scaffold(
+    body:IndexedStack(index:index,children:pages),
+    bottomNavigationBar:NavigationBar(selectedIndex:index,onDestinationSelected:(i)=>setState(()=>index=i),destinations:const[
+      NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'الرئيسية'),
+      NavigationDestination(icon:Icon(Icons.explore_outlined),selectedIcon:Icon(Icons.explore),label:'اكتشف'),
+      NavigationDestination(icon:Icon(Icons.account_balance_wallet_outlined),selectedIcon:Icon(Icons.account_balance_wallet),label:'المحفظة'),
+      NavigationDestination(icon:Icon(Icons.person_outline),selectedIcon:Icon(Icons.person),label:'حسابي'),
+    ]),
+  );
+}
+
 class Home extends StatefulWidget {
   const Home({super.key});
 
