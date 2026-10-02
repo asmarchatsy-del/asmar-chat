@@ -24,9 +24,8 @@ create policy "active_promotions_read"
 on public.app_promotions
 for select to authenticated
 using (
-  is_active = true
-  and starts_at <= now()
-  and (ends_at is null or ends_at >= now())
+  (is_active = true and starts_at <= now() and (ends_at is null or ends_at >= now()))
+  or public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[])
 );
 
 drop policy if exists "admins_manage_promotions" on public.app_promotions;
@@ -34,7 +33,7 @@ create policy "admins_manage_promotions"
 on public.app_promotions
 for all to authenticated
 using (public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]))
-with check (public.has_role(auth.uid(), array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]));
+with check (public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]));
 
 insert into public.app_promotions
   (title, subtitle, first_place, second_place, third_place, first_prize, second_prize, third_prize, button_text, starts_at, is_active)
