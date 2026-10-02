@@ -21,11 +21,13 @@ class _AvatarPickerButtonState extends State<AvatarPickerButton>{
   if(x==null)return;
   setState(()=>busy=true);
   try{
-   final file=File(x.path); final ext=x.path.split('.').last.toLowerCase(); final uid=Supabase.instance.client.auth.currentUser!.id;
+   final file=File(x.path); final ext=x.path.split('.').last.toLowerCase(); final animated=ext=='gif';
+   if(animated && vip<7 && !admin){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('GIF/الصورة المتحركة متاحة من VIP7+ فقط')));return;}
+   final uid=Supabase.instance.client.auth.currentUser!.id;
    final path='$uid/avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
    await Supabase.instance.client.storage.from('avatars').upload(path,file,fileOptions:FileOptions(upsert:true,contentType:'image/$ext'));
    final url=Supabase.instance.client.storage.from('avatars').getPublicUrl(path);
-   await Supabase.instance.client.from('profiles').update({'avatar_url':url,'avatar_is_animated':false}).eq('id',uid);
+   await Supabase.instance.client.from('profiles').update({'avatar_url':url,'avatar_is_animated':animated}).eq('id',uid);
    widget.onSaved();
    if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم تحديث الصورة الشخصية ✅')));
   }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر رفع الصورة: $e')));}
