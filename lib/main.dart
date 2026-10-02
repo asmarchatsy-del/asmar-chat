@@ -501,144 +501,118 @@ class _ProfileState extends State<Profile> {
           .select('username,role,country_code,vip_level,public_id,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified')
           .eq('id', user.id)
           .maybeSingle();
-      return Map<String, dynamic>.from(
-        row ?? {'role': 'USER', 'username': user.email ?? 'مستخدم'},
-      );
+      return Map<String, dynamic>.from(row ?? {'role': 'USER', 'username': user.email ?? 'مستخدم'});
     } catch (_) {
       return {'role': 'USER', 'username': user.email ?? 'مستخدم'};
     }
   }
 
+  void _info(String title) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(title), backgroundColor: gold2, behavior: SnackBarBehavior.floating),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('حسابي')),
+      backgroundColor: bg,
       body: FutureBuilder<Map<String, dynamic>>(
         future: _profileFuture,
         builder: (context, snapshot) {
-          final profile = snapshot.data ?? const <String, dynamic>{};
-          final role = profile['role']?.toString() ?? 'USER';
-          final username = profile['username']?.toString() ?? 'مستخدم';
-          final country = profile['country_code']?.toString();
-          final vip = profile['vip_level']?.toString();
-          final publicId = profile['public_id']?.toString() ?? '---';
+          final p = snapshot.data ?? const <String, dynamic>{};
+          final role = p['role']?.toString() ?? 'USER';
+          final username = p['username']?.toString() ?? 'مستخدم';
+          final country = p['country_code']?.toString();
+          final vip = p['vip_level']?.toString();
+          final publicId = p['public_id']?.toString() ?? '---';
+          final avatarUrl = p['avatar_url']?.toString();
+          final animated = p['avatar_is_animated'] == true;
 
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  if (snapshot.connectionState != ConnectionState.done)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 14),
-                      child: CircularProgressIndicator(color: gold),
-                    ),
-                  AvatarPickerButton(
-                    avatarUrl: profile['avatar_url']?.toString(),
-                    isAnimated: profile['avatar_is_animated'] == true,
-                    vipLevel: vip,
-                    role: role,
-                    publicId: publicId,
-                    onSaved: () => setState(() { _profileFuture = _loadProfile(); }),
-                  ),
-                  const SizedBox(height: 10),
-                  RankFrame(
-                    role: role,
-                    vipLevel: vip,
-                    size: 88,
-                    child: const CircleAvatar(
-                      backgroundColor: Color(0xFF120A06),
-                      child: Icon(Icons.person, color: gold, size: 42),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    CountryFlag(code: country, size: 22),
-                    const SizedBox(width: 7),
-                    Text(
-                      username,
-                      style: const TextStyle(color: Colors.white,fontSize: 20,fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('ID: $publicId',style: const TextStyle(color: gold,fontSize: 11,fontWeight: FontWeight.w800)),
-                  ]),
-                  const SizedBox(height: 5),
-                  DropdownButton<String>(
-                    value: countryNames.containsKey(country) ? country : null,
-                    hint: const Text('اختر الدولة', style: TextStyle(color: Colors.white54)),
-                    dropdownColor: card,
-                    items: countryNames.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[CountryFlag(code:e.key,size:20),const SizedBox(width:8),Text(e.value)]))).toList(),
-                    onChanged: (v) async { if(v==null) return; final user=Supabase.instance.client.auth.currentUser; if(user==null)return; await Supabase.instance.client.from('profiles').update({'country_code':v}).eq('id',user.id); if(mounted)setState(()=>_profileFuture=_loadProfile()); },
-                  ),
-                  const SizedBox(height: 7),
-                  ProfileBadges(activityAdmin: profile['activity_admin_badge'] == true, customerService: profile['customer_service_badge'] == true, verified: profile['is_verified'] == true),
-                  const SizedBox(height: 5),
-                  Text(
-                    vip != null && vip.isNotEmpty ? vip : (role == 'AGENT' ? 'COIN SELLER' : role),
-                    style: const TextStyle(
-                      color: gold,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: RefreshIndicator(
+              color: gold,
+              backgroundColor: card,
+              onRefresh: () async {
+                setState(() => _profileFuture = _loadProfile());
+                await _profileFuture;
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _ProfileHeader(
+                      username: username,
+                      publicId: publicId,
+                      country: country,
+                      vip: vip,
+                      role: role,
+                      avatarUrl: avatarUrl,
+                      animated: animated,
+                      activityAdmin: p['activity_admin_badge'] == true,
+                      customerService: p['customer_service_badge'] == true,
+                      verified: p['is_verified'] == true,
+                      onAvatarSaved: () => setState(() => _profileFuture = _loadProfile()),
                     ),
                   ),
-                  StreamBuilder<List<Map<String,dynamic>>>(
-                    stream: Supabase.instance.client.from('notifications').stream(primaryKey: ['id']),
-                    builder: (context, snap) {
-                      final uid=Supabase.instance.client.auth.currentUser?.id;
-                      final unread=(snap.data??[]).where((x)=>x['user_id']==uid && x['is_read']!=true).length;
-                      return Stack(children:[
-                        SizedBox(width:double.infinity,child:OutlinedButton.icon(
-                          onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const NotificationsPage())),
-                          icon:const Icon(Icons.notifications,color:gold),label:const Text('الإشعارات'),
-                        )),
-                        if(unread>0) Positioned(left:12,top:6,child:Container(padding:const EdgeInsets.symmetric(horizontal:7,vertical:3),decoration:const BoxDecoration(color:Colors.red,shape:BoxShape.circle),child:Text(unread>99?'99+':unread.toString(),style:const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.w900)))),
-                      ]);
-                    },
-                  ),
-                  SizedBox(width:double.infinity,child:OutlinedButton.icon(
-                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const FriendsPage())),
-                    icon:const Icon(Icons.people_alt,color:gold),label:const Text('الأصدقاء وطلبات الصداقة'),
-                  )),
-                  const SizedBox(height: 12),
-                  SizedBox(width:double.infinity,child:OutlinedButton.icon(
-                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessagesPage())),
-                    icon:const Icon(Icons.forum,color:gold),label:const Text('الرسائل'),
-                  )),
-                  const SizedBox(height: 12),
-                  const SizedBox(height: 28),
-                  const Text(
-                    'الملف الشخصي',
-                    style: TextStyle(
-                      color: gold,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Row(
+                        children: const [
+                          Expanded(child: _StatCard(value: '0', label: 'المتابعون')),
+                          SizedBox(width: 10),
+                          Expanded(child: _StatCard(value: '1', label: 'التالي')),
+                          SizedBox(width: 10),
+                          Expanded(child: _StatCard(value: '0', label: 'الزوار')),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AdminPanel()),
-                      );
-                    },
-                    icon: const Icon(Icons.admin_panel_settings),
-                    label: const Text('لوحة الإدارة'),
-                    style: const ButtonStyle(
-                      backgroundColor: WidgetStatePropertyAll(gold2),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                      child: Row(
+                        children: [
+                          Expanded(child: _MembershipCard(title: 'SVIP', subtitle: 'Supreme Membership', icon: Icons.diamond_outlined, onTap: () => _info('SVIP — معلومات العضوية'))),
+                          const SizedBox(width: 10),
+                          Expanded(child: _MembershipCard(title: vip == null || vip.isEmpty ? 'VIP' : vip, subtitle: 'Growth Privilege', icon: Icons.workspace_premium_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VipPage())))),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AgentRechargePage()),
-                      );
-                    },
-                    icon: const Icon(Icons.currency_exchange),
-                    label: const Text('وكيل الشحن'),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF4A2D17))),
+                        child: Row(
+                          children: [
+                            Expanded(child: _MiddleAction(icon: Icons.backpack_outlined, label: 'شنطة', onTap: () => _info('الشنطة'))),
+                            Expanded(child: _MiddleAction(icon: Icons.storefront_outlined, label: 'محل', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorePage())))),
+                            Expanded(child: _MiddleAction(icon: Icons.account_balance_wallet_outlined, label: 'محفظة', onTap: () => _info('المحفظة'))),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        _ProfileMenuItem(icon: Icons.family_restroom_outlined, title: 'عائلة', onTap: () => _info('العائلة')),
+                        _ProfileMenuItem(icon: Icons.favorite_border, title: 'CP', onTap: () => _info('CP')),
+                        _ProfileMenuItem(icon: Icons.people_outline, title: 'الأخ والأخت', onTap: () => _info('الأخ والأخت')),
+                        _ProfileMenuItem(icon: Icons.military_tech_outlined, title: 'المستوى', trailing: vip ?? 'VIP', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VipPage()))),
+                        _ProfileMenuItem(icon: Icons.headset_mic_outlined, title: 'مركز المضيف', onTap: () => _info('مركز المضيف')),
+                        _ProfileMenuItem(icon: Icons.people_alt_outlined, title: 'الأصدقاء', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsPage()))),
+                        _ProfileMenuItem(icon: Icons.notifications_none, title: 'الإشعارات', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()))),
+                        _ProfileMenuItem(icon: Icons.admin_panel_settings_outlined, title: 'لوحة الإدارة', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPanel()))),
+                        _ProfileMenuItem(icon: Icons.currency_exchange, title: 'وكيل الشحن', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentRechargePage()))),
+                      ]),
+                    ),
                   ),
                 ],
               ),
@@ -648,4 +622,220 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  final String username;
+  final String publicId;
+  final String? country;
+  final String? vip;
+  final String role;
+  final String? avatarUrl;
+  final bool animated;
+  final bool activityAdmin;
+  final bool customerService;
+  final bool verified;
+  final VoidCallback onAvatarSaved;
+
+  const _ProfileHeader({
+    required this.username,
+    required this.publicId,
+    required this.country,
+    required this.vip,
+    required this.role,
+    required this.avatarUrl,
+    required this.animated,
+    required this.activityAdmin,
+    required this.customerService,
+    required this.verified,
+    required this.onAvatarSaved,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 42, 16, 18),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF2B1508), Color(0xFF100804), bg],
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Text('أنا', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+              const Spacer(),
+              IconButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
+                icon: const Icon(Icons.settings_outlined, color: Colors.white70),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              RankFrame(
+                role: role,
+                vipLevel: vip,
+                size: 126,
+                child: CircleAvatar(
+                  radius: 45,
+                  backgroundColor: const Color(0xFF120A06),
+                  backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty ? NetworkImage(avatarUrl!) : null,
+                  child: avatarUrl == null || avatarUrl!.isEmpty ? const Icon(Icons.person, color: gold, size: 44) : null,
+                ),
+              ),
+              Positioned(
+                bottom: 1,
+                right: 3,
+                child: Material(
+                  color: gold2,
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    iconSize: 18,
+                    onPressed: () => showModalBottomSheet(
+                      context: context,
+                      backgroundColor: card,
+                      builder: (_) => Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: AvatarPickerButton(
+                          avatarUrl: avatarUrl,
+                          isAnimated: animated,
+                          vipLevel: vip,
+                          role: role,
+                          publicId: publicId,
+                          onSaved: onAvatarSaved,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.camera_alt, color: Colors.black),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CountryFlag(code: country, size: 22),
+              const SizedBox(width: 7),
+              Flexible(child: Text(username, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900))),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text('ID: $publicId', style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 7),
+          ProfileBadges(activityAdmin: activityAdmin, customerService: customerService, verified: verified),
+          const SizedBox(height: 5),
+          Text(vip != null && vip!.isNotEmpty ? vip! : (role == 'AGENT' ? 'COIN SELLER' : role), style: const TextStyle(color: gold, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String value;
+  final String label;
+  const _StatCard({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFF4A2D17))),
+    child: Column(
+      children: [
+        Text(value, style: const TextStyle(color: gold, fontSize: 20, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 3),
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+      ],
+    ),
+  );
+}
+
+class _MembershipCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+  const _MembershipCard({required this.title, required this.subtitle, required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(20),
+    child: Container(
+      height: 94,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xFF321A09), Color(0xFF140A05)]), border: Border.all(color: gold2, width: 1.1)),
+      child: Row(
+        children: [
+          Container(width: 48, height: 48, decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [gold, gold2])), child: Icon(icon, color: Colors.black, size: 25)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(color: gold, fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 3),
+                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 9)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _MiddleAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _MiddleAction({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Column(
+      children: [
+        Icon(icon, color: gold, size: 27),
+        const SizedBox(height: 5),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+      ],
+    ),
+  );
+}
+
+class _ProfileMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? trailing;
+  final VoidCallback onTap;
+  const _ProfileMenuItem({required this.icon, required this.title, this.trailing, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(top: 8),
+    decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(17), border: Border.all(color: const Color(0xFF382315))),
+    child: ListTile(
+      onTap: onTap,
+      leading: Icon(icon, color: gold),
+      title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (trailing != null) Text(trailing!, style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w800)),
+          const SizedBox(width: 5),
+          const Icon(Icons.chevron_left, color: Colors.white38),
+        ],
+      ),
+    ),
+  );
 }
