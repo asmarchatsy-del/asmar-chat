@@ -27,7 +27,8 @@ jobs:
       - name: Install Asmar Chat launcher icon
         run: |
           mkdir -p android/app/src/main/res/drawable
-          base64 -d tooling/app_icon.webp.b64 > android/app/src/main/res/drawable/app_icon.webp
+          tr -d '[:space:]' < tooling/app_icon.webp.b64 | base64 --decode --ignore-garbage > android/app/src/main/res/drawable/app_icon.webp
+          test -s android/app/src/main/res/drawable/app_icon.webp
           sed -i 's#@mipmap/ic_launcher#@drawable/app_icon#g' android/app/src/main/AndroidManifest.xml
 
       - name: Remove generated sample test
@@ -37,7 +38,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze || true
+        run: flutter analyze
 
       - name: Build APK
         run: flutter build apk --release
