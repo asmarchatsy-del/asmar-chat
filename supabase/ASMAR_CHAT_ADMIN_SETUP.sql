@@ -309,3 +309,35 @@ begin
   update public.profiles set role=p_role,updated_at=now() where id=p_user_id;
   return found;
 end$$;
+
+-- Agency assignment RPCs
+create or replace function public.agency_assign_agent(p_agency_id uuid,p_agent_id uuid)
+returns boolean language plpgsql security definer set search_path=public as $$
+declare v_role public.app_role;
+begin
+ select role into v_role from public.profiles where id=p_agent_id and is_active=true;
+ if v_role <> 'AGENT' then raise exception 'target must be AGENT'; end if;
+ if public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]) then null;
+ elsif public.has_role(array['MANAGER']::public.app_role[]) then
+   if not exists(select 1 from public.agencies where id=p_agency_id and manager_id=auth.uid() and is_active) then raise exception 'agency outside manager scope'; end if;
+ else raise exception 'not authorized'; end if;
+ update public.agencies set owner_id=p_agent_id,updated_at=now() where id=p_agency_id;
+ return found;
+end$$;
+
+create or replace function public.agency_assign_admin(p_agency_id uuid,p_admin_id uuid)
+returns boolean language plpgsql security definer set search_path=public as $$
+declare v_role public.app_role;
+begin
+ select role into v_role from public.profiles where id=p_admin_id and is_active=true;
+ if v_role <> 'ADMIN' then raise exception 'target must be ADMIN'; end if;
+ if public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]) then null;
+ elsif public.has_role(array['MANAGER']::public.app_role[]) then
+   if not exists(select 1 from public.agencies where id=p_agency_id and manager_id=auth.uid() and is_active) then raise exception 'agency outside manager scope'; end if;
+ else raise exception 'not authorized'; end if;
+ update public.agencies set admin_id=p_admin_id,updated_at=now() where id=p_agency_id;
+ return found;
+end$$;
+
+revoke execute on function public.agency_assign_agent(uuid,uuid) from anon;
+revoke execute on function public.agency_assign_admin(uuid,uuid) from anon;
