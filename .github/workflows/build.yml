@@ -27,7 +27,13 @@ jobs:
           from pathlib import Path
           p = Path('android/app/src/main/AndroidManifest.xml')
           s = p.read_text()
-          deep_link = '''\n            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="io.supabase.flutter" android:host="login-callback" />\n            </intent-filter>'''
+          deep_link = '''
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="io.supabase.flutter" android:host="login-callback" />
+            </intent-filter>'''
           if 'io.supabase.flutter' not in s:
               marker = '</activity>'
               if marker not in s:
@@ -43,7 +49,21 @@ jobs:
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        id: analyze
+        continue-on-error: true
+        run: flutter analyze 2>&1 | tee analyze.log
+
+      - name: Upload analyze log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asmar-chat-analyze-log
+          path: analyze.log
+          if-no-files-found: warn
+
+      - name: Fail if analyze failed
+        if: steps.analyze.outcome == 'failure'
+        run: exit 1
 
       - name: Build universal APK
         run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64
