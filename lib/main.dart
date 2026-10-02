@@ -501,22 +501,43 @@ class _ProfileState extends State<Profile> {
           .select('username,role,country_code,vip_level,public_id,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified')
           .eq('id', user.id)
           .maybeSingle();
-      return Map<String, dynamic>.from(row ?? {'role': 'USER', 'username': user.email ?? 'مستخدم'});
+      return Map<String, dynamic>.from(
+        row ?? {'role': 'USER', 'username': user.email ?? 'مستخدم'},
+      );
     } catch (_) {
       return {'role': 'USER', 'username': user.email ?? 'مستخدم'};
     }
   }
 
+  Future<void> _openWhatsApp() async {
+    const phone = '963997048001';
+    const msg = 'السلام عليكم';
+    final url = Uri.parse(
+      'https://wa.me/$phone?text=${Uri.encodeComponent(msg)}',
+    );
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح واتساب')),
+        );
+      }
+    }
+  }
+
   void _info(String title) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(title), backgroundColor: gold2, behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(title),
+        backgroundColor: gold2,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: const Color(0xFF1A1109),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _profileFuture,
         builder: (context, snapshot) {
@@ -542,75 +563,301 @@ class _ProfileState extends State<Profile> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _ProfileHeader(
-                      username: username,
-                      publicId: publicId,
-                      country: country,
-                      vip: vip,
-                      role: role,
-                      avatarUrl: avatarUrl,
-                      animated: animated,
-                      activityAdmin: p['activity_admin_badge'] == true,
-                      customerService: p['customer_service_badge'] == true,
-                      verified: p['is_verified'] == true,
-                      onAvatarSaved: () => setState(() => _profileFuture = _loadProfile()),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: Row(
-                        children: const [
-                          Expanded(child: _StatCard(value: '0', label: 'المتابعون')),
-                          SizedBox(width: 10),
-                          Expanded(child: _StatCard(value: '1', label: 'التالي')),
-                          SizedBox(width: 10),
-                          Expanded(child: _StatCard(value: '0', label: 'الزوار')),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                      child: Row(
-                        children: [
-                          Expanded(child: _MembershipCard(title: 'SVIP', subtitle: 'Supreme Membership', icon: Icons.diamond_outlined, onTap: () => _info('SVIP — معلومات العضوية'))),
-                          const SizedBox(width: 10),
-                          Expanded(child: _MembershipCard(title: vip == null || vip.isEmpty ? 'VIP' : vip, subtitle: 'Growth Privilege', icon: Icons.workspace_premium_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VipPage())))),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF4A2D17))),
-                        child: Row(
-                          children: [
-                            Expanded(child: _MiddleAction(icon: Icons.backpack_outlined, label: 'شنطة', onTap: () => _info('الشنطة'))),
-                            Expanded(child: _MiddleAction(icon: Icons.storefront_outlined, label: 'محل', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorePage())))),
-                            Expanded(child: _MiddleAction(icon: Icons.account_balance_wallet_outlined, label: 'محفظة', onTap: () => _info('المحفظة'))),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xFF2C1608),
+                            Color(0xFF1A1109),
                           ],
                         ),
+                      ),
+                      child: Row(
+                        children: [
+                          RankFrame(
+                            role: role,
+                            vipLevel: vip,
+                            size: 84,
+                            child: CircleAvatar(
+                              radius: 30,
+                              backgroundColor: const Color(0xFF120A06),
+                              backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                                  ? NetworkImage(avatarUrl)
+                                  : null,
+                              child: avatarUrl == null || avatarUrl.isEmpty
+                                  ? const Icon(Icons.person, color: gold, size: 32)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CountryFlag(code: country, size: 20),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        username,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'ID: $publicId',
+                                  style: const TextStyle(
+                                    color: gold,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                ProfileBadges(
+                                  activityAdmin: p['activity_admin_badge'] == true,
+                                  customerService: p['customer_service_badge'] == true,
+                                  verified: p['is_verified'] == true,
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationsPage(),
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.settings_outlined,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: const [
+                          _ProfileStat(value: '0', label: 'المتابعون'),
+                          _ProfileStat(value: '1', label: 'التالي'),
+                          _ProfileStat(value: '5', label: 'الزوار'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      height: 60,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8A1A1A), Color(0xFFFFA000)],
+                        ),
+                        border: Border.all(color: const Color(0xFFFFD700), width: 1.2),
+                      ),
+                      child: Row(
+                        children: const [
+                          SizedBox(width: 10),
+                          Icon(Icons.card_giftcard, color: Colors.yellow),
+                          SizedBox(width: 8),
+                          Text('انتصر', style: TextStyle(color: Colors.white)),
+                          Spacer(),
+                          Text(
+                            'X20  10000  يرسل',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white24,
+                          ),
+                          SizedBox(width: 10),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _MembershipCard(
+                              title: 'SVIP',
+                              subtitle: 'Supreme Membership',
+                              icon: Icons.diamond_outlined,
+                              onTap: () => _info('SVIP — معلومات العضوية'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _MembershipCard(
+                              title: vip == null || vip.isEmpty ? 'VIP' : vip,
+                              subtitle: 'Growth Privilege',
+                              icon: Icons.workspace_premium_outlined,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const VipPage(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C1E10),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFF8B6A2A)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _MiddleAction(
+                            icon: Icons.shopping_bag,
+                            label: 'شنطة',
+                            onTap: () => _info('الشنطة'),
+                          ),
+                          _MiddleAction(
+                            icon: Icons.account_balance,
+                            label: 'محل',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const StorePage(),
+                              ),
+                            ),
+                          ),
+                          _MiddleAction(
+                            icon: Icons.wallet,
+                            label: 'محفظة',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const Wallet(),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        _ProfileMenuItem(icon: Icons.family_restroom_outlined, title: 'عائلة', onTap: () => _info('العائلة')),
-                        _ProfileMenuItem(icon: Icons.favorite_border, title: 'CP', onTap: () => _info('CP')),
-                        _ProfileMenuItem(icon: Icons.people_outline, title: 'الأخ والأخت', onTap: () => _info('الأخ والأخت')),
-                        _ProfileMenuItem(icon: Icons.military_tech_outlined, title: 'المستوى', trailing: vip ?? 'VIP', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VipPage()))),
-                        _ProfileMenuItem(icon: Icons.headset_mic_outlined, title: 'مركز المضيف', onTap: () => _info('مركز المضيف')),
-                        _ProfileMenuItem(icon: Icons.people_alt_outlined, title: 'الأصدقاء', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsPage()))),
-                        _ProfileMenuItem(icon: Icons.notifications_none, title: 'الإشعارات', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()))),
-                        _ProfileMenuItem(icon: Icons.admin_panel_settings_outlined, title: 'لوحة الإدارة', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPanel()))),
-                        _ProfileMenuItem(icon: Icons.currency_exchange, title: 'وكيل الشحن', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentRechargePage()))),
+                        _ProfileMenuItem(
+                          icon: Icons.family_restroom,
+                          title: 'عائلة',
+                          onTap: () => _info('العائلة'),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.favorite,
+                          title: 'CP',
+                          onTap: () => _info('CP'),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.military_tech,
+                          title: 'الأخ والأخت',
+                          onTap: () => _info('الأخ والأخت'),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.star,
+                          title: 'المستوى',
+                          trailing: vip ?? 'VIP',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const VipPage(),
+                            ),
+                          ),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.badge,
+                          title: 'مركز المضيف',
+                          onTap: () => _info('مركز المضيف'),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.phone,
+                          title: 'تواصل مع المسؤول الرسمي',
+                          onTap: _openWhatsApp,
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.settings,
+                          title: 'جلسة',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsPage(),
+                            ),
+                          ),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.people_alt_outlined,
+                          title: 'الأصدقاء',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const FriendsPage(),
+                            ),
+                          ),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.notifications_none,
+                          title: 'الإشعارات',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsPage(),
+                            ),
+                          ),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.admin_panel_settings_outlined,
+                          title: 'لوحة الإدارة',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminPanel(),
+                            ),
+                          ),
+                        ),
+                        _ProfileMenuItem(
+                          icon: Icons.currency_exchange,
+                          title: 'وكيل الشحن',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AgentRechargePage(),
+                            ),
+                          ),
+                        ),
                       ]),
                     ),
                   ),
@@ -624,138 +871,31 @@ class _ProfileState extends State<Profile> {
   }
 }
 
-class _ProfileHeader extends StatelessWidget {
-  final String username;
-  final String publicId;
-  final String? country;
-  final String? vip;
-  final String role;
-  final String? avatarUrl;
-  final bool animated;
-  final bool activityAdmin;
-  final bool customerService;
-  final bool verified;
-  final VoidCallback onAvatarSaved;
-
-  const _ProfileHeader({
-    required this.username,
-    required this.publicId,
-    required this.country,
-    required this.vip,
-    required this.role,
-    required this.avatarUrl,
-    required this.animated,
-    required this.activityAdmin,
-    required this.customerService,
-    required this.verified,
-    required this.onAvatarSaved,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 42, 16, 18),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF2B1508), Color(0xFF100804), bg],
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Text('أنا', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
-              const Spacer(),
-              IconButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
-                icon: const Icon(Icons.settings_outlined, color: Colors.white70),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              RankFrame(
-                role: role,
-                vipLevel: vip,
-                size: 126,
-                child: CircleAvatar(
-                  radius: 45,
-                  backgroundColor: const Color(0xFF120A06),
-                  backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty ? NetworkImage(avatarUrl!) : null,
-                  child: avatarUrl == null || avatarUrl!.isEmpty ? const Icon(Icons.person, color: gold, size: 44) : null,
-                ),
-              ),
-              Positioned(
-                bottom: 1,
-                right: 3,
-                child: Material(
-                  color: gold2,
-                  shape: const CircleBorder(),
-                  child: IconButton(
-                    iconSize: 18,
-                    onPressed: () => showModalBottomSheet(
-                      context: context,
-                      backgroundColor: card,
-                      builder: (_) => Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: AvatarPickerButton(
-                          avatarUrl: avatarUrl,
-                          isAnimated: animated,
-                          vipLevel: vip,
-                          role: role,
-                          publicId: publicId,
-                          onSaved: onAvatarSaved,
-                        ),
-                      ),
-                    ),
-                    icon: const Icon(Icons.camera_alt, color: Colors.black),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CountryFlag(code: country, size: 22),
-              const SizedBox(width: 7),
-              Flexible(child: Text(username, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900))),
-            ],
-          ),
-          const SizedBox(height: 5),
-          Text('ID: $publicId', style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 7),
-          ProfileBadges(activityAdmin: activityAdmin, customerService: customerService, verified: verified),
-          const SizedBox(height: 5),
-          Text(vip != null && vip!.isNotEmpty ? vip! : (role == 'AGENT' ? 'COIN SELLER' : role), style: const TextStyle(color: gold, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
+class _ProfileStat extends StatelessWidget {
   final String value;
   final String label;
-  const _StatCard({required this.value, required this.label});
+  const _ProfileStat({required this.value, required this.label});
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 14),
-    decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFF4A2D17))),
-    child: Column(
-      children: [
-        Text(value, style: const TextStyle(color: gold, fontSize: 20, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 3),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) => Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      );
 }
 
 class _MembershipCard extends StatelessWidget {
@@ -763,54 +903,69 @@ class _MembershipCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
-  const _MembershipCard({required this.title, required this.subtitle, required this.icon, required this.onTap});
+
+  const _MembershipCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(20),
-    child: Container(
-      height: 94,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xFF321A09), Color(0xFF140A05)]), border: Border.all(color: gold2, width: 1.1)),
-      child: Row(
-        children: [
-          Container(width: 48, height: 48, decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [gold, gold2])), child: Icon(icon, color: Colors.black, size: 25)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 50,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F160B),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF8B6A2A)),
+          ),
+          child: Center(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: gold, fontSize: 18, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 3),
-                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 9)),
+                Icon(icon, color: gold, size: 17),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    subtitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white70, fontSize: 9),
+                  ),
+                ),
               ],
             ),
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
 
 class _MiddleAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _MiddleAction({required this.icon, required this.label, required this.onTap});
+  const _MiddleAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    child: Column(
-      children: [
-        Icon(icon, color: gold, size: 27),
-        const SizedBox(height: 5),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-      ],
-    ),
-  );
+        onTap: onTap,
+        child: Column(
+          children: [
+            Icon(icon, color: const Color(0xFFD4A054)),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+        ),
+      );
 }
 
 class _ProfileMenuItem extends StatelessWidget {
@@ -818,24 +973,37 @@ class _ProfileMenuItem extends StatelessWidget {
   final String title;
   final String? trailing;
   final VoidCallback onTap;
-  const _ProfileMenuItem({required this.icon, required this.title, this.trailing, required this.onTap});
+  const _ProfileMenuItem({
+    required this.icon,
+    required this.title,
+    this.trailing,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(top: 8),
-    decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(17), border: Border.all(color: const Color(0xFF382315))),
-    child: ListTile(
-      onTap: onTap,
-      leading: Icon(icon, color: gold),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (trailing != null) Text(trailing!, style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w800)),
-          const SizedBox(width: 5),
-          const Icon(Icons.chevron_left, color: Colors.white38),
-        ],
-      ),
-    ),
-  );
-}
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Color(0xFF2C1E10)),
+          ),
+        ),
+        child: ListTile(
+          onTap: onTap,
+          leading: const Icon(
+            Icons.arrow_back_ios,
+            size: 16,
+            color: Color(0xFFD4A054),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(width: 10),
+              Icon(icon, color: const Color(0xFFD4A054), size: 24),
+            ],
+          ),
+        ),
+      );
