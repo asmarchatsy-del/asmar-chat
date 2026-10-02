@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'vip.dart';
 
 const _gold = Color(0xFFFFD36A);
 const _gold2 = Color(0xFFB77921);
@@ -61,9 +62,10 @@ class _StorePageState extends State<StorePage> {
       child: Scaffold(
         backgroundColor: _bg,
         appBar: AppBar(
-          actions: [IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const VipPage())),icon:const Icon(Icons.workspace_premium,color:_gold))],
           title: const Text('متجر الإطارات', style: TextStyle(fontWeight: FontWeight.w900)),
-          actions: [Padding(
+          actions: [
+            IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const VipPage())),icon:const Icon(Icons.workspace_premium,color:_gold)),
+            Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Center(child: Text(_loadingBalance ? '...' : '${_balance ?? 0} 🪙',
               style: const TextStyle(color: _gold, fontWeight: FontWeight.w900))),
