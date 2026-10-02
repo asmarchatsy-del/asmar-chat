@@ -32,6 +32,8 @@ class _RoomState extends State<Room> {
   final List<Map<String, dynamic>> messages = [];
   final Map<String, Map<String,dynamic>> profiles = {};
   StreamSubscription<List<Map<String, dynamic>>>? _messageSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _giftSub;
+  final Set<String> _seenGiftIds = {};
   lk.Room? _voiceRoom;
   bool microphoneOn = false;
   bool joiningVoice = false;
@@ -49,6 +51,22 @@ class _RoomState extends State<Room> {
   void initState() {
     super.initState();
     _loadMessages();
+    _giftSub = Supabase.instance.client
+        .from('gift_transactions')
+        .stream(primaryKey: ['id'])
+        .eq('room_id', widget.roomId)
+        .order('created_at')
+        .listen((rows) async {
+          for (final row in rows) {
+            final id = row['id']?.toString();
+            if (id == null || _seenGiftIds.contains(id)) continue;
+            _seenGiftIds.add(id);
+            try {
+              final gift = await Supabase.instance.client.from('gifts').select('name,emoji,price').eq('id', row['gift_id']).single();
+              if (mounted) _showGiftAnimation({'emoji': gift['emoji'], 'name': gift['name'], 'amount': row['amount']});
+            } catch (_) {}
+          }
+        });
     _messageSub = Supabase.instance.client
         .from('room_messages')
         .stream(primaryKey: ['id'])
@@ -69,6 +87,7 @@ class _RoomState extends State<Room> {
   @override
   void dispose() {
     _messageSub?.cancel();
+    _giftSub?.cancel();
     _voiceRoom?.disconnect();
     messageController.dispose();
     super.dispose();
