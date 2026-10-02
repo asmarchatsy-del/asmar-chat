@@ -52,7 +52,7 @@ class _RoomState extends State<Room> {
   Future<void> _loadMessages() async {
     final rows = await Supabase.instance.client.from('room_messages').select('id,user_id,message,created_at').eq('room_id', widget.roomId).order('created_at');
     final list=List<Map<String,dynamic>>.from(rows); final ids=list.map((m)=>m['user_id'].toString()).toSet().toList();
-    if(ids.isNotEmpty){final ps=await Supabase.instance.client.from('profiles').select('id,username,role,country_code').inFilter('id',ids); profiles.addEntries(List<Map<String,dynamic>>.from(ps).map((p)=>MapEntry(p['id'].toString(),p)));}
+    if(ids.isNotEmpty){final ps=await Supabase.instance.client.from('profiles').select('id,username,role,country_code,vip_level').inFilter('id',ids); profiles.addEntries(List<Map<String,dynamic>>.from(ps).map((p)=>MapEntry(p['id'].toString(),p)));}
     if (mounted) setState(() => messages..clear()..addAll(list));
   }
 
@@ -239,7 +239,7 @@ class _RoomState extends State<Room> {
       ),
       child: Row(
         children: [
-          RankFrame(role: profile?['role']?.toString()??'USER', size: 40, showLabel: false, child: CircleAvatar(
+          RankFrame(role: profile?['role']?.toString()??'USER', vipLevel: profile?['vip_level']?.toString(), size: 40, showLabel: false, child: CircleAvatar(
             radius: 18,
             backgroundColor: Color(0xFF422511),
             child: Icon(
@@ -250,7 +250,7 @@ class _RoomState extends State<Room> {
           ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children:[
-            Row(children:[CountryFlag(code: profile?['country_code']?.toString(),size:18),const SizedBox(width:5),Text(profile?['username']?.toString()??'مستخدم',style:const TextStyle(color:gold,fontSize:11,fontWeight:FontWeight.w800))]),
+            Row(children:[CountryFlag(code: profile?['country_code']?.toString(),size:18),const SizedBox(width:5),Text(profile?['username']?.toString()??'مستخدم',style:const TextStyle(color:gold,fontSize:11,fontWeight:FontWeight.w800)), if((profile?['vip_level']?.toString()??'').isNotEmpty) ...[const SizedBox(width:5),Text(profile!['vip_level'].toString(),style:const TextStyle(color:gold,fontSize:9,fontWeight:FontWeight.w900))]]),
             const SizedBox(height:3), Text(text,
               style: const TextStyle(
                 color: Colors.white,
