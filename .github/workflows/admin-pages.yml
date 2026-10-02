@@ -37,6 +37,7 @@ jobs:
           cp admin/badges.js _site/badges.js
           cp admin/gifts.js _site/gifts.js
           cp admin/rocket_levels.js _site/rocket_levels.js
+          cp admin/privacy-policy.html _site/privacy-policy.html
           touch _site/.nojekyll
 
       - name: Configure Pages
