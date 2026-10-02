@@ -2,7 +2,7 @@ name: asmar_chat
 description: Asmar Chat voice application
 publish_to: "none"
 
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -17,6 +17,7 @@ dependencies:
   livekit_client: ^2.5.1
   image_picker: ^1.2.0
   url_launcher: ^6.3.2
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:
