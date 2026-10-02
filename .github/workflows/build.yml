@@ -21,6 +21,9 @@ jobs:
       - name: Create Android platform
         run: flutter create --platforms=android --project-name asmar_chat .
 
+      - name: Remove generated sample test
+        run: rm -f test/widget_test.dart
+
       - name: Get dependencies
         run: flutter pub get
 
