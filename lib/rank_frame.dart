@@ -6,6 +6,7 @@ class RankFrame extends StatefulWidget {
   final double size;
   final Widget child;
   final bool showLabel;
+  final String? vipLevel;
 
   const RankFrame({
     super.key,
@@ -13,6 +14,7 @@ class RankFrame extends StatefulWidget {
     required this.child,
     this.size = 86,
     this.showLabel = true,
+    this.vipLevel,
   });
 
   @override
@@ -41,7 +43,7 @@ class _RankFrameState extends State<RankFrame>
     super.dispose();
   }
 
-  _RankStyle get _style => _RankStyle.forRole(widget.role);
+  _RankStyle get _style => _RankStyle.forRole(widget.role, widget.vipLevel);
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +180,25 @@ class _RankStyle {
     required this.icon,
   });
 
-  static _RankStyle forRole(String rawRole) {
+  static _RankStyle forRole(String rawRole, String? vipLevel) {
+    final vip = vipLevel?.toUpperCase();
+    if (vip != null && vip.startsWith('VIP')) {
+      final n = int.tryParse(vip.substring(3)) ?? 0;
+      final animals = ['','🦌','🐺','🐊','🐘','🦅','🐻','🐆','🐯','🐉','🦁'];
+      final colors = [
+        [const Color(0xFF6B3E0B),const Color(0xFFFFC107),const Color(0xFFFFF0A0)],
+        [const Color(0xFF073B4C),const Color(0xFF00B4D8),const Color(0xFFB8F2FF)],
+        [const Color(0xFF3A0A0A),const Color(0xFFE53935),const Color(0xFFFFB4B4)],
+        [const Color(0xFF2E165C),const Color(0xFF8E44FF),const Color(0xFFE0C7FF)],
+        [const Color(0xFF064A38),const Color(0xFF16C784),const Color(0xFFA8FFE0)],
+        [const Color(0xFF5A2606),const Color(0xFFFF8A00),const Color(0xFFFFD2A1)],
+        [const Color(0xFF4A3005),const Color(0xFFE5A900),const Color(0xFFFFF1A3)],
+        [const Color(0xFF24105A),const Color(0xFF7B2CFF),const Color(0xFFE0C7FF)],
+        [const Color(0xFF071B4D),const Color(0xFF1976D2),const Color(0xFFB8DDFF)],
+        [const Color(0xFF5A0808),const Color(0xFFD4AF37),const Color(0xFFFFF0A0)],
+      ];
+      if(n>=1 && n<=10) return _RankStyle(label:'VIP$n ${animals[n]}',dark:colors[n-1][0],primary:colors[n-1][1],highlight:colors[n-1][2],icon:Icons.workspace_premium);
+    }
     final role = rawRole.toUpperCase();
     switch (role) {
       case 'CEO':
