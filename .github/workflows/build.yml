@@ -18,7 +18,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Create Android platform without touching app source
+      - name: Create Android platform
         run: |
           rm -rf /tmp/asmar_flutter_template
           flutter create --platforms=android --project-name asmar_chat --no-pub /tmp/asmar_flutter_template
@@ -54,10 +54,9 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      # Build one universal APK containing both ARM 32-bit and ARM 64-bit
-      # native libraries. This avoids installing an incompatible split APK.
+      # One universal APK: ARM32 + ARM64 + x86_64 for broad Android compatibility.
       - name: Build universal APK
-        run: flutter build apk --release
+        run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64
 
       - name: Build App Bundle
         run: flutter build appbundle --release
@@ -65,7 +64,9 @@ jobs:
       - name: Verify universal APK
         run: |
           test -s build/app/outputs/flutter-apk/app-release.apk
-          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -E 'lib/(armeabi-v7a|arm64-v8a)/'
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -q 'lib/armeabi-v7a/'
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -q 'lib/arm64-v8a/'
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -q 'lib/x86_64/'
 
       - name: Upload universal APK
         uses: actions/upload-artifact@v4
