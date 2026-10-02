@@ -43,7 +43,7 @@ class _AdminPanelState extends State<AdminPanel> {
       // Owner dashboard is strictly CEO-only. Other roles use their own RoleCenter.
       if (role != 'CEO') return;
 
-      final profiles = await client.from('profiles').select('id,display_name,username,role,is_active,vip_level').eq('is_active', true).order('created_at', ascending: false);
+      final profiles = await client.from('profiles').select('id,display_name,username,role,is_active,vip_level').order('created_at', ascending: false);
       final wallets = await client.from('wallets').select('user_id,balance');
       final walletByUser = <String, int>{for (final w in wallets) w['user_id'] as String: (w['balance'] as num).toInt()};
       final agenciesData = await client.from('agencies').select('id,name,manager_id,is_active,created_at');
@@ -54,7 +54,7 @@ class _AdminPanelState extends State<AdminPanel> {
       setState(() {
         users..clear()..addAll(profiles.map<Map<String, dynamic>>((p) => {
           'id': p['id'], 'name': (p['display_name'] ?? p['username'] ?? 'مستخدم').toString(),
-          'role': p['role'].toString(), 'vip': p['vip_level']?.toString() ?? '', 'coins': walletByUser[p['id']] ?? 0, 'online': false,
+          'role': p['role'].toString(), 'vip': p['vip_level']?.toString() ?? '', 'coins': walletByUser[p['id']] ?? 0, 'online': p['is_active'] == true, 'active': p['is_active'] == true,
         }));
         hosts..clear()..addAll(users.where((u) => u['role'] == 'HOST').map((u) => {
           'id': u['id'], 'name': u['name'], 'agency': '—', 'status': true, 'coins': u['coins'],
@@ -439,6 +439,7 @@ class _AdminPanelState extends State<AdminPanel> {
       case 'ADMIN': return 'ADMIN';
       case 'HOST': return 'HOST';
       case 'AGENT': return 'AGENT';
+      case 'BD': return 'BD';
       default: return 'USER';
     }
   }
@@ -672,7 +673,7 @@ class _AdminPanelState extends State<AdminPanel> {
     );
   }
 
-  Future<void> _toggleUser(Map<String,dynamic> u) async { try { final next = !(u['online'] == true); await Supabase.instance.client.rpc('admin_set_user_active', params: {'p_user_id': u['id'], 'p_active': next}); await _loadData(); _message(next ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب'); } catch (e) { _message('فشل تحديث الحساب: $e'); } }
+  Future<void> _toggleUser(Map<String,dynamic> u) async { try { final next = !(u['active'] == true); await Supabase.instance.client.rpc('admin_set_user_active', params: {'p_user_id': u['id'], 'p_active': next}); await _loadData(); _message(next ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب'); } catch (e) { _message('فشل تحديث الحساب: $e'); } }
 
   Future<void> _changeRole(Map<String,dynamic> u) async { final roles = ['USER','HOST','AGENT','ADMIN','BD','MANAGER','SUPER_ADMIN']; String selected = (u['role'] ?? 'USER').toString(); final value = await showDialog<String>(context: context, builder: (ctx)=>AlertDialog(backgroundColor: card,title: Text('تغيير رتبة '+u['name'].toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w900)),content: StatefulBuilder(builder:(ctx,setState)=>DropdownButtonFormField<String>(value: roles.contains(selected) ? selected : 'USER',dropdownColor: card,items: roles.map((r)=>DropdownMenuItem(value:r,child:Text(r))).toList(),onChanged:(v){if(v!=null){selected=v;setState((){});}})),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,selected),child:const Text('حفظ'))],)); if(value==null || value==u['role']) return; try { await Supabase.instance.client.rpc('admin_set_user_role', params: {'p_user_id':u['id'],'p_role':value}); await _loadData(); _message('تم تغيير الرتبة إلى '+value); } catch(e){_message('فشل تغيير الرتبة: $e');} }
 
@@ -738,12 +739,12 @@ class _AdminPanelState extends State<AdminPanel> {
                 dropdownColor: card,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(labelText: 'نوع المستلم'),
-                items: const ['مستخدم','مضيف','وكيل','وكالة'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                items: const ['مستخدم','مضيف','وكيل'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
                 onChanged: (v) {
                   if (v == null) return;
                   setDialogState(() {
                     type = v;
-                    final list = type == 'مضيف' ? hosts : type == 'وكالة' ? agencies : users;
+                    final list = type == 'مضيف' ? hosts : users;
                     recipient = list.first['name'];
                   });
                 },
