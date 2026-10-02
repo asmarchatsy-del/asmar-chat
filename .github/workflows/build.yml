@@ -25,7 +25,6 @@ jobs:
           cp -R /tmp/asmar_flutter_template/android ./android
           python3 - <<'PY'
           from pathlib import Path
-          import re
           p = Path("android/app/src/main/AndroidManifest.xml")
           s = p.read_text()
           deep_link = '''
@@ -35,14 +34,12 @@ jobs:
                   <category android:name="android.intent.category.BROWSABLE" />
                   <data android:scheme="io.supabase.flutter" android:host="login-callback" />
               </intent-filter>'''
-          pattern = r'(<activity[^>]*android:name="\\.MainActivity"[^>]*>.*?</activity>)'
-          m = re.search(pattern, s, re.S)
-          if not m:
-              raise SystemExit("MainActivity not found")
-          block = m.group(1)
-          if "io.supabase.flutter" not in block:
-              block = block.replace("</activity>", deep_link + "\n          </activity>")
-          p.write_text(s[:m.start()] + block + s[m.end():])
+          if "io.supabase.flutter" not in s:
+              marker = "</activity>"
+              if marker not in s:
+                  raise SystemExit("Android activity block not found")
+              s = s.replace(marker, deep_link + "\n        " + marker, 1)
+              p.write_text(s)
           PY
 
       - name: Remove generated sample test
@@ -54,7 +51,6 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      # One universal APK: ARM32 + ARM64 + x86_64 for broad Android compatibility.
       - name: Build universal APK
         run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64
 
