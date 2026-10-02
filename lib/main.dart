@@ -24,6 +24,7 @@ import 'rocket_levels.dart';
 import 'wallet.dart';
 import 'plinko_demo.dart';
 import 'slot_demo.dart';
+import 'chicken_crossing_demo.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -1269,6 +1270,14 @@ class _ProfileState extends State<Profile> {
                           () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const PlinkoDemoPage()),
+                          ),
+                        ),
+                        _ProfileMenuTile(
+                          '🐔 عبور الدجاجة تجريبية',
+                          Icons.pets,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ChickenCrossingDemoPage()),
                           ),
                         ),
                         _ProfileMenuTile(
