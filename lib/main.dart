@@ -31,16 +31,13 @@ Future<void> main() async {
   await Supabase.initialize(
     url: BackendConfig.supabaseUrl,
     publishableKey: BackendConfig.supabasePublishableKey,
+    // On Flutter Web, use the implicit OAuth flow so Supabase handles the
+    // Google callback in the browser without leaving a ?code= URL behind.
+    // Mobile keeps the more secure PKCE flow.
+    authOptions: FlutterAuthClientOptions(
+      authFlowType: kIsWeb ? AuthFlowType.implicit : AuthFlowType.pkce,
+    ),
   );
-
-  if (kIsWeb && Supabase.instance.client.auth.currentSession == null) {
-    final code = Uri.base.queryParameters['code'];
-    if (code != null && code.isNotEmpty) {
-      try {
-        await Supabase.instance.client.auth.exchangeCodeForSession(code);
-      } catch (_) {}
-    }
-  }
 
   runApp(const AsmarApp());
 }
