@@ -11,6 +11,7 @@ import 'country_flag.dart';
 import 'notifications.dart';
 import 'friends.dart';
 import 'private_conversations.dart';
+import 'avatar_picker.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -377,6 +378,15 @@ class _ProfileState extends State<Profile> {
                       padding: EdgeInsets.only(bottom: 14),
                       child: CircularProgressIndicator(color: gold),
                     ),
+                  AvatarPickerButton(
+                    avatarUrl: profile['avatar_url']?.toString(),
+                    isAnimated: profile['avatar_is_animated'] == true,
+                    vipLevel: vip,
+                    role: role,
+                    publicId: publicId,
+                    onSaved: () => setState(() { _profileFuture = _loadProfile(); }),
+                  ),
+                  const SizedBox(height: 10),
                   RankFrame(
                     role: role,
                     vipLevel: vip,
