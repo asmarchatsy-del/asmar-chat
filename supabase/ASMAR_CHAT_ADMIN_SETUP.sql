@@ -64,3 +64,62 @@ create or replace function public.admin_update_gift(p_id text,p_name text,p_emoj
 grant execute on function public.admin_set_user_active(uuid,boolean),public.admin_set_room_active(uuid,boolean),public.admin_adjust_wallet(uuid,bigint),public.admin_update_gift(text,text,text,bigint,text,boolean,boolean,bigint,bigint) to authenticated;
 create or replace function public.admin_grant_vip(p_user_id uuid,p_vip_level text) returns text language plpgsql security definer set search_path=public as $$declare actor_role public.app_role; target_level integer; max_level integer;begin select role into actor_role from public.profiles where id=auth.uid() and is_active;if actor_role is null then raise exception 'not authorized';end if;target_level:=case when upper(p_vip_level) like 'VIP%' then regexp_replace(upper(p_vip_level),'[^0-9]','','g')::integer else 0 end;max_level:=case actor_role when 'CEO' then 10 when 'SUPER_ADMIN' then 6 else 0 end;if target_level<1 or target_level>max_level then raise exception 'VIP level not permitted for this role';end if;update public.profiles set vip_level=upper(p_vip_level),updated_at=now() where id=p_user_id;return upper(p_vip_level);end$$;
 grant execute on function public.admin_grant_vip(uuid,text) to authenticated;
+
+create table if not exists public.agency_commission_settings(
+ id boolean primary key default true,
+ app_share_percent numeric(5,2) not null default 20 check(app_share_percent between 0 and 100),
+ owner_work_percent numeric(5,2) not null default 0 check(owner_work_percent between 0 and 100),
+ super_admin_work_percent numeric(5,2) not null default 0 check(super_admin_work_percent between 0 and 100),
+ manager_work_percent numeric(5,2) not null default 0 check(manager_work_percent between 0 and 100),
+ bd_work_percent numeric(5,2) not null default 0 check(bd_work_percent between 0 and 100),
+ admin_work_percent numeric(5,2) not null default 0 check(admin_work_percent between 0 and 100),
+ updated_at timestamptz not null default now()
+);
+insert into public.agency_commission_settings(id) values(true) on conflict(id) do nothing;
+alter table public.agencies add column if not exists opened_by uuid references public.profiles(id);
+alter table public.agencies add column if not exists super_admin_id uuid references public.profiles(id);
+alter table public.agencies add column if not exists work_share_percent numeric(5,2) not null default 0;
+alter table public.agencies add column if not exists created_by_role text;
+alter table public.agencies add column if not exists updated_at timestamptz not null default now();
+
+create table if not exists public.agency_commission_ledger(
+ id uuid primary key default gen_random_uuid(),
+ agency_id uuid not null references public.agencies(id) on delete cascade,
+ source_amount bigint not null check(source_amount >= 0),
+ app_share_amount bigint not null default 0,
+ work_share_amount bigint not null default 0,
+ owner_amount bigint not null default 0,
+ super_admin_amount bigint not null default 0,
+ manager_amount bigint not null default 0,
+ bd_amount bigint not null default 0,
+ admin_amount bigint not null default 0,
+ created_at timestamptz not null default now()
+);
+alter table public.agency_commission_settings enable row level security;
+drop policy if exists commission_settings_read on public.agency_commission_settings;
+create policy commission_settings_read on public.agency_commission_settings for select to authenticated using(public.has_role(array['CEO','SUPER_ADMIN','MANAGER','BD','ADMIN']::public.app_role[]));
+drop policy if exists commission_settings_owner on public.agency_commission_settings;
+create policy commission_settings_owner on public.agency_commission_settings for all to authenticated using(public.has_role(array['CEO']::public.app_role[])) with check(public.has_role(array['CEO']::public.app_role[]));
+alter table public.agency_commission_ledger enable row level security;
+drop policy if exists commission_ledger_read on public.agency_commission_ledger;
+create policy commission_ledger_read on public.agency_commission_ledger for select to authenticated using(
+ public.has_role(array['CEO','SUPER_ADMIN','MANAGER','BD','ADMIN']::public.app_role[])
+);
+create or replace function public.agency_open(
+ p_name text,
+ p_manager_id uuid default null,
+ p_bd_id uuid default null
+) returns uuid language plpgsql security definer set search_path=public as $$
+declare actor_role public.app_role; aid uuid; aid_owner uuid; aid_manager uuid; aid_bd uuid;
+begin
+ select role into actor_role from public.profiles where id=auth.uid() and is_active;
+ if actor_role is null or actor_role not in ('CEO','SUPER_ADMIN','MANAGER','BD') then raise exception 'not authorized'; end if;
+ aid_owner:=case when actor_role='CEO' then auth.uid() else null end;
+ aid_manager:=case when actor_role='MANAGER' then auth.uid() else p_manager_id end;
+ aid_bd:=case when actor_role='BD' then auth.uid() else p_bd_id end;
+ insert into public.agencies(name,manager_id,bd_id,owner_id,opened_by,super_admin_id,created_by_role)
+ values(trim(p_name),aid_manager,aid_bd,aid_owner,auth.uid(),case when actor_role='SUPER_ADMIN' then auth.uid() else null end,actor_role::text)
+ returning id into aid;
+ return aid;
+end $$;
+grant execute on function public.agency_open(text,uuid,uuid) to authenticated;
