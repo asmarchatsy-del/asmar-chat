@@ -1127,3 +1127,20 @@ class _ProfileMenuTile extends StatelessWidget {
         ),
       );
 }
+
+class _MiddleAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _MiddleAction({required this.icon, required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(10),
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, color: gold2, size: 26),
+      const SizedBox(height: 4),
+      Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+    ]),
+  );
+}
