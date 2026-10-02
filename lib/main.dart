@@ -248,23 +248,94 @@ class _LoginPageState extends State<LoginPage> {
       controller: controller,
       obscureText: password,
       keyboardType: type,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(password ? Icons.lock_outline : Icons.person_outline, color: gold2),
+        labelStyle: const TextStyle(color: Colors.white54),
+        filled: true,
+        fillColor: const Color(0xFF160B06),
+        prefixIcon: Icon(
+          password ? Icons.lock_outline_rounded : Icons.alternate_email_rounded,
+          color: gold,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF4C2B12)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: gold, width: 1.4),
+        ),
       ),
     );
   }
 
-  Widget _actionButton({required String label, required IconData icon, required VoidCallback? onPressed}) {
+  Widget _mainButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 54,
       child: FilledButton.icon(
         onPressed: loading ? null : onPressed,
-        icon: Icon(icon),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
-        style: const ButtonStyle(backgroundColor: WidgetStatePropertyAll(gold2)),
+        icon: Icon(icon, size: 22),
+        label: Text(
+          label,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+        ),
+        style: FilledButton.styleFrom(
+          backgroundColor: gold,
+          foregroundColor: Colors.black,
+          disabledBackgroundColor: const Color(0xFF5A4525),
+          disabledForegroundColor: Colors.black54,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
+
+  Widget _googleButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: OutlinedButton(
+        onPressed: loading ? null : _loginWithGoogle,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: const BorderSide(color: Color(0xFF6A4522), width: 1.2),
+          backgroundColor: const Color(0xFF160B06),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'G',
+                style: TextStyle(
+                  color: Color(0xFF4285F4),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              isCreate ? 'إنشاء حساب باستخدام Google' : 'تسجيل الدخول باستخدام Google',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -272,16 +343,59 @@ class _LoginPageState extends State<LoginPage> {
   Widget _modeButton(String label, IconData icon, _AuthMode value) {
     final selected = mode == value;
     return Expanded(
-      child: OutlinedButton.icon(
-        onPressed: loading ? null : () => setState(() { mode = value; error = null; }),
-        icon: Icon(icon, size: 18),
-        label: Text(label, overflow: TextOverflow.ellipsis),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: selected ? Colors.black : gold,
-          backgroundColor: selected ? gold : Colors.transparent,
-          side: const BorderSide(color: gold2),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 44,
+        decoration: BoxDecoration(
+          color: selected ? gold : const Color(0xFF160B06),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(
+            color: selected ? gold : const Color(0xFF4C2B12),
+            width: 1,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(13),
+            onTap: loading ? null : () => setState(() {
+              mode = value;
+              error = null;
+            }),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 17, color: selected ? Colors.black : gold),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected ? Colors.black : Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _orDivider() {
+    return Row(
+      children: const [
+        Expanded(child: Divider(color: Color(0xFF3B2412))),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Text('أو', style: TextStyle(color: Colors.white38, fontSize: 12)),
+        ),
+        Expanded(child: Divider(color: Color(0xFF3B2412))),
+      ],
     );
   }
 
@@ -289,74 +403,153 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final isId = mode == _AuthMode.idLogin;
     final isCreate = mode == _AuthMode.create;
+
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 430),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('ASMAR CHAT', style: TextStyle(color: gold, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                  const SizedBox(height: 8),
-                  Text(
-                    isCreate ? 'إنشاء حساب' : isId ? 'تسجيل الدخول بالـID' : 'تسجيل الدخول',
-                    style: const TextStyle(color: Colors.white70, fontSize: 17),
-                  ),
-                  const SizedBox(height: 22),
-                  Row(
-                    children: [
-                      _modeButton('تسجيل الدخول', Icons.login, _AuthMode.login),
-                      const SizedBox(width: 6),
-                      _modeButton('إنشاء حساب', Icons.person_add_alt_1, _AuthMode.create),
-                      const SizedBox(width: 6),
-                      _modeButton('دخول بالـID', Icons.badge_outlined, _AuthMode.idLogin),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F0804),
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(color: const Color(0xFF3B2412)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x66000000),
+                      blurRadius: 28,
+                      offset: Offset(0, 14),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 66,
+                      height: 66,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [gold, gold2],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x445A3610),
+                            blurRadius: 18,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'أسمر',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 13),
+                    const Text(
+                      'ASMAR CHAT',
+                      style: TextStyle(
+                        color: gold,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      isCreate
+                          ? 'أنشئ حسابك وابدأ الآن'
+                          : isId
+                              ? 'ادخل بحسابك باستخدام الـID'
+                              : 'أهلاً بك، سجّل دخولك للمتابعة',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // خيارات الدخول الرئيسية بشكل موحّد.
+                    Row(
+                      children: [
+                        _modeButton('تسجيل الدخول', Icons.login_rounded, _AuthMode.login),
+                        const SizedBox(width: 7),
+                        _modeButton('إنشاء حساب', Icons.person_add_alt_1_rounded, _AuthMode.create),
+                        const SizedBox(width: 7),
+                        _modeButton('بالـID', Icons.badge_rounded, _AuthMode.idLogin),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+
+                    if (isId) ...[
+                      _field(publicId, 'ID المستخدم', type: TextInputType.number),
+                      const SizedBox(height: 12),
+                      _field(password, 'كلمة المرور', password: true),
+                      const SizedBox(height: 18),
+                      _mainButton(
+                        label: 'تسجيل الدخول بالـID',
+                        icon: Icons.badge_rounded,
+                        onPressed: _loginWithId,
+                      ),
+                    ] else ...[
+                      _field(email, 'البريد الإلكتروني', type: TextInputType.emailAddress),
+                      const SizedBox(height: 12),
+                      _field(password, 'كلمة المرور', password: true),
+                      const SizedBox(height: 18),
+                      _mainButton(
+                        label: isCreate ? 'إنشاء الحساب' : 'تسجيل الدخول',
+                        icon: isCreate ? Icons.person_add_alt_1_rounded : Icons.login_rounded,
+                        onPressed: isCreate ? _createAccount : _loginWithEmail,
+                      ),
+                      const SizedBox(height: 15),
+                      _orDivider(),
+                      const SizedBox(height: 15),
+                      _googleButton(),
                     ],
-                  ),
-                  const SizedBox(height: 22),
-                  if (isId) ...[
-                    _field(publicId, 'ID المستخدم', type: TextInputType.number),
-                    const SizedBox(height: 12),
-                    _field(password, 'كلمة المرور', password: true),
-                    const SizedBox(height: 20),
-                    _actionButton(label: 'تسجيل الدخول بالـID', icon: Icons.badge, onPressed: _loginWithId),
-                  ] else ...[
-                    _field(email, 'البريد الإلكتروني', type: TextInputType.emailAddress),
-                    const SizedBox(height: 12),
-                    _field(password, 'كلمة المرور', password: true),
-                    const SizedBox(height: 20),
-                    _actionButton(
-                      label: isCreate ? 'إنشاء حساب' : 'تسجيل الدخول',
-                      icon: isCreate ? Icons.person_add : Icons.login,
-                      onPressed: isCreate ? _createAccount : _loginWithEmail,
-                    ),
-                    const SizedBox(height: 12),
-                    const Row(children: [
-                      Expanded(child: Divider(color: Color(0xFF4C3019))),
-                      Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('أو', style: TextStyle(color: Colors.white54))),
-                      Expanded(child: Divider(color: Color(0xFF4C3019))),
-                    ]),
-                    const SizedBox(height: 12),
-                    _actionButton(
-                      label: isCreate ? 'إنشاء حساب باستخدام Google' : 'تسجيل الدخول باستخدام Google',
-                      icon: Icons.g_mobiledata,
-                      onPressed: _loginWithGoogle,
+
+                    if (error != null) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0x332A0C08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0x664A1710)),
+                        ),
+                        child: Text(
+                          error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFFFF8A80),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 15),
+                    Text(
+                      isId
+                          ? 'استخدم الـID الظاهر في ملفك الشخصي مع كلمة المرور.'
+                          : 'بعد إنشاء الحساب سيظهر لك ID خاص يمكنك استخدامه عند العودة للتطبيق.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white30, fontSize: 10.5, height: 1.4),
                     ),
                   ],
-                  if (error != null) ...[
-                    const SizedBox(height: 14),
-                    Text(error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
-                  ],
-                  const SizedBox(height: 16),
-                  Text(
-                    isId ? 'استخدم الـID الذي يظهر في ملفك الشخصي مع كلمة المرور.' : 'بعد إنشاء الحساب سيظهر لك ID خاص لتستخدمه عند العودة للتطبيق.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -365,6 +558,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
 class Shell extends StatefulWidget {
   const Shell({super.key});
   @override State<Shell> createState()=>_ShellState();
