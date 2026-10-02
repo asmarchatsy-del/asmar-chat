@@ -164,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
       if(error!=null)Padding(padding:const EdgeInsets.only(top:12),child:Text(error!,style:const TextStyle(color:Colors.redAccent))),
       const SizedBox(height:20),
       SizedBox(width:double.infinity,height:50,child:FilledButton(onPressed:loading?null:_submit,child:loading?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2)):const Text('دخول / إنشاء حساب'))),
-    ]))));
+    ])))));
 }
 class Shell extends StatefulWidget {
   const Shell({super.key});
