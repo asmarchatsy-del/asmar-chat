@@ -22,10 +22,10 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
     if(text.isEmpty||user==null||sending)return;
     setState(()=>sending=true);
     try {
-      await Supabase.instance.client.from('global_chat_messages').insert({'sender_id':user.id,'message':text});
+      await Supabase.instance.client.rpc('send_global_chat_message', params: {'p_message': text});
       controller.clear();
       if(scroll.hasClients)scroll.animateTo(0,duration:const Duration(milliseconds:220),curve:Curves.easeOut);
-    } finally { if(mounted)setState(()=>sending=false); }
+    } catch (e) {\n      if (mounted) {\n        final msg = e.toString().contains('INSUFFICIENT_COINS') ? 'رصيدك غير كافٍ. تكلفة الرسالة 200 كوين 🪙' : 'تعذر إرسال الرسالة';\n        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));\n      }\n    } finally { if(mounted)setState(()=>sending=false); }
   }
 
   @override void dispose(){controller.dispose();scroll.dispose();super.dispose();}
@@ -65,7 +65,7 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
             SafeArea(top:false,child:Padding(
               padding:const EdgeInsets.fromLTRB(10,6,10,10),
               child:Row(children:[
-                Expanded(child:TextField(controller:controller,maxLength:1000,onSubmitted:(_)=>send(),style:const TextStyle(color:Colors.white),decoration:InputDecoration(hintText:'اكتب رسالتك...',counterText:'',filled:true,fillColor:publicChatCard,border:OutlineInputBorder(borderRadius:BorderRadius.circular(24),borderSide:BorderSide.none)))),
+                Expanded(child:TextField(controller:controller,maxLength:1000,onSubmitted:(_)=>send(),style:const TextStyle(color:Colors.white),decoration:InputDecoration(hintText:'اكتب رسالتك... (200 🪙)',counterText:'',filled:true,fillColor:publicChatCard,border:OutlineInputBorder(borderRadius:BorderRadius.circular(24),borderSide:BorderSide.none)))),
                 const SizedBox(width:8),
                 IconButton(onPressed:sending?null:send,style:IconButton.styleFrom(backgroundColor:publicChatGold,foregroundColor:Colors.black),icon:const Icon(Icons.send)),
               ]),
