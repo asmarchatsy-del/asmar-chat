@@ -17,6 +17,7 @@ import 'profile_badges.dart';
 import 'gift_banner.dart';
 import 'global_chat.dart';
 import 'messages.dart';
+import 'rocket_levels.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
