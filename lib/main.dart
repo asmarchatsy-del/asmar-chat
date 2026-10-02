@@ -138,39 +138,230 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
   @override State<LoginPage> createState() => _LoginPageState();
 }
+
+enum _AuthMode { login, create, idLogin }
+
 class _LoginPageState extends State<LoginPage> {
+  _AuthMode mode = _AuthMode.login;
   final email = TextEditingController();
   final password = TextEditingController();
+  final publicId = TextEditingController();
   bool loading = false;
   String? error;
-  Future<void> _submit() async {
-    final e=email.text.trim(), p=password.text;
-    if(e.isEmpty || p.isEmpty){setState(()=>error='أدخل البريد وكلمة المرور');return;}
-    setState(()=>loading=true);
+
+  Future<void> _loginWithEmail() async {
+    final e = email.text.trim();
+    final p = password.text;
+    if (e.isEmpty || p.isEmpty) {
+      setState(() => error = 'أدخل البريد الإلكتروني وكلمة المرور');
+      return;
+    }
+    setState(() { loading = true; error = null; });
     try {
-      await Supabase.instance.client.auth.signInWithPassword(email:e,password:p);
-    } catch (_) {
-      try {
-        await Supabase.instance.client.auth.signUp(email:e,password:p);
-      } catch (e) {
-        if(mounted)setState(()=>error='تعذر تسجيل الدخول: $e');
-      }
-    } finally { if(mounted)setState(()=>loading=false); }
+      await Supabase.instance.client.auth.signInWithPassword(email: e, password: p);
+    } catch (e) {
+      if (mounted) setState(() => error = 'تعذر تسجيل الدخول. تأكد من البيانات.');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
-  @override void dispose(){email.dispose();password.dispose();super.dispose();}
-  @override Widget build(BuildContext context)=>Scaffold(
-    backgroundColor:bg,
-    body:SafeArea(child:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
-      const Text('ASMAR CHAT',style:TextStyle(color:gold,fontSize:32,fontWeight:FontWeight.w900,letterSpacing:2)),
-      const SizedBox(height:8),const Text('تسجيل الدخول',style:TextStyle(color:Colors.white70,fontSize:16)),
-      const SizedBox(height:28),
-      TextField(controller:email,keyboardType:TextInputType.emailAddress,style:const TextStyle(color:Colors.white),decoration:const InputDecoration(labelText:'البريد الإلكتروني')),
-      const SizedBox(height:12),
-      TextField(controller:password,obscureText:true,style:const TextStyle(color:Colors.white),decoration:const InputDecoration(labelText:'كلمة المرور')),
-      if(error!=null)Padding(padding:const EdgeInsets.only(top:12),child:Text(error!,style:const TextStyle(color:Colors.redAccent))),
-      const SizedBox(height:20),
-      SizedBox(width:double.infinity,height:50,child:FilledButton(onPressed:loading?null:_submit,child:loading?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2)):const Text('دخول / إنشاء حساب'))),
-    ])))));
+
+  Future<void> _createAccount() async {
+    final e = email.text.trim();
+    final p = password.text;
+    if (e.isEmpty || p.length < 6) {
+      setState(() => error = 'أدخل بريدًا صحيحًا وكلمة مرور من 6 أحرف على الأقل');
+      return;
+    }
+    setState(() { loading = true; error = null; });
+    try {
+      final response = await Supabase.instance.client.auth.signUp(
+        email: e,
+        password: p,
+      );
+      if (response.session == null && mounted) {
+        setState(() => error = 'تم إنشاء الحساب. تحقق من بريدك الإلكتروني ثم سجّل الدخول.');
+      }
+    } catch (e) {
+      if (mounted) setState(() => error = 'تعذر إنشاء الحساب. جرّب بريدًا آخر.');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _loginWithId() async {
+    final id = publicId.text.trim();
+    final p = password.text;
+    if (id.isEmpty || p.isEmpty) {
+      setState(() => error = 'أدخل الـID وكلمة المرور');
+      return;
+    }
+    setState(() { loading = true; error = null; });
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'login-by-id',
+        body: {'public_id': id, 'password': p},
+      );
+      final data = response.data;
+      if (data is! Map || data['access_token'] == null || data['refresh_token'] == null) {
+        throw Exception('Invalid login response');
+      }
+      await Supabase.instance.client.auth.setSession(
+        data['refresh_token'].toString(),
+        accessToken: data['access_token'].toString(),
+      );
+    } catch (e) {
+      if (mounted) setState(() => error = 'الـID أو كلمة المرور غير صحيحة');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() { loading = true; error = null; });
+    try {
+      final ok = await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'io.supabase.flutter://login-callback/',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+      if (!ok && mounted) {
+        setState(() => error = 'تعذر فتح تسجيل الدخول بواسطة Google');
+      }
+    } catch (e) {
+      if (mounted) setState(() => error = 'تسجيل Google غير مفعّل حاليًا');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    publicId.dispose();
+    super.dispose();
+  }
+
+  Widget _field(TextEditingController controller, String label, {bool password = false, TextInputType? type}) {
+    return TextField(
+      controller: controller,
+      obscureText: password,
+      keyboardType: type,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(password ? Icons.lock_outline : Icons.person_outline, color: gold2),
+      ),
+    );
+  }
+
+  Widget _actionButton({required String label, required IconData icon, required VoidCallback? onPressed}) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: FilledButton.icon(
+        onPressed: loading ? null : onPressed,
+        icon: Icon(icon),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+        style: const ButtonStyle(backgroundColor: WidgetStatePropertyAll(gold2)),
+      ),
+    );
+  }
+
+  Widget _modeButton(String label, IconData icon, _AuthMode value) {
+    final selected = mode == value;
+    return Expanded(
+      child: OutlinedButton.icon(
+        onPressed: loading ? null : () => setState(() { mode = value; error = null; }),
+        icon: Icon(icon, size: 18),
+        label: Text(label, overflow: TextOverflow.ellipsis),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: selected ? Colors.black : gold,
+          backgroundColor: selected ? gold : Colors.transparent,
+          side: const BorderSide(color: gold2),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isId = mode == _AuthMode.idLogin;
+    final isCreate = mode == _AuthMode.create;
+    return Scaffold(
+      backgroundColor: bg,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('ASMAR CHAT', style: TextStyle(color: gold, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  const SizedBox(height: 8),
+                  Text(
+                    isCreate ? 'إنشاء حساب' : isId ? 'تسجيل الدخول بالـID' : 'تسجيل الدخول',
+                    style: const TextStyle(color: Colors.white70, fontSize: 17),
+                  ),
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      _modeButton('تسجيل الدخول', Icons.login, _AuthMode.login),
+                      const SizedBox(width: 6),
+                      _modeButton('إنشاء حساب', Icons.person_add_alt_1, _AuthMode.create),
+                      const SizedBox(width: 6),
+                      _modeButton('دخول بالـID', Icons.badge_outlined, _AuthMode.idLogin),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  if (isId) ...[
+                    _field(publicId, 'ID المستخدم', type: TextInputType.number),
+                    const SizedBox(height: 12),
+                    _field(password, 'كلمة المرور', password: true),
+                    const SizedBox(height: 20),
+                    _actionButton(label: 'تسجيل الدخول بالـID', icon: Icons.badge, onPressed: _loginWithId),
+                  ] else ...[
+                    _field(email, 'البريد الإلكتروني', type: TextInputType.emailAddress),
+                    const SizedBox(height: 12),
+                    _field(password, 'كلمة المرور', password: true),
+                    const SizedBox(height: 20),
+                    _actionButton(
+                      label: isCreate ? 'إنشاء حساب' : 'تسجيل الدخول',
+                      icon: isCreate ? Icons.person_add : Icons.login,
+                      onPressed: isCreate ? _createAccount : _loginWithEmail,
+                    ),
+                    const SizedBox(height: 12),
+                    if (!isCreate) ...[
+                      const Row(children: [
+                        Expanded(child: Divider(color: Color(0xFF4C3019))),
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('أو', style: TextStyle(color: Colors.white54))),
+                        Expanded(child: Divider(color: Color(0xFF4C3019))),
+                      ]),
+                      const SizedBox(height: 12),
+                      _actionButton(label: 'تسجيل الدخول باستخدام Google', icon: Icons.g_mobiledata, onPressed: _loginWithGoogle),
+                    ],
+                  ],
+                  if (error != null) ...[
+                    const SizedBox(height: 14),
+                    Text(error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    isId ? 'استخدم الـID الذي يظهر في ملفك الشخصي مع كلمة المرور.' : 'بعد إنشاء الحساب سيظهر لك ID خاص لتستخدمه عند العودة للتطبيق.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 class Shell extends StatefulWidget {
   const Shell({super.key});
