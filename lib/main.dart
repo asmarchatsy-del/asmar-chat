@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend_config.dart';
@@ -222,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final ok = await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'io.supabase.flutter://login-callback/',
+        redirectTo: kIsWeb ? Uri.base.origin : 'io.supabase.flutter://login-callback/',
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
       if (!ok && mounted) {
