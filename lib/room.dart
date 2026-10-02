@@ -5,6 +5,7 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 import 'country_flag.dart';
 import 'rank_frame.dart';
 import 'gifts.dart';
+import 'profile_badges.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -80,7 +81,7 @@ class _RoomState extends State<Room> {
   Future<void> _loadMessages() async {
     final rows = await Supabase.instance.client.from('room_messages').select('id,user_id,message,created_at').eq('room_id', widget.roomId).order('created_at');
     final list=List<Map<String,dynamic>>.from(rows); final ids=list.map((m)=>m['user_id'].toString()).toSet().toList();
-    if(ids.isNotEmpty){final ps=await Supabase.instance.client.from('profiles').select('id,username,role,country_code,vip_level,avatar_url,avatar_is_animated').inFilter('id',ids); profiles.addEntries(List<Map<String,dynamic>>.from(ps).map((p)=>MapEntry(p['id'].toString(),p)));}
+    if(ids.isNotEmpty){final ps=await Supabase.instance.client.from('profiles').select('id,username,role,country_code,vip_level,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified').inFilter('id',ids); profiles.addEntries(List<Map<String,dynamic>>.from(ps).map((p)=>MapEntry(p['id'].toString(),p)));}
     if (mounted) setState(() => messages..clear()..addAll(list));
   }
 
@@ -306,7 +307,7 @@ class _RoomState extends State<Room> {
           ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children:[
-            Row(children:[CountryFlag(code: profile?['country_code']?.toString(),size:18),const SizedBox(width:5),Text(profile?['username']?.toString()??'مستخدم',style:const TextStyle(color:gold,fontSize:11,fontWeight:FontWeight.w800)), if((profile?['vip_level']?.toString()??'').isNotEmpty) ...[const SizedBox(width:5),Text(profile!['vip_level'].toString(),style:const TextStyle(color:gold,fontSize:9,fontWeight:FontWeight.w900))]]),
+            Row(children:[CountryFlag(code: profile?['country_code']?.toString(),size:18),const SizedBox(width:5),Text(profile?['username']?.toString()??'مستخدم',style:const TextStyle(color:gold,fontSize:11,fontWeight:FontWeight.w800)),const SizedBox(width:5),ProfileBadges(activityAdmin:profile?['activity_admin_badge']==true,customerService:profile?['customer_service_badge']==true,verified:profile?['is_verified']==true), if((profile?['vip_level']?.toString()??'').isNotEmpty) ...[const SizedBox(width:5),Text(profile!['vip_level'].toString(),style:const TextStyle(color:gold,fontSize:9,fontWeight:FontWeight.w900))]]),
             const SizedBox(height:3), Text(text,
               style: const TextStyle(
                 color: Colors.white,
