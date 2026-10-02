@@ -46,7 +46,8 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
   Future<void> _action(String name) async {
     final client = Supabase.instance.client;
     try {
-      if ((name == 'الوكالات' || name == 'متابعة الوكالات') && ['CEO','SUPER_ADMIN','MANAGER','BD'].contains(role)) { await _showAgencies(); return; }
+      if (name == 'الوكالات' && ['CEO','SUPER_ADMIN','MANAGER','BD'].contains(role)) { await _showAgencies(); return; }
+      if (name == 'متابعة الوكالات' && ['CEO','SUPER_ADMIN','MANAGER','BD','ADMIN'].contains(role)) { await _showCommission(); return; }
       if (name == 'VIP 1 → VIP 6' && role == 'SUPER_ADMIN') {
         final target = await showDialog<String>(
           context: context,
@@ -84,6 +85,42 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         SnackBar(content: Text('تعذر تنفيذ العملية: $e')),
       );
     }
+  }
+
+  Future<void> _showCommission() async {
+    final rows = await Supabase.instance.client.from('agency_commission_ledger')
+      .select('agency_id,source_amount,app_share_amount,work_share_amount,owner_amount,super_admin_amount,manager_amount,bd_amount,admin_amount,created_at')
+      .order('created_at', ascending: false).limit(100);
+    if (!mounted) return;
+    final totals = <String,int>{'source':0,'app':0,'work':0,'owner':0,'super':0,'manager':0,'bd':0,'admin':0};
+    for (final r in rows) {
+      totals['source'] = totals['source']! + ((r['source_amount'] as num?)?.toInt() ?? 0);
+      totals['app'] = totals['app']! + ((r['app_share_amount'] as num?)?.toInt() ?? 0);
+      totals['work'] = totals['work']! + ((r['work_share_amount'] as num?)?.toInt() ?? 0);
+      totals['owner'] = totals['owner']! + ((r['owner_amount'] as num?)?.toInt() ?? 0);
+      totals['super'] = totals['super']! + ((r['super_admin_amount'] as num?)?.toInt() ?? 0);
+      totals['manager'] = totals['manager']! + ((r['manager_amount'] as num?)?.toInt() ?? 0);
+      totals['bd'] = totals['bd']! + ((r['bd_amount'] as num?)?.toInt() ?? 0);
+      totals['admin'] = totals['admin']! + ((r['admin_amount'] as num?)?.toInt() ?? 0);
+    }
+    if (!mounted) return;
+    await showModalBottomSheet(context: context, backgroundColor: _bg, isScrollControlled: true,
+      builder: (ctx) => Directionality(textDirection: TextDirection.rtl,
+        child: SizedBox(height: MediaQuery.of(ctx).size.height*.72,
+          child: ListView(padding: const EdgeInsets.all(16), children: [
+            const Text('دفتر العمولات', style: TextStyle(color:_gold,fontSize:22,fontWeight:FontWeight.w900)),
+            const SizedBox(height:12),
+            _infoCard('إجمالي الحركة', 'المصدر: ${totals['source']} • نسبة التطبيق: ${totals['app']} • نسبة الشغل: ${totals['work']}'),
+            _infoCard('توزيع الشغل', 'Owner: ${totals['owner']} • Super Admin: ${totals['super']} • Manager: ${totals['manager']} • BD: ${totals['bd']} • Admin: ${totals['admin']}'),
+            const SizedBox(height:8),
+            ...rows.map((r) => Card(color:_card, child: ListTile(
+              title: Text('وكالة: ${r['agency_id']}', style: const TextStyle(color:Colors.white)),
+              subtitle: Text('المصدر ${r['source_amount']} | التطبيق ${r['app_share_amount']} | الشغل ${r['work_share_amount']}', style: const TextStyle(color:Colors.white60)),
+            ))),
+          ]),
+        ),
+      ),
+    );
   }
 
   Future<void> _showAgencies() async {
