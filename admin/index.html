@@ -13,8 +13,9 @@
 <div id="app" class="hidden">
 <header><div><b>ASMAR CHAT</b><span>لوحة الإدارة</span></div><button class="ghost" onclick="logout()">تسجيل الخروج</button></header>
 <main><div id="stats" class="grid"></div>
-<nav><button onclick="showTab('store')">🛒 المتجر والأسعار</button><button onclick="showTab('users')">👥 المستخدمون</button><button onclick="showTab('rooms')">🎙️ الغرف</button><button onclick="showTab('wallets')">🪙 المحافظ</button></nav>
-<section id="store" class="tab"><h2>أسعار المتجر</h2><div id="frames" class="cards"></div><h2>حزم الكوينز</h2><div id="packages" class="cards"></div></section>
+<nav><button onclick="showTab('store')">🛒 المتجر والأسعار</button><button onclick="showTab('policy')">📊 سياسة Asmar</button><button onclick="showTab('users')">👥 المستخدمون</button><button onclick="showTab('rooms')">🎙️ الغرف</button><button onclick="showTab('wallets')">🪙 المحافظ</button></nav>
+<section id="store" class="tab"><h2>المتجر والأسعار</h2><p>إدارة الإطارات والدخوليات والـID وفقاعات الدردشة وموجات المايك وVIP وSVIP وحزم الكوينز.</p><div id="storeItems" class="cards"></div></section>
+<section id="policy" class="tab hidden"><h2>سياسة Asmar Chat — المستويات 1 إلى 32</h2><div id="policyTable"></div></section>
 <section id="users" class="tab hidden"><h2>المستخدمون</h2><div id="usersTable"></div></section>
 <section id="rooms" class="tab hidden"><h2>الغرف</h2><div id="roomsTable"></div></section>
 <section id="wallets" class="tab hidden"><h2>المحافظ</h2><div id="walletsTable"></div></section>
