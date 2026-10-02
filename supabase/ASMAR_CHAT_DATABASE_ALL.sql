@@ -1291,3 +1291,314 @@ exception when duplicate_object then
   null;
 end $$;
 
+
+-- ===== 019_rocket_levels.sql =====
+create table if not exists public.rocket_levels (
+  id integer primary key check (id between 1 and 5),
+  name text not null,
+  bg1 text not null,
+  bg2 text not null,
+  line text not null,
+  coins bigint not null default 0 check (coins >= 0),
+  is_active boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+alter table public.rocket_levels enable row level security;
+drop policy if exists "rocket_levels_select_active" on public.rocket_levels;
+create policy "rocket_levels_select_active" on public.rocket_levels for select to authenticated using (is_active = true);
+drop policy if exists "rocket_levels_admin_update" on public.rocket_levels;
+create policy "rocket_levels_admin_update" on public.rocket_levels for update to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+insert into public.rocket_levels(id,name,bg1,bg2,line,coins) values
+(1,'LV1 عادي','#2A1E0F','#1A1109','#FFD700',1000),
+(2,'LV2 زمرد','#0F2A1E','#05140A','#00FF88',3000),
+(3,'LV3 ياقوت ازرق','#0F1E4A','#050A2A','#3A7BFF',5000),
+(4,'LV4 روبي احمر','#4A0F0F','#2A0505','#FF2A2A',7000),
+(5,'LV5 ملكي بنفسجي','#3A0F4A','#1A052A','#AA2AFF',10000)
+on conflict(id) do update set name=excluded.name,bg1=excluded.bg1,bg2=excluded.bg2,line=excluded.line,coins=excluded.coins,updated_at=now();
+
+
+-- ===== 020_admin_dashboard_access.sql =====
+-- Fix external admin dashboard access for authenticated admin accounts.
+-- Safe: grants table access to authenticated users; RLS remains the authorization boundary.
+grant select on public.profiles to authenticated;
+grant select on public.wallets to authenticated;
+grant select on public.rooms to authenticated;
+grant select on public.store_items to authenticated;
+grant select on public.asmar_policy to authenticated;
+grant select, insert, update on public.app_promotions to authenticated;
+grant select, update on public.gifts to authenticated;
+grant select, update on public.rocket_levels to authenticated;
+
+drop policy if exists "profiles_select_admin" on public.profiles;
+create policy "profiles_select_admin"
+on public.profiles for select
+to authenticated
+using (
+  id = auth.uid()
+  or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])
+);
+
+drop policy if exists "store_items_admin" on public.store_items;
+create policy "store_items_admin"
+on public.store_items for update
+to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+drop policy if exists "promotions_admin_insert" on public.app_promotions;
+create policy "promotions_admin_insert"
+on public.app_promotions for insert
+to authenticated
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+drop policy if exists "promotions_admin_update" on public.app_promotions;
+create policy "promotions_admin_update"
+on public.app_promotions for update
+to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+
+-- ===== 020_admin_profiles_access.sql =====
+-- Allow the authenticated admin dashboard to read profiles safely.
+-- The dashboard still checks that the current user's profile role is CEO/SUPER_ADMIN.
+
+GRANT SELECT ON TABLE public.profiles TO authenticated;
+
+DROP POLICY IF EXISTS "admin_profiles_select" ON public.profiles;
+CREATE POLICY "admin_profiles_select"
+ON public.profiles
+FOR SELECT
+TO authenticated
+USING (
+  id = (select auth.uid())
+  OR public.has_role(ARRAY['CEO','SUPER_ADMIN']::public.app_role[])
+);
+
+
+-- ===== 021_admin_dashboard_hardening.sql =====
+-- Admin dashboard hardening: complete privileged reads and actions.
+-- Safe to run after the existing migrations.
+
+grant select on public.profiles, public.wallets, public.rooms, public.frame_items,
+  public.coin_packages, public.vip_levels, public.gifts, public.rocket_levels,
+  public.asmar_policy, public.app_promotions to authenticated;
+
+drop policy if exists "rooms_select_privileged" on public.rooms;
+create policy "rooms_select_privileged"
+on public.rooms for select to authenticated
+using (
+  is_active = true
+  or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])
+);
+
+drop policy if exists "gifts_select_privileged" on public.gifts;
+create policy "gifts_select_privileged"
+on public.gifts for select to authenticated
+using (
+  is_active = true
+  or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])
+);
+
+drop policy if exists "promotions_admin_select_all" on public.app_promotions;
+create policy "promotions_admin_select_all"
+on public.app_promotions for select to authenticated
+using (
+  is_active = true
+  or public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[])
+);
+
+create or replace function public.admin_set_user_active(
+  p_user_id uuid,
+  p_active boolean
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null or not public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]) then
+    raise exception 'not authorized';
+  end if;
+  if p_user_id = auth.uid() and not p_active then
+    raise exception 'cannot deactivate current admin';
+  end if;
+  update public.profiles
+    set is_active = p_active, updated_at = now()
+  where id = p_user_id;
+  if not found then raise exception 'user not found'; end if;
+  return p_active;
+end;
+$$;
+
+create or replace function public.admin_set_room_active(
+  p_room_id uuid,
+  p_active boolean
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null or not public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]) then
+    raise exception 'not authorized';
+  end if;
+  update public.rooms set is_active = p_active where id = p_room_id;
+  if not found then raise exception 'room not found'; end if;
+  return p_active;
+end;
+$$;
+
+create or replace function public.admin_adjust_wallet(
+  p_user_id uuid,
+  p_amount bigint
+)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare new_balance bigint;
+begin
+  if auth.uid() is null or not public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]) then
+    raise exception 'not authorized';
+  end if;
+  if p_amount = 0 then raise exception 'amount cannot be zero'; end if;
+
+  insert into public.wallets(user_id,balance)
+  values (p_user_id,0)
+  on conflict(user_id) do nothing;
+
+  update public.wallets
+    set balance = balance + p_amount, updated_at = now()
+  where user_id = p_user_id
+    and balance + p_amount >= 0
+  returning balance into new_balance;
+
+  if new_balance is null then raise exception 'insufficient balance'; end if;
+
+  insert into public.coin_transactions(from_user_id,to_user_id,amount,reason)
+  values (
+    case when p_amount < 0 then auth.uid() else null end,
+    case when p_amount > 0 then p_user_id else null end,
+    abs(p_amount),
+    'admin_adjustment'
+  );
+  return new_balance;
+end;
+$$;
+
+revoke all on function public.admin_set_user_active(uuid,boolean) from public;
+grant execute on function public.admin_set_user_active(uuid,boolean) to authenticated;
+revoke all on function public.admin_set_room_active(uuid,boolean) from public;
+grant execute on function public.admin_set_room_active(uuid,boolean) to authenticated;
+revoke all on function public.admin_adjust_wallet(uuid,bigint) from public;
+grant execute on function public.admin_adjust_wallet(uuid,bigint) to authenticated;
+
+
+-- ===== 022_admin_dashboard_runtime.sql =====
+-- Admin dashboard runtime permissions and owner wallet bootstrap.
+-- Run after 021_admin_dashboard_hardening.sql.
+
+-- Admins can read all profiles and edit admin-controlled profile flags.
+drop policy if exists "profiles_admin_select" on public.profiles;
+create policy "profiles_admin_select"
+on public.profiles for select to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+drop policy if exists "profiles_admin_update" on public.profiles;
+create policy "profiles_admin_update"
+on public.profiles for update to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+-- Admins may manage catalog values from the dashboard.
+drop policy if exists "frame_items_admin_manage" on public.frame_items;
+create policy "frame_items_admin_manage"
+on public.frame_items for all to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+drop policy if exists "coin_packages_admin_manage" on public.coin_packages;
+create policy "coin_packages_admin_manage"
+on public.coin_packages for all to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+drop policy if exists "vip_levels_admin_manage" on public.vip_levels;
+create policy "vip_levels_admin_manage"
+on public.vip_levels for all to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+drop policy if exists "rocket_levels_admin_manage" on public.rocket_levels;
+create policy "rocket_levels_admin_manage"
+on public.rocket_levels for all to authenticated
+using (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]))
+with check (public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+-- Gift editor used by the dashboard.
+create or replace function public.admin_update_gift(
+  p_id uuid,
+  p_name text,
+  p_emoji text,
+  p_price bigint,
+  p_category text,
+  p_is_active boolean,
+  p_banner_enabled boolean,
+  p_banner_min_price bigint,
+  p_luck_min_win bigint
+)
+returns public.gifts
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare result_gift public.gifts;
+begin
+  if auth.uid() is null or not public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]) then
+    raise exception 'not authorized';
+  end if;
+  if p_price < 1 or p_banner_min_price < 0 or p_luck_min_win < 0 then
+    raise exception 'invalid gift values';
+  end if;
+
+  update public.gifts
+  set name=p_name,
+      emoji=p_emoji,
+      price=p_price,
+      category=p_category,
+      is_active=p_is_active,
+      banner_enabled=p_banner_enabled,
+      banner_min_price=p_banner_min_price,
+      luck_min_win=p_luck_min_win
+  where id=p_id
+  returning * into result_gift;
+
+  if result_gift.id is null then raise exception 'gift not found'; end if;
+  return result_gift;
+end;
+$$;
+
+revoke all on function public.admin_update_gift(uuid,text,text,bigint,text,boolean,boolean,bigint,bigint) from public;
+grant execute on function public.admin_update_gift(uuid,text,text,bigint,text,boolean,boolean,bigint,bigint) to authenticated;
+
+-- Keep the owner's CEO wallet at the requested 10 billion starting balance.
+-- Only initializes/raises CEO wallet balances; it never reduces an existing balance.
+insert into public.wallets(user_id,balance)
+select p.id, 10000000000
+from public.profiles p
+where p.role = 'CEO'::public.app_role
+  and not exists (select 1 from public.wallets w where w.user_id=p.id);
+
+update public.wallets w
+set balance = 10000000000, updated_at = now()
+from public.profiles p
+where p.id=w.user_id
+  and p.role = 'CEO'::public.app_role
+  and w.balance < 10000000000;
+
