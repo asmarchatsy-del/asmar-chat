@@ -13,6 +13,7 @@ import 'friends.dart';
 import 'private_conversations.dart';
 import 'avatar_picker.dart';
 import 'profile_badges.dart';
+import 'gift_banner.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -174,7 +175,7 @@ class _ShellState extends State<Shell> {
   int index=0;
   final pages=<Widget>[const Home(), const Discover(), const Wallet(), const Profile()];
   @override Widget build(BuildContext context)=>Scaffold(
-    body:IndexedStack(index:index,children:pages),
+    body:GlobalGiftBanner(child:IndexedStack(index:index,children:pages)),
     bottomNavigationBar:NavigationBar(selectedIndex:index,onDestinationSelected:(i)=>setState(()=>index=i),destinations:const[
       NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'الرئيسية'),
       NavigationDestination(icon:Icon(Icons.explore_outlined),selectedIcon:Icon(Icons.explore),label:'اكتشف'),
