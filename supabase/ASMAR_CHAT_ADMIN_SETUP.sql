@@ -222,7 +222,7 @@ create or replace function public.get_my_host_earnings() returns table(total_sou
 language sql security definer set search_path=public as $$
  select coalesce(sum(source_amount),0)::bigint,coalesce(sum(host_amount),0)::bigint,count(*)::bigint
  from public.host_earnings where host_id=auth.uid();
-$$;
+$;
 grant execute on function public.get_my_host_earnings() to authenticated;
 
 
