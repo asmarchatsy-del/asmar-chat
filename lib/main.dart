@@ -32,6 +32,16 @@ Future<void> main() async {
     url: BackendConfig.supabaseUrl,
     publishableKey: BackendConfig.supabasePublishableKey,
   );
+
+  if (kIsWeb && Supabase.instance.client.auth.currentSession == null) {
+    final code = Uri.base.queryParameters['code'];
+    if (code != null && code.isNotEmpty) {
+      try {
+        await Supabase.instance.client.auth.exchangeCodeForSession(code);
+      } catch (_) {}
+    }
+  }
+
   runApp(const AsmarApp());
 }
 
