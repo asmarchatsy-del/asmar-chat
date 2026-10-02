@@ -8,6 +8,7 @@ import 'agent_recharge.dart';
 import 'rank_frame.dart';
 import 'vip.dart';
 import 'country_flag.dart';
+import 'notifications.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -412,6 +413,20 @@ class _ProfileState extends State<Profile> {
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1,
                     ),
+                  ),
+                  StreamBuilder<List<Map<String,dynamic>>>(
+                    stream: Supabase.instance.client.from('notifications').stream(primaryKey: ['id']),
+                    builder: (context, snap) {
+                      final uid=Supabase.instance.client.auth.currentUser?.id;
+                      final unread=(snap.data??[]).where((x)=>x['user_id']==uid && x['is_read']!=true).length;
+                      return Stack(children:[
+                        SizedBox(width:double.infinity,child:OutlinedButton.icon(
+                          onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const NotificationsPage())),
+                          icon:const Icon(Icons.notifications,color:gold),label:const Text('الإشعارات'),
+                        )),
+                        if(unread>0) Positioned(left:12,top:6,child:Container(padding:const EdgeInsets.symmetric(horizontal:7,vertical:3),decoration:const BoxDecoration(color:Colors.red,shape:BoxShape.circle),child:Text(unread>99?'99+':unread.toString(),style:const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.w900)))),
+                      ]);
+                    },
                   ),
                   const SizedBox(height: 28),
                   const Text(
