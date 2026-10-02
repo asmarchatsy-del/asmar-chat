@@ -5,6 +5,7 @@ import 'admin_panel.dart';
 import 'room.dart';
 import 'store.dart';
 import 'agent_recharge.dart';
+import 'rank_frame.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -314,48 +315,126 @@ class Wallet extends StatelessWidget {
   }
 }
 
-class Profile extends StatelessWidget {
+class Profile extends StatefulWidget {
   const Profile({super.key});
+
+  @override
+  State<Profile> createState() => _ProfileState();
+}
+
+class _ProfileState extends State<Profile> {
+  late Future<Map<String, dynamic>> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = _loadProfile();
+  }
+
+  Future<Map<String, dynamic>> _loadProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return {'role': 'USER', 'username': 'مستخدم'};
+    try {
+      final row = await Supabase.instance.client
+          .from('profiles')
+          .select('username,role')
+          .eq('id', user.id)
+          .maybeSingle();
+      return Map<String, dynamic>.from(
+        row ?? {'role': 'USER', 'username': user.email ?? 'مستخدم'},
+      );
+    } catch (_) {
+      return {'role': 'USER', 'username': user.email ?? 'مستخدم'};
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('حسابي')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'الملف الشخصي',
-              style: TextStyle(color: gold, fontSize: 28, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminPanel()),
-                );
-              },
-              icon: const Icon(Icons.admin_panel_settings),
-              label: const Text('لوحة الإدارة'),
-              style: const ButtonStyle(
-                backgroundColor: WidgetStatePropertyAll(gold2),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          final profile = snapshot.data ?? const <String, dynamic>{};
+          final role = profile['role']?.toString() ?? 'USER';
+          final username = profile['username']?.toString() ?? 'مستخدم';
+
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  if (snapshot.connectionState != ConnectionState.done)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 14),
+                      child: CircularProgressIndicator(color: gold),
+                    ),
+                  RankFrame(
+                    role: role,
+                    size: 88,
+                    child: const CircleAvatar(
+                      backgroundColor: Color(0xFF120A06),
+                      child: Icon(Icons.person, color: gold, size: 42),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    username,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    role == 'AGENT' ? 'COIN SELLER' : role,
+                    style: const TextStyle(
+                      color: gold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  const Text(
+                    'الملف الشخصي',
+                    style: TextStyle(
+                      color: gold,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AdminPanel()),
+                      );
+                    },
+                    icon: const Icon(Icons.admin_panel_settings),
+                    label: const Text('لوحة الإدارة'),
+                    style: const ButtonStyle(
+                      backgroundColor: WidgetStatePropertyAll(gold2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AgentRechargePage()),
+                      );
+                    },
+                    icon: const Icon(Icons.currency_exchange),
+                    label: const Text('وكيل الشحن'),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AgentRechargePage()),
-                );
-              },
-              icon: const Icon(Icons.currency_exchange),
-              label: const Text('وكيل الشحن'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
