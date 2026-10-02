@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_panel.dart';
 
 const _gold = Color(0xFFFFD36A);
@@ -43,10 +44,45 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
   }
 
   Future<void> _action(String name) async {
-    final msg = role == 'SUPER_ADMIN' && name == 'VIP 1 → VIP 6'
-        ? 'منح VIP متاح حتى VIP 6 فقط — سيتم تنفيذ العملية عبر صلاحيات قاعدة البيانات.'
-        : '$name — سيتم تنفيذ العملية ضمن صلاحيات $role.';
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    final client = Supabase.instance.client;
+    try {
+      if (name == 'VIP 1 → VIP 6' && role == 'SUPER_ADMIN') {
+        final target = await showDialog<String>(
+          context: context,
+          builder: (ctx) {
+            final id = TextEditingController();
+            final vip = TextEditingController(text: 'VIP6');
+            return AlertDialog(
+              title: const Text('منح VIP'),
+              content: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(controller: id, decoration: const InputDecoration(labelText: 'ID المستخدم (UUID)')),
+                TextField(controller: vip, decoration: const InputDecoration(labelText: 'VIP 1 إلى VIP 6')),
+              ]),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+                FilledButton(onPressed: () => Navigator.pop(ctx, id.text.trim() + '|' + vip.text.trim()), child: const Text('منح')),
+              ],
+            );
+          },
+        );
+        if (target == null) return;
+        final parts = target.split('|');
+        if (parts.length != 2) throw Exception('بيانات غير صحيحة');
+        await client.rpc('admin_grant_vip', params: {
+          'p_user_id': parts[0],
+          'p_vip_level': parts[1].toUpperCase(),
+        });
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم منح VIP بنجاح')));
+        return;
+      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$name — صلاحية $role جاهزة للربط بالعملية الخاصة بها.')),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر تنفيذ العملية: $e')),
+      );
+    }
   }
 
   @override
