@@ -39,8 +39,9 @@ class _AdminPanelState extends State<AdminPanel> {
     if (user == null) return;
     try {
       final profile = await client.from('profiles').select('id,display_name,username,role,is_active').eq('id', user.id).maybeSingle();
-      final role = profile?['role'] as String? ?? 'USER';
-      if (!['CEO', 'SUPER_ADMIN', 'MANAGER', 'ADMIN'].contains(role)) return;
+      final role = (profile?['role'] as String? ?? 'USER').toUpperCase();
+      // Owner dashboard is strictly CEO-only. Other roles use their own RoleCenter.
+      if (role != 'CEO') return;
 
       final profiles = await client.from('profiles').select('id,display_name,username,role,is_active').eq('is_active', true).order('created_at', ascending: false);
       final wallets = await client.from('wallets').select('user_id,balance');
@@ -158,7 +159,7 @@ class _AdminPanelState extends State<AdminPanel> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'ASMAR CHAT',
+                    'CHAT • OWNER',
                     style: TextStyle(
                       color: gold,
                       fontSize: 22,
@@ -167,7 +168,7 @@ class _AdminPanelState extends State<AdminPanel> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'لوحة تحكم الإدارة',
+                    'لوحة Chat الرئيسية • تحكم المالك',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
@@ -270,7 +271,7 @@ class _AdminPanelState extends State<AdminPanel> {
             Expanded(
               child: _statCard(
                 'المستخدمون',
-                '128',
+                '${users.length}',
                 Icons.people,
               ),
             ),
@@ -290,7 +291,7 @@ class _AdminPanelState extends State<AdminPanel> {
             Expanded(
               child: _statCard(
                 'المضيفون',
-                '32',
+                '${hosts.length}',
                 Icons.mic,
               ),
             ),
@@ -298,7 +299,7 @@ class _AdminPanelState extends State<AdminPanel> {
             Expanded(
               child: _statCard(
                 'VIP',
-                '17',
+                '${users.where((u) => ((u['vip'] ?? 0) as num) > 0).length}',
                 Icons.workspace_premium,
               ),
             ),
