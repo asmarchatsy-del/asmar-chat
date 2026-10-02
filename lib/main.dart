@@ -6,6 +6,7 @@ import 'room.dart';
 import 'store.dart';
 import 'agent_recharge.dart';
 import 'rank_frame.dart';
+import 'country_flag.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -337,7 +338,7 @@ class _ProfileState extends State<Profile> {
     try {
       final row = await Supabase.instance.client
           .from('profiles')
-          .select('username,role')
+          .select('username,role,country_code')
           .eq('id', user.id)
           .maybeSingle();
       return Map<String, dynamic>.from(
@@ -358,6 +359,7 @@ class _ProfileState extends State<Profile> {
           final profile = snapshot.data ?? const <String, dynamic>{};
           final role = profile['role']?.toString() ?? 'USER';
           final username = profile['username']?.toString() ?? 'مستخدم';
+          final country = profile['country_code']?.toString();
 
           return Center(
             child: SingleChildScrollView(
@@ -378,13 +380,25 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    CountryFlag(code: country, size: 22),
+                    const SizedBox(width: 7),
+                    Text(
                     username,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
+                    ),
+                  ]),
+                  const SizedBox(height: 5),
+                  DropdownButton<String>(
+                    value: countryNames.containsKey(country) ? country : null,
+                    hint: const Text('اختر الدولة', style: TextStyle(color: Colors.white54)),
+                    dropdownColor: card,
+                    items: countryNames.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[CountryFlag(code:e.key,size:20),const SizedBox(width:8),Text(e.value)]))).toList(),
+                    onChanged: (v) async { if(v==null) return; final user=Supabase.instance.client.auth.currentUser; if(user==null)return; await Supabase.instance.client.from('profiles').update({'country_code':v}).eq('id',user.id); if(mounted)setState(()=>_profileFuture=_loadProfile()); },
                   ),
                   const SizedBox(height: 5),
                   Text(
