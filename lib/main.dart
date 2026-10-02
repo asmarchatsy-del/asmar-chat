@@ -172,7 +172,7 @@ class Shell extends StatefulWidget {
 }
 class _ShellState extends State<Shell> {
   int index=0;
-  final pages=const [Home(),Discover(),Wallet(),Profile()];
+  final pages=<Widget>[const Home(), const Discover(), const Wallet(), const Profile()];
   @override Widget build(BuildContext context)=>Scaffold(
     body:IndexedStack(index:index,children:pages),
     bottomNavigationBar:NavigationBar(selectedIndex:index,onDestinationSelected:(i)=>setState(()=>index=i),destinations:const[
