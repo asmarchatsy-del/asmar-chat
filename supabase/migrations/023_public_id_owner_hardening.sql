@@ -135,3 +135,37 @@ $$;
 
 revoke all on function public.admin_set_user_role(uuid,public.app_role) from public, anon;
 grant execute on function public.admin_set_user_role(uuid,public.app_role) to authenticated;
+
+-- Keep SECURITY DEFINER RPCs off the anonymous/public API surface.
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid, n.nspname, p.proname,
+           pg_get_function_identity_arguments(p.oid) as args
+    from pg_proc p
+    join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public' and p.prosecdef
+  loop
+    execute format('revoke execute on function %I.%I(%s) from anon, public',
+      r.nspname, r.proname, r.args);
+    if r.proname <> 'rls_auto_enable' then
+      execute format('grant execute on function %I.%I(%s) to authenticated',
+        r.nspname, r.proname, r.args);
+    end if;
+  end loop;
+end $$;
+
+-- Cover foreign keys used by joins, RLS checks, and dashboard lookups.
+create index if not exists agencies_bd_id_idx on public.agencies(bd_id);
+create index if not exists agencies_manager_id_idx on public.agencies(manager_id);
+create index if not exists agencies_opened_by_idx on public.agencies(opened_by);
+create index if not exists agencies_owner_id_idx on public.agencies(owner_id);
+create index if not exists agencies_super_admin_id_idx on public.agencies(super_admin_id);
+create index if not exists agency_commission_ledger_agency_id_idx on public.agency_commission_ledger(agency_id);
+create index if not exists agent_recharges_agent_id_idx on public.agent_recharges(agent_id);
+create index if not exists agent_recharges_recipient_id_idx on public.agent_recharges(recipient_id);
+create index if not exists coin_transactions_from_user_id_idx on public.coin_transactions(from_user_id);
+create index if not exists coin_transactions_to_user_id_idx on public.coin_transactions(to_user_id);
+create index if not exists host_earnings_agency_id_idx on public.host_earnings(agency_id);
+create index if not exists rooms_owner_id_idx on public.rooms(owner_id);
