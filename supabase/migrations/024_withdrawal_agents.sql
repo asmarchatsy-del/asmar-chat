@@ -3,10 +3,17 @@ create table if not exists public.recharge_agents (id uuid primary key default g
 create table if not exists public.withdrawal_requests (id uuid primary key default gen_random_uuid(),user_id uuid not null references public.profiles(id) on delete cascade,method_id uuid references public.withdrawal_methods(id) on delete set null,amount bigint not null check(amount>0),fee numeric not null default 0 check(fee>=0),details jsonb not null default '{}'::jsonb,status text not null default 'pending' check(status in('pending','approved','paid','rejected')),admin_note text,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
 alter table public.withdrawal_methods enable row level security;alter table public.recharge_agents enable row level security;alter table public.withdrawal_requests enable row level security;
 grant select on public.withdrawal_methods to anon,authenticated;grant select on public.recharge_agents to authenticated;grant select,insert on public.withdrawal_requests to authenticated;
+drop policy if exists "withdrawal_methods_public_read" on public.withdrawal_methods;
 create policy "withdrawal_methods_public_read" on public.withdrawal_methods for select to anon,authenticated using(is_active=true or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+drop policy if exists "withdrawal_methods_admin_manage" on public.withdrawal_methods;
 create policy "withdrawal_methods_admin_manage" on public.withdrawal_methods for all to authenticated using(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])) with check(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+drop policy if exists "recharge_agents_public_read" on public.recharge_agents;
 create policy "recharge_agents_public_read" on public.recharge_agents for select to authenticated using(is_active=true or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+drop policy if exists "recharge_agents_admin_manage" on public.recharge_agents;
 create policy "recharge_agents_admin_manage" on public.recharge_agents for all to authenticated using(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])) with check(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+drop policy if exists "withdrawal_requests_own_read" on public.withdrawal_requests;
 create policy "withdrawal_requests_own_read" on public.withdrawal_requests for select to authenticated using(user_id=auth.uid() or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+drop policy if exists "withdrawal_requests_own_insert" on public.withdrawal_requests;
 create policy "withdrawal_requests_own_insert" on public.withdrawal_requests for insert to authenticated with check(user_id=auth.uid());
+drop policy if exists "withdrawal_requests_admin_update" on public.withdrawal_requests;
 create policy "withdrawal_requests_admin_update" on public.withdrawal_requests for update to authenticated using(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[])) with check(public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
