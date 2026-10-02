@@ -14,6 +14,7 @@ import 'private_conversations.dart';
 import 'avatar_picker.dart';
 import 'profile_badges.dart';
 import 'gift_banner.dart';
+import 'global_chat.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
