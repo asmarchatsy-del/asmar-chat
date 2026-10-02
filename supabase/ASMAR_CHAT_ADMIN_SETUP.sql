@@ -299,3 +299,13 @@ end$$;
 
 revoke execute on function public.rls_auto_enable() from authenticated;
 revoke execute on function public.transfer_coins(uuid,uuid,bigint) from authenticated;
+
+-- CEO-only role management
+create or replace function public.admin_set_user_role(p_user_id uuid,p_role public.app_role)
+returns boolean language plpgsql security definer set search_path=public as $$
+begin
+  if not public.has_role(array['CEO']::public.app_role[]) then raise exception 'not authorized'; end if;
+  if p_user_id=auth.uid() and p_role<>'CEO' then raise exception 'owner cannot demote self'; end if;
+  update public.profiles set role=p_role,updated_at=now() where id=p_user_id;
+  return found;
+end$$;
