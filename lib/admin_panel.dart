@@ -319,17 +319,17 @@ class _AdminPanelState extends State<AdminPanel> {
         _action(
           'إضافة غرفة',
           Icons.add_home_work,
-          () => _message('إضافة الغرف مرتبطة بقاعدة البيانات — جاهزة للتنفيذ'),
+          _addRoom,
         ),
         _action(
           'إدارة المضيفين',
           Icons.mic_external_on,
-          () => _message('إدارة المضيفين مرتبطة بالبيانات الحية'),
+          _manageHosts,
         ),
         _action(
           'إدارة الوكالات',
           Icons.business,
-          () => _message('إدارة الوكالات مرتبطة بالبيانات الحية'),
+          _manageAgencies,
         ),
       ],
     );
@@ -515,6 +515,20 @@ class _AdminPanelState extends State<AdminPanel> {
         ),
       ),
     );
+  }
+
+  Future<void> _addRoom() async {
+    final name=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+      backgroundColor:card,title:const Text('إضافة غرفة',style:TextStyle(color:gold,fontWeight:FontWeight.w900)),
+      content:TextField(controller:name,decoration:const InputDecoration(labelText:'اسم الغرفة')),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('إضافة'))],
+    ));
+    if(ok!=true||name.text.trim().isEmpty)return;
+    try{
+      await Supabase.instance.client.from('rooms').insert({'name':name.text.trim(),'owner_id':Supabase.instance.client.auth.currentUser!.id,'is_active':true});
+      await _loadData(); _message('تمت إضافة الغرفة');
+    }catch(e){_message('فشل إضافة الغرفة: $e');}
   }
 
   void _manageRoles() {
