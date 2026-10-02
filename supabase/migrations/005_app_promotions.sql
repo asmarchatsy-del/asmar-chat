@@ -33,7 +33,7 @@ drop policy if exists "admins_manage_promotions" on public.app_promotions;
 create policy "admins_manage_promotions"
 on public.app_promotions
 for all to authenticated
-using (public.has_role(auth.uid(), array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]))
+using (public.has_role(array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]))
 with check (public.has_role(auth.uid(), array['CEO','SUPER_ADMIN','MANAGER']::public.app_role[]));
 
 insert into public.app_promotions
