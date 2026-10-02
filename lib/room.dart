@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
@@ -30,10 +31,14 @@ class _RoomState extends State<Room> {
   bool microphoneOn = false;
   bool joiningVoice = false;
   Map<String, dynamic>? giftOverlay;
+  Map<String, dynamic>? roomInfo;
+  final picker = ImagePicker();
+  bool changingBackground = false;
 
   @override
   void initState() {
     super.initState();
+    _loadRoomInfo();
     _loadMessages();
     messageSub = Supabase.instance.client
         .from('room_messages')
@@ -54,6 +59,89 @@ class _RoomState extends State<Room> {
         .eq('room_id', widget.roomId)
         .order('created_at')
         .listen(_handleGifts);
+  }
+
+  Future<void> _loadRoomInfo() async {
+    try {
+      final row = await Supabase.instance.client
+          .from('rooms')
+          .select('id,name,owner_id,room_background_url,room_background_expires_at,seats_background_url,seats_background_expires_at')
+          .eq('id', widget.roomId)
+          .maybeSingle();
+      if (mounted) setState(() => roomInfo = row == null ? null : Map<String, dynamic>.from(row));
+    } catch (_) {}
+  }
+
+  bool _active(String? expires) {
+    if (expires == null || expires.isEmpty) return false;
+    return DateTime.tryParse(expires)?.isAfter(DateTime.now()) ?? false;
+  }
+
+  bool get _canManageBackground {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final owner = roomInfo?['owner_id']?.toString();
+    return uid != null && owner == uid;
+  }
+
+  Future<void> _changeBackground(String type) async {
+    if (changingBackground || !_canManageBackground) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: card,
+      builder: (_) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.calendar_view_week, color: gold),
+            title: const Text('أسبوع • 10,000 كوين'),
+            onTap: () => Navigator.pop(context, '7'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.calendar_month, color: gold),
+            title: const Text('شهر • 35,000 كوين'),
+            onTap: () => Navigator.pop(context, '30'),
+          ),
+        ]),
+      ),
+    );
+    if (choice == null || !mounted) return;
+
+    final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (image == null || !mounted) return;
+
+    setState(() => changingBackground = true);
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception('not authenticated');
+      final ext = image.name.split('.').last.toLowerCase();
+      final path = '${user.id}/${widget.roomId}/${type}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final bytes = await image.readAsBytes();
+      await Supabase.instance.client.storage.from('room-backgrounds').uploadBinary(
+        path,
+        bytes,
+        fileOptions: const FileOptions(upsert: false),
+      );
+      final url = Supabase.instance.client.storage.from('room-backgrounds').getPublicUrl(path);
+      await Supabase.instance.client.rpc('purchase_room_background', params: {
+        'p_room_id': widget.roomId,
+        'p_background_type': type,
+        'p_background_url': url,
+        'p_duration_days': int.parse(choice),
+      });
+      await _loadRoomInfo();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(type == 'room' ? 'تم تغيير خلفية الروم' : 'تم تغيير خلفية المقاعد')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تغيير الخلفية: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => changingBackground = false);
+    }
   }
 
   Future<void> _loadMessages() async {
@@ -177,11 +265,34 @@ class _RoomState extends State<Room> {
           backgroundColor: const Color(0xFF100805),
           foregroundColor: Colors.white,
           title: Text(widget.name, style: const TextStyle(color: gold, fontWeight: FontWeight.w900)),
+          actions: [
+            if (_canManageBackground)
+              PopupMenuButton<String>(
+                onSelected: _changeBackground,
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'room', child: Text('خلفية الروم • أسبوع/شهر')),
+                  PopupMenuItem(value: 'seats', child: Text('خلفية المقاعد • أسبوع/شهر')),
+                ],
+                icon: const Icon(Icons.wallpaper, color: gold),
+              ),
+          ],
         ),
         body: Stack(
           children: [
+            if (_active(roomInfo?['room_background_expires_at']?.toString()) &&
+                (roomInfo?['room_background_url']?.toString() ?? '').isNotEmpty)
+              Positioned.fill(
+                child: Image.network(
+                  roomInfo!['room_background_url'].toString(),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            Positioned.fill(child: Container(color: const Color(0xD9090604))),
             Column(
               children: [
+                if (changingBackground)
+                  const LinearProgressIndicator(minHeight: 2, color: gold),
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(14),
@@ -198,13 +309,25 @@ class _RoomState extends State<Room> {
                   ]),
                 ),
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final row = messages[index];
-                      return _message(row['message']?.toString() ?? '', profiles[row['user_id']?.toString()]);
-                    },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: _active(roomInfo?['seats_background_expires_at']?.toString()) &&
+                              (roomInfo?['seats_background_url']?.toString() ?? '').isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(roomInfo!['seats_background_url'].toString()),
+                              fit: BoxFit.cover,
+                              opacity: 0.28,
+                            )
+                          : null,
+                    ),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final row = messages[index];
+                        return _message(row['message']?.toString() ?? '', profiles[row['user_id']?.toString()]);
+                      },
+                    ),
                   ),
                 ),
                 SafeArea(
