@@ -35,7 +35,7 @@ jobs:
                   <category android:name="android.intent.category.BROWSABLE" />
                   <data android:scheme="io.supabase.flutter" android:host="login-callback" />
               </intent-filter>'''
-          pattern = r'(<activity[^>]*android:name="\\.MainActivity"[^>]*>.*?</activity>)'
+          pattern = r'(<activity[^>]*android:name="\.MainActivity"[^>]*>.*?</activity>)'
           m = re.search(pattern, s, re.S)
           if not m:
               raise SystemExit("MainActivity not found")
