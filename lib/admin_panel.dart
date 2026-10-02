@@ -768,7 +768,7 @@ class _AdminPanelState extends State<AdminPanel> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 final amount = int.tryParse(amountController.text) ?? 0;
                 if (amount <= 0 || amount > coins) {
                   _message('قيمة الكوينز غير صالحة');
