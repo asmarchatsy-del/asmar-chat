@@ -439,6 +439,26 @@ class Discover extends StatelessWidget {
   }
 }
 
+class MomentsPage extends StatelessWidget {
+  const MomentsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('لحظات', style: TextStyle(color: gold, fontWeight: FontWeight.w900)),
+        centerTitle: true,
+      ),
+      body: const Center(
+        child: Text(
+          'لحظات',
+          style: TextStyle(color: gold, fontSize: 28, fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+}
+
 class Wallet extends StatelessWidget {
   const Wallet({super.key});
 
