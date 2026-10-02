@@ -6,9 +6,16 @@ const _gold2 = Color(0xFFB77921);
 const _bg = Color(0xFF090604);
 const _card = Color(0xFF1B0E08);
 
-class RoleCenterPage extends StatelessWidget {
+class RoleCenterPage extends StatefulWidget {
   final String role;
   const RoleCenterPage({super.key, required this.role});
+
+  @override
+  State<RoleCenterPage> createState() => _RoleCenterPageState();
+}
+
+class _RoleCenterPageState extends State<RoleCenterPage> {
+  String get role => widget.role.toUpperCase();
 
   String get title {
     switch (role) {
@@ -33,6 +40,13 @@ class RoleCenterPage extends StatelessWidget {
       case 'HOST': return ['أرباحي', 'ساعات البث', 'المهام', 'المستوى'];
       default: return [];
     }
+  }
+
+  Future<void> _action(String name) async {
+    final msg = role == 'SUPER_ADMIN' && name == 'VIP 1 → VIP 6'
+        ? 'منح VIP متاح حتى VIP 6 فقط — سيتم تنفيذ العملية عبر صلاحيات قاعدة البيانات.'
+        : '$name — سيتم تنفيذ العملية ضمن صلاحيات $role.';
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
@@ -90,9 +104,7 @@ class RoleCenterPage extends StatelessWidget {
                 leading: const Icon(Icons.check_circle, color: _gold),
                 title: Text(p, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 trailing: const Icon(Icons.chevron_left, color: Colors.white38),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('$p — سيتم ربطه ببيانات قاعدة البيانات')),
-                ),
+                onTap: () => _action(p),
               ),
             )),
           ],
