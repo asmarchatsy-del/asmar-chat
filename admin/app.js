@@ -57,7 +57,8 @@ async function loadAll(){
   const ps=profiles.data||[],ws=wallets.data||[],rs=rooms.data||[];
   $('stats').innerHTML=[['المستخدمون',ps.length],['الغرف النشطة',rs.filter(r=>r.is_active).length],['إجمالي الكوينز',ws.reduce((a,w)=>a+Number(w.balance||0),0).toLocaleString()],['المضيفون',ps.filter(p=>p.role==='HOST').length]].map(x=>'<div class="stat">'+x[0]+'<strong>'+x[1]+'</strong></div>').join('');
   renderStore(frames.data||[],packages.data||[],vips.data||[]);
-  renderPolicy(policy.data||[]);renderUsers(ps);renderRooms(rs);renderWallets(ws,ps);renderPromotions(promotions.data||[]);renderRoles(ps);renderAgencies(agencies.data||[],ps);\n  if(typeof loadFinance==='function') await loadFinance();
+  renderPolicy(policy.data||[]);renderUsers(ps);renderRooms(rs);renderWallets(ws,ps);renderPromotions(promotions.data||[]);renderRoles(ps);renderAgencies(agencies.data||[],ps);
+  if(typeof loadFinance==='function') await loadFinance();
 }
 
 function renderStore(frames,packages,vips){
@@ -105,7 +106,7 @@ async function raiseUserLevel(id){
   const value=prompt('أدخل الليفل الجديد للمستخدم:',current);
   if(value===null)return;
   const level=Math.trunc(Number(value));
-  if(!Number.isInteger(level)||level<1||level>1000){alert('الليفل يجب أن يكون بين 1 و1000');return}
+  if(!Number.isInteger(level)||level<1||level>150){alert('الليفل يجب أن يكون بين 1 و1000');return}
   const {error}=await db.rpc('admin_set_user_level',{p_user_id:id,p_level:level});
   if(error){alert(error.message);return}
   alert('تم رفع لفل المستخدم إلى '+level);
