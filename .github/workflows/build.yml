@@ -100,6 +100,11 @@ jobs:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64 --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
 
+      - name: Build ARM64 APK
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+        run: flutter build apk --release --target-platform android-arm64 --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
+
       - name: Build App Bundle
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
@@ -118,11 +123,31 @@ jobs:
           "$ZIPALIGN" -c -P 16 -v 4 "$APK"
           "$APKSIGNER" verify --verbose "$APK"
 
+      - name: Verify ARM64 APK
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/'
+          ! unzip -l "$APK" | grep -q 'lib/armeabi-v7a/'
+          ! unzip -l "$APK" | grep -q 'lib/x86_64/'
+          ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign | sort -V | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$ZIPALIGN" -c -P 16 -v 4 "$APK"
+          "$APKSIGNER" verify --verbose "$APK"
+          cp "$APK" build/app/outputs/flutter-apk/asmar-chat-arm64.apk
+
       - name: Upload universal APK
         uses: actions/upload-artifact@v4
         with:
           name: asmar-chat-universal-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload ARM64 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: asmar-chat-arm64-apk
+          path: build/app/outputs/flutter-apk/asmar-chat-arm64.apk
 
       - name: Upload App Bundle
         uses: actions/upload-artifact@v4
@@ -130,14 +155,15 @@ jobs:
           name: asmar-chat-aab
           path: build/app/outputs/bundle/release/app-release.aab
 
-      - name: Publish installable APK
+      - name: Publish installable APKs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="build-${{ github.run_number }}"
           gh release create "$TAG" \
+            build/app/outputs/flutter-apk/asmar-chat-arm64.apk \
             build/app/outputs/flutter-apk/app-release.apk \
             build/app/outputs/bundle/release/app-release.aab \
             --title "Asmar Chat $TAG" \
-            --notes "Installable Asmar Chat release built by CI." \
+            --notes "Installable Asmar Chat releases. ARM64 APK is recommended for modern Android phones; universal APK is provided for compatibility." \
             --prerelease
