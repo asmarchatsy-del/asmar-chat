@@ -25,7 +25,7 @@ async function boot(){
 function showTab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$(id).classList.remove('hidden')}
 
 async function loadAll(){
-  const [profiles,wallets,rooms,frames,packages,vips,policy,promotions]=await Promise.all([
+  const [profiles,wallets,rooms,frames,packages,vips,policy,promotions,agencies]=await Promise.all([
     db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified').order('created_at',{ascending:false}),
     db.from('wallets').select('user_id,balance').order('balance',{ascending:false}),
     db.from('rooms').select('id,name,owner_id,is_active,created_at').order('created_at',{ascending:false}),
@@ -33,14 +33,15 @@ async function loadAll(){
     db.from('coin_packages').select('id,name,coins,price_usd,is_active').order('price_usd'),
     db.from('vip_levels').select('id,animal,image,price_coins,duration_days,is_active').order('price_coins'),
     db.from('asmar_policy').select('level,target,host_base,agent_base,host_total,agent_total').order('level'),
-    db.from('app_promotions').select('*').order('created_at',{ascending:false})
+    db.from('app_promotions').select('*').order('created_at',{ascending:false}),
+    db.from('agencies').select('id,name,manager_id,is_active,created_at').order('created_at',{ascending:false})
   ]);
-  const firstError=[profiles,wallets,rooms,frames,packages,vips,policy,promotions].find(x=>x.error);
+  const firstError=[profiles,wallets,rooms,frames,packages,vips,policy,promotions,agencies].find(x=>x.error);
   if(firstError){alert(firstError.error.message);return}
   const ps=profiles.data||[],ws=wallets.data||[],rs=rooms.data||[];
   $('stats').innerHTML=[['المستخدمون',ps.length],['الغرف النشطة',rs.filter(r=>r.is_active).length],['إجمالي الكوينز',ws.reduce((a,w)=>a+Number(w.balance||0),0).toLocaleString()],['المضيفون',ps.filter(p=>p.role==='HOST').length]].map(x=>'<div class="stat">'+x[0]+'<strong>'+x[1]+'</strong></div>').join('');
   renderStore(frames.data||[],packages.data||[],vips.data||[]);
-  renderPolicy(policy.data||[]);renderUsers(ps);renderRooms(rs);renderWallets(ws,ps);renderPromotions(promotions.data||[]);
+  renderPolicy(policy.data||[]);renderUsers(ps);renderRooms(rs);renderWallets(ws,ps);renderPromotions(promotions.data||[]);renderRoles(ps);renderAgencies(agencies.data||[],ps);
 }
 
 function renderStore(frames,packages,vips){
@@ -110,3 +111,33 @@ async function toggleRoomActive(id,active){const {error}=await db.rpc('admin_set
 async function adjustWallet(id){const amount=Number($('wa_'+id).value);if(!Number.isFinite(amount)||amount===0){alert('أدخل عدد كوينز موجب أو سالب');return}if(!confirm('تأكيد تعديل رصيد الكوين؟'))return;const {data,error}=await db.rpc('admin_adjust_wallet',{p_user_id:id,p_amount:Math.trunc(amount)});if(error){alert('تعذر تعديل الرصيد: '+error.message);return}alert('تم تحديث الرصيد إلى '+Number(data||0).toLocaleString());await loadAll()}
 db.auth.onAuthStateChange((event)=>{if(event==='SIGNED_IN'||event==='SIGNED_OUT')boot()});
 boot();
+
+function renderRoles(ps){
+ $('rolesTable').innerHTML='<table><tr><th>المستخدم</th><th>ID</th><th>الدور</th></tr>'+ps.filter(p=>p.role&&p.role!=='USER').map(p=>'<tr><td>'+esc(p.display_name||p.username||'—')+'</td><td>'+esc(p.public_id||'—')+'</td><td><b>'+esc(p.role)+'</b></td></tr>').join('')+'</table>';
+}
+function setSelectedRole(){
+ const q=$('roleUserSearch').value.trim().toLowerCase(), p=allUsers.find(x=>[x.public_id,x.username,x.display_name,x.id].some(v=>String(v||'').toLowerCase()===q));
+ if(!p){alert('لم يتم العثور على المستخدم بالـID أو الاسم المطابق');return}
+ const role=$('roleSelect').value;
+ if(!confirm('تعيين '+role+' للمستخدم '+(p.display_name||p.username)+'؟'))return;
+ db.rpc('admin_set_user_role',{p_user_id:p.id,p_role:role}).then(async ({error})=>{if(error){alert('تعذر تغيير الدور: '+error.message);return}alert('تم تعيين '+role);await loadAll();});
+}
+function renderAgencies(items,ps){
+ const names=Object.fromEntries(ps.map(p=>[p.id,p.display_name||p.username||p.public_id||p.id]));
+ $('agenciesTable').innerHTML='<table><tr><th>الوكالة</th><th>المدير</th><th>الحالة</th><th>إضافة عضو</th></tr>'+items.map(a=>'<tr><td><b>'+esc(a.name)+'</b></td><td>'+esc(names[a.manager_id]||a.manager_id||'—')+'</td><td>'+(a.is_active?'🟢 فعالة':'🔴 موقوفة')+'</td><td><input id="am_'+a.id+'" placeholder="ID المستخدم"><select id="ar_'+a.id+'"><option>AGENT</option><option>HOST</option></select><button onclick="addAgencyMember(\''+a.id+'\')">إضافة</button></td></tr>').join('')+'</table>';
+}
+async function createAgency(){
+ const name=$('agencyName').value.trim(), q=$('agencyManager').value.trim().toLowerCase();
+ const p=allUsers.find(x=>[x.public_id,x.username,x.display_name,x.id].some(v=>String(v||'').toLowerCase()===q));
+ if(!name){alert('اكتب اسم الوكالة');return} if(q&&!p){alert('مدير الوكالة غير موجود');return}
+ const {error}=await db.rpc('admin_create_agency',{p_name:name,p_manager_id:p?.id||null});
+ if(error){alert('تعذر إنشاء الوكالة: '+error.message);return}
+ alert('تم إنشاء وكالة الشحن');$('agencyName').value='';$('agencyManager').value='';await loadAll();
+}
+async function addAgencyMember(aid){
+ const q=$('am_'+aid).value.trim().toLowerCase(), p=allUsers.find(x=>[x.public_id,x.username,x.display_name,x.id].some(v=>String(v||'').toLowerCase()===q));
+ if(!p){alert('المستخدم غير موجود');return}
+ const role=$('ar_'+aid).value, {error}=await db.rpc('admin_add_agency_member',{p_agency_id:aid,p_user_id:p.id,p_role:role});
+ if(error){alert('تعذر إضافة العضو: '+error.message);return}
+ alert('تمت إضافة '+(p.display_name||p.username)+' إلى الوكالة');
+}
