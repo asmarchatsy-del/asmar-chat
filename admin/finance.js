@@ -9,7 +9,7 @@ async function loadFinance(){
     db.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(100)
   ]);
   const err=[rm,wm,rr,wr,sv,audit].find(x=>x.error);
-  if(err){console.warn(err.error);return}
+  if(err){const root=$('financeRoot');if(root)root.innerHTML='<div class="panel"><h3>⚠️ تعذر تحميل قسم الشحن والسحب</h3><p>'+esc(err.error?.message||'خطأ غير معروف')+'</p><button onclick="loadFinance()">إعادة المحاولة</button></div>';console.error('loadFinance',err.error);return}
   financeCache={rechargeMethods:rm.data||[],withdrawalMethods:wm.data||[],recharges:rr.data||[],withdrawals:wr.data||[],svip:sv.data||[],audit:audit.data||[]};
   renderFinance();
 }
@@ -59,7 +59,7 @@ function openWithdrawalMethodForm(id){
  '<input id="wm_min" type="number" min="0" value="'+Number(x.min_amount||0)+'" placeholder="أقل كوين"><input id="wm_max" type="number" min="0" value="'+Number(x.max_amount||0)+'" placeholder="أقصى كوين">'+
  '<input id="wm_fee" type="number" min="0" step="0.01" value="'+Number(x.fee||0)+'" placeholder="الرسم"><input id="wm_fields" placeholder="الحقول JSON" value="'+esc(JSON.stringify(x.fields||[]))+'">'+
  '<label><input id="wm_active" type="checkbox" '+(x.id?(x.is_active?'checked':''):'checked')+'> فعال</label></div>'+
- '<button onclick="saveWithdrawalMethod(\''+(id||'')+'\')">حفظ</button> <button class="ghost" onclick="$('financeMethodForm').classList.add('hidden')">إلغاء</button>';
+ '<button onclick="saveWithdrawalMethod(\''+(id||'')+'\')">حفظ</button> <button class="ghost" onclick="document.getElementById('financeMethodForm').classList.add('hidden')">إلغاء</button>';
 }
 function editWithdrawalMethod(id){openWithdrawalMethodForm(id)}
 async function saveWithdrawalMethod(id){
