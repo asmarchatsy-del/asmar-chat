@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'svip.dart';
 
 class VipLevelData {
   final String id, animal, icon, description;
@@ -53,7 +54,7 @@ class _VipPageState extends State<VipPage> {
         backgroundColor: const Color(0xFF090604),
         appBar: AppBar(
           title: const Text('VIP 1 — VIP 10', style: TextStyle(fontWeight: FontWeight.w900)),
-          actions: [Padding(padding: const EdgeInsets.all(14), child: Center(child: Text(loading ? '...' : balance.toString()+' 🪙', style: const TextStyle(color: Color(0xFFFFD36A), fontWeight: FontWeight.w900))))],
+          actions: [IconButton(tooltip:'SVIP',icon:const Icon(Icons.workspace_premium,color:Color(0xFFFFD36A)),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const SvipPage()))),Padding(padding: const EdgeInsets.all(14), child: Center(child: Text(loading ? '...' : balance.toString()+' 🪙', style: const TextStyle(color: Color(0xFFFFD36A), fontWeight: FontWeight.w900))))],
         ),
         body: ListView.builder(
           padding: const EdgeInsets.all(14),
