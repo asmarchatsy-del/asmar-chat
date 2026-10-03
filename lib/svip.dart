@@ -8,7 +8,8 @@ class SvipPage extends StatefulWidget {
 class _SvipPageState extends State<SvipPage> {
   bool loading=true; int level=0; int monthlyPoints=0;
   List<Map<String,dynamic>> levels=[]; Map<int,List<Map<String,dynamic>>> gifts={};
-  @override void initState(){super.initState();_load();}
+  RealtimeChannel? _svipChannel;
+  @override void initState(){super.initState();_load();_listen();}
   Future<void> _load() async {
     try {
       final c=Supabase.instance.client; final u=c.auth.currentUser; if(u==null)return;
@@ -24,6 +25,16 @@ class _SvipPageState extends State<SvipPage> {
       if(!mounted)return; setState((){level=(p?['svip_level'] as num?)?.toInt()??0;monthlyPoints=(mp?['points'] as num?)?.toInt()??0;levels=ls.map((x)=>Map<String,dynamic>.from(x)).toList();gifts=grouped;loading=false;});
     } catch(_){if(mounted)setState(()=>loading=false);}
   }
+  void _listen(){
+    _svipChannel=Supabase.instance.client.channel('svip-live')
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'svip_levels',callback:(_)=>_load())
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'svip_gift_package_items',callback:(_)=>_load())
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'gifts',callback:(_)=>_load())
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'profiles',callback:(_)=>_load())
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'svip_monthly_points',callback:(_)=>_load())
+      .subscribe();
+  }
+  @override void dispose(){if(_svipChannel!=null)Supabase.instance.client.removeChannel(_svipChannel!);super.dispose();}
   @override Widget build(BuildContext context)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
     backgroundColor:const Color(0xFF090604),
     appBar:AppBar(title:const Text('SVIP',style:TextStyle(fontWeight:FontWeight.w900)),actions:[IconButton(onPressed:_load,icon:const Icon(Icons.refresh))]),
