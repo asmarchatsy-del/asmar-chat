@@ -28,8 +28,6 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         return 'مركز Manager';
       case 'BD':
         return 'مركز BD';
-      case 'ADMIN':
-        return 'مركز Admin';
       case 'AGENT':
         return 'مركز الوكيل';
       case 'HOST':
@@ -47,8 +45,6 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         return ['المستخدمون', 'المضيفون', 'الوكالات', 'BD', 'Admin'];
       case 'BD':
         return ['المستخدمون', 'الوكالات', 'متابعة الوكالات'];
-      case 'ADMIN':
-        return ['المستخدمون', 'الغرف', 'المضيفون'];
       case 'AGENT':
         return ['وكالتي', 'المضيفون', 'الإحصائيات'];
       case 'HOST':
@@ -68,7 +64,7 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         await _showCommission();
         return;
       }
-      if (name == 'المستخدمون' && ['SUPER_ADMIN', 'ADMIN'].contains(role)) {
+      if (name == 'المستخدمون' && role == 'SUPER_ADMIN') {
         await _showUsers();
         return;
       }
@@ -84,11 +80,11 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         await _showWalletOverview();
         return;
       }
-      if (name == 'الغرف' && ['SUPER_ADMIN', 'ADMIN'].contains(role)) {
+      if (name == 'الغرف' && role == 'SUPER_ADMIN') {
         await _showRooms();
         return;
       }
-      if (name == 'المضيفون' && ['SUPER_ADMIN', 'MANAGER', 'ADMIN'].contains(role)) {
+      if (name == 'المضيفون' && ['SUPER_ADMIN', 'MANAGER'].contains(role)) {
         await _showHostsScoped();
         return;
       }
@@ -106,10 +102,6 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
       }
       if (name == 'BD' && role == 'MANAGER') {
         await _showMyBD();
-        return;
-      }
-      if (name == 'Admin' && role == 'MANAGER') {
-        await _showTeamRole('ADMIN');
         return;
       }
       if (name == 'أرباحي' && role == 'HOST') {
@@ -377,7 +369,7 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
   Future<void> _showTeamRole(String wanted) async {
     final rows = await Supabase.instance.client.from('profiles').select('id,display_name,username,role,is_active').eq('role', wanted).order('created_at', ascending: false).limit(100);
     if (!mounted) return;
-    await _simpleList(wanted == 'BD' ? '💼 فريق BD' : '🛡️ فريق Admin', rows, (r) => '${r['display_name'] ?? r['username'] ?? wanted} • ${r['is_active'] == true ? 'نشط' : 'متوقف'}');
+    await _simpleList('💼 فريق BD', rows, (r) => '${r['display_name'] ?? r['username'] ?? wanted} • ${r['is_active'] == true ? 'نشط' : 'متوقف'}');
   }
 
   Future<void> _simpleList(String title, List rows, String Function(dynamic) label) async {
@@ -518,7 +510,6 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
             if (role == 'SUPER_ADMIN') _infoCard('وضع العرض', 'عرض البيانات فقط. التحكم بالـVIP والكوينزات وإدارة النظام للـCEO فقط.'),
             if (role == 'MANAGER') _infoCard('وضع العرض', 'عرض المستخدمين وBD والوكالة ضمن نطاقك فقط. لا يوجد حظر أو تعديل أو حذف.'),
             if (role == 'BD') _infoCard('وضع العرض', 'عرض البيانات والوكالات ضمن نطاقك فقط. لا يوجد حظر أو تعديل أو حذف.'),
-            if (role == 'ADMIN') _infoCard('وضع العرض', 'عرض البيانات فقط. لا يوجد حظر أو تعديل أو حذف.'),
             if (role == 'AGENT') _infoCard('الوكيل', 'إدارة وكالتك ومضيفيك.'),
             if (role == 'HOST') _infoCard('المضيف', 'مركزك الشخصي للأرباح والبث والمهام والمستوى.'),
             const SizedBox(height: 10),
