@@ -82,7 +82,7 @@ class _AdminPanelState extends State<AdminPanel> {
 
 
 
-  Future<void> _saveData() async {}
+  Future<void> _saveData() => _loadData();
 
   @override
   Widget build(BuildContext context) {
@@ -102,9 +102,7 @@ class _AdminPanelState extends State<AdminPanel> {
           ),
           actions: [
             IconButton(
-              onPressed: () {
-                setState(() {});
-              },
+              onPressed: _loadData,
               icon: const Icon(Icons.refresh),
             ),
           ],
