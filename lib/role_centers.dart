@@ -42,9 +42,11 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
   List<String> get permissions {
     switch (role) {
       case 'SUPER_ADMIN':
-        return ['المستخدمون', 'الغرف', 'المضيفون', 'الوكالات', 'VIP 1 → VIP 6'];
+        return ['المستخدمون', 'الغرف', 'المضيفون', 'الوكالات', 'المحافظ', 'VIP 1 → VIP 6'];
       case 'MANAGER':
-        return ['المضيفون', 'الوكالات', 'BD', 'Admin'];
+        return ['المستخدمون', 'المضيفون', 'الوكالات', 'BD', 'Admin'];
+      case 'BD':
+        return ['المستخدمون', 'الوكالات', 'متابعة الوكالات'];
       case 'BD':
         return ['الوكالات', 'متابعة الوكالات'];
       case 'ADMIN':
@@ -72,6 +74,18 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         await _showUsers();
         return;
       }
+      if (name == 'المستخدمون' && role == 'MANAGER') {
+        await _showManagerUsers();
+        return;
+      }
+      if (name == 'المستخدمون' && role == 'BD') {
+        await _showBdUsers();
+        return;
+      }
+      if (name == 'المحافظ' && role == 'SUPER_ADMIN') {
+        await _showWalletOverview();
+        return;
+      }
       if (name == 'الغرف' && ['SUPER_ADMIN', 'ADMIN'].contains(role)) {
         await _showRooms();
         return;
@@ -93,7 +107,7 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         return;
       }
       if (name == 'BD' && role == 'MANAGER') {
-        await _showTeamRole('BD');
+        await _showMyBD();
         return;
       }
       if (name == 'Admin' && role == 'MANAGER') {
@@ -295,6 +309,54 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
     final rows = await Supabase.instance.client.from('profiles').select('id,display_name,username,role,is_active,vip_level').order('created_at', ascending: false).limit(150);
     if (!mounted) return;
     await _simpleList('👥 المستخدمون', rows, (r) => '${r['display_name'] ?? r['username'] ?? 'مستخدم'} • ${r['role']} • ${r['is_active'] == true ? 'نشط' : 'متوقف'}');
+  }
+
+  Future<List<dynamic>> _myManagedAgencyIds(String column) async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return [];
+    final rows = await Supabase.instance.client.from('agencies').select('id').eq(column, uid);
+    return List<dynamic>.from(rows).map((r) => r['id']).toList();
+  }
+
+  Future<void> _showManagerUsers() async {
+    final ids = await _myManagedAgencyIds('manager_id');
+    if (ids.isEmpty) { _message('لا توجد وكالة مرتبطة بك كـManager'); return; }
+    final rows = await Supabase.instance.client.from('profiles')
+        .select('id,display_name,username,role,is_active,vip_level,agency_id')
+        .inFilter('agency_id', ids).order('created_at', ascending: false).limit(200);
+    if (!mounted) return;
+    await _simpleList('👥 مستخدمو نطاق Manager', rows,
+      (r) => '${r['display_name'] ?? r['username'] ?? 'مستخدم'} • ${r['role']} • ${r['is_active'] == true ? 'نشط' : 'متوقف'}');
+  }
+
+  Future<void> _showMyBD() async {
+    final ids = await _myManagedAgencyIds('manager_id');
+    if (ids.isEmpty) { _message('لا توجد وكالة مرتبطة بك كـManager'); return; }
+    final rows = await Supabase.instance.client.from('profiles')
+        .select('id,display_name,username,role,is_active,agency_id')
+        .eq('role', 'BD').inFilter('agency_id', ids).order('created_at', ascending: false).limit(100);
+    if (!mounted) return;
+    await _simpleList('💼 BD التابعون لنطاقك', rows,
+      (r) => '${r['display_name'] ?? r['username'] ?? 'BD'} • ${r['is_active'] == true ? 'نشط' : 'متوقف'}');
+  }
+
+  Future<void> _showBdUsers() async {
+    final ids = await _myManagedAgencyIds('bd_id');
+    if (ids.isEmpty) { _message('لا توجد وكالة مرتبطة بك كـBD'); return; }
+    final rows = await Supabase.instance.client.from('profiles')
+        .select('id,display_name,username,role,is_active,vip_level,agency_id')
+        .inFilter('agency_id', ids).order('created_at', ascending: false).limit(200);
+    if (!mounted) return;
+    await _simpleList('👥 مستخدمو نطاق BD', rows,
+      (r) => '${r['display_name'] ?? r['username'] ?? 'مستخدم'} • ${r['role']} • ${r['is_active'] == true ? 'نشط' : 'متوقف'}');
+  }
+
+  Future<void> _showWalletOverview() async {
+    final rows = await Supabase.instance.client.from('wallets')
+        .select('user_id,coins,updated_at').order('updated_at', ascending: false).limit(150);
+    if (!mounted) return;
+    await _simpleList('💰 المحافظ', rows,
+      (r) => 'المستخدم: ${r['user_id']} • الرصيد: ${r['coins'] ?? 0}');
   }
 
   Future<void> _showRooms() async {
