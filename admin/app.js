@@ -26,7 +26,7 @@ function showTab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.ad
 
 async function loadAll(){
   const [profiles,wallets,rooms,frames,packages,vips,policy,promotions,agencies]=await Promise.all([
-    db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified').order('created_at',{ascending:false}),
+    db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified,recharge_points,svip_level').order('created_at',{ascending:false}),
     db.from('wallets').select('user_id,balance').order('balance',{ascending:false}),
     db.from('rooms').select('id,name,owner_id,is_active,created_at').order('created_at',{ascending:false}),
     db.from('frame_items').select('id,name,style_key,price,is_active').order('price'),
@@ -41,7 +41,7 @@ async function loadAll(){
   const ps=profiles.data||[],ws=wallets.data||[],rs=rooms.data||[];
   $('stats').innerHTML=[['المستخدمون',ps.length],['الغرف النشطة',rs.filter(r=>r.is_active).length],['إجمالي الكوينز',ws.reduce((a,w)=>a+Number(w.balance||0),0).toLocaleString()],['المضيفون',ps.filter(p=>p.role==='HOST').length]].map(x=>'<div class="stat">'+x[0]+'<strong>'+x[1]+'</strong></div>').join('');
   renderStore(frames.data||[],packages.data||[],vips.data||[]);
-  renderPolicy(policy.data||[]);renderUsers(ps);renderRooms(rs);renderWallets(ws,ps);renderPromotions(promotions.data||[]);renderRoles(ps);renderAgencies(agencies.data||[],ps);
+  renderPolicy(policy.data||[]);renderUsers(ps);renderRooms(rs);renderWallets(ws,ps);renderPromotions(promotions.data||[]);renderRoles(ps);renderAgencies(agencies.data||[],ps);\n  if(typeof loadFinance==='function') await loadFinance();
 }
 
 function renderStore(frames,packages,vips){
@@ -74,7 +74,7 @@ function openUserActions(id){
   const root=$('userActions'); root.classList.remove('hidden');
   root.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h3>إدارة: '+esc(p.display_name||p.username||'مستخدم')+'</h3><p>ID: <b>'+esc(p.public_id||'—')+'</b> · الدور: '+esc(p.role||'USER')+'</p></div><button class="ghost" onclick="$(&quot;userActions&quot;).classList.add(&quot;hidden&quot;)">إغلاق</button></div>'+
   '<div class="module-grid">'+
-  '<div class="card"><h3>👑 VIP</h3><select id="uaVip"><option value="">اختر VIP</option>'+['VIP1','VIP2','VIP3','VIP4','VIP5','VIP6','VIP7','VIP8','VIP9','VIP10','SVIP'].map(v=>'<option value="'+v+'" '+(p.vip_level===v?'selected':'')+'>'+v+'</option>').join('')+'</select><button onclick="grantVipToUser(\''+p.id+'\')">إهداء VIP</button></div>'+
+  '<div class="card"><h3>👑 VIP</h3><select id="uaVip"><option value="">اختر VIP</option>'+['VIP1','VIP2','VIP3','VIP4','VIP5','VIP6','VIP7','VIP8','VIP9','VIP10'].map(v=>'<option value="'+v+'" '+(p.vip_level===v?'selected':'')+'>'+v+'</option>').join('')+'</select><button onclick="grantVipToUser(\''+p.id+'\')">إهداء VIP</button></div>'+
   '<div class="card"><h3>🆔 ID مميز</h3><input id="uaPublicId" value="'+esc(p.public_id||'')+'" placeholder="مثال VIP511"><button onclick="setSpecialId(\''+p.id+'\')">حفظ ID المميز</button></div>'+
   '<div class="card"><h3>🏅 الشارات</h3><label><input id="uaVerified" type="checkbox" '+(p.is_verified?'checked':'')+'> موثق</label><label><input id="uaActivity" type="checkbox" '+(p.activity_admin_badge?'checked':'')+'> أدمن نشاط</label><label><input id="uaCS" type="checkbox" '+(p.customer_service_badge?'checked':'')+'> خدمة عملاء</label><button onclick="saveUserBadges(\''+p.id+'\')">حفظ الشارات</button></div>'+
   '<div class="card"><h3>⚠️ تحذير</h3><input id="uaWarning" placeholder="سبب التحذير"><button onclick="warnUser(\''+p.id+'\')">إضافة تحذير</button></div>'+
