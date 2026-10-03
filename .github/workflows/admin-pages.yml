@@ -7,6 +7,7 @@ on:
       - "admin/**"
       - ".github/workflows/admin-pages.yml"
       - "vercel.json"
+      - "admin.html"
   workflow_dispatch:
 
 permissions:
@@ -32,6 +33,7 @@ jobs:
         run: |
           mkdir -p _site
           cp admin/index.html _site/index.html
+          cp admin/index.html _site/admin.html
           cp admin/app.js _site/app.js
           cp admin/style.css _site/style.css
           cp admin/badges.js _site/badges.js
