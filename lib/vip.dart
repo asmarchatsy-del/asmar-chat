@@ -8,35 +8,43 @@ class VipLevelData {
   final List<String> perks;
   const VipLevelData({required this.id, required this.animal, required this.icon, required this.description, required this.price, required this.perks});
 }
-const vipLevels = <VipLevelData>[
-  VipLevelData(id:'VIP1',animal:'الغزال',icon:'🦌',description:'بداية مسار VIP',price:10000,perks:['إطار VIP','شارة VIP','مزايا استلام العملات']),
-  VipLevelData(id:'VIP2',animal:'الذئب',icon:'🐺',description:'مستوى VIP متقدم',price:25000,perks:['إطار VIP','شارة VIP','مزايا استلام العملات']),
-  VipLevelData(id:'VIP3',animal:'التمساح',icon:'🐊',description:'نمط VIP مميز',price:50000,perks:['نمط حصري','اسم مستخدم مميز','إطار VIP']),
-  VipLevelData(id:'VIP4',animal:'الفيل',icon:'🐘',description:'مزايا الغرف والبطاقة',price:90000,perks:['نمط غرفة','نمط بطاقة التعريف','مزايا استلام العملات']),
-  VipLevelData(id:'VIP5',animal:'النسر',icon:'🦅',description:'مستوى النسر',price:150000,perks:['مزايا الغرفة','اسم ميكروفون مجاني','رسائل غير محدودة']),
-  VipLevelData(id:'VIP6',animal:'الدب',icon:'🐻',description:'مستوى الدب',price:250000,perks:['مزايا الغرفة','اسم ميكروفون مجاني','رسائل غير محدودة']),
-  VipLevelData(id:'VIP7',animal:'الفهد',icon:'🐆',description:'مستوى الفهد',price:400000,perks:['نمط بطاقة التعريف','اسم مجاني','مزايا استلام العملات']),
-  VipLevelData(id:'VIP8',animal:'النمر',icon:'🐯',description:'مستوى النمر',price:650000,perks:['اسم مميز','شارة VIP','مزايا استلام العملات']),
-  VipLevelData(id:'VIP9',animal:'التنين',icon:'🐉',description:'مستوى أسطوري',price:1000000,perks:['مزايا الغرفة','اسم ميكروفون مجاني','رسائل غير محدودة']),
-  VipLevelData(id:'VIP10',animal:'الأسد',icon:'🦁',description:'أعلى مستوى VIP',price:1500000,perks:['ترحيب أسطوري','دخول الغرفة بتأثير','كل المميزات']),
-];
-
 class VipPage extends StatefulWidget {
   const VipPage({super.key});
   @override State<VipPage> createState() => _VipPageState();
 }
 class _VipPageState extends State<VipPage> {
   int balance=0; String? currentVip; bool loading=true;
-  @override void initState(){super.initState();_load();}
+  List<VipLevelData> levels = const [];
+  RealtimeChannel? _vipChannel;
+  @override void initState(){super.initState();_load();_listen();}
   Future<void> _load() async {
     try {
+      final rows = await Supabase.instance.client.from('vip_levels')
+        .select('id,name,animal,price_coins,perks,is_active')
+        .eq('is_active', true)
+        .neq('id', 'SVIP')
+        .order('id');
       final c=Supabase.instance.client; final u=c.auth.currentUser; if(u==null)return;
+      final parsed = (rows as List).map((r) {
+        final m=Map<String,dynamic>.from(r as Map);
+        final id=m['id'].toString();
+        const icons={'VIP1':'🦌','VIP2':'🐺','VIP3':'🐊','VIP4':'🐘','VIP5':'🦅','VIP6':'🐻','VIP7':'🐆','VIP8':'🐯','VIP9':'🐉','VIP10':'🦁'};
+        final perksRaw=m['perks'];
+        final perks=perksRaw is List ? perksRaw.map((x)=>x.toString()).toList() : <String>[];
+        return VipLevelData(id:id,animal:m['animal']?.toString()??'',icon:icons[id]??'⭐',description:perks.isEmpty?'مزايا VIP':perks.join(' • '),price:(m['price_coins'] as num?)?.toInt()??0,perks:perks);
+      }).toList();
       final w=await c.from('wallets').select('balance').eq('user_id',u.id).maybeSingle();
       final p=await c.from('profiles').select('vip_level').eq('id',u.id).maybeSingle();
       if(!mounted)return;
-      setState((){balance=(w?['balance'] as num?)?.toInt()??0;currentVip=p?['vip_level']?.toString();loading=false;});
+      setState((){levels=parsed;balance=(w?['balance'] as num?)?.toInt()??0;currentVip=p?['vip_level']?.toString();loading=false;});
     } catch (_) { if(mounted)setState(()=>loading=false); }
   }
+  void _listen(){
+    _vipChannel=Supabase.instance.client.channel('vip-levels-live')
+      .onPostgresChanges(event: PostgresChangeEvent.all, schema:'public', table:'vip_levels', callback:(_)=>_load())
+      .subscribe();
+  }
+  @override void dispose(){ if(_vipChannel!=null) Supabase.instance.client.removeChannel(_vipChannel!); super.dispose(); }
   Future<void> _buy(VipLevelData v) async {
     try {
       await Supabase.instance.client.rpc('purchase_vip', params:{'p_vip_level':v.id});
@@ -58,9 +66,9 @@ class _VipPageState extends State<VipPage> {
         ),
         body: ListView.builder(
           padding: const EdgeInsets.all(14),
-          itemCount: vipLevels.length,
+          itemCount: levels.length,
           itemBuilder: (context, i) {
-            final v=vipLevels[i]; final active=currentVip==v.id;
+            final v=levels[i]; final active=currentVip==v.id;
             return Container(
               margin: const EdgeInsets.only(bottom:12),
               padding: const EdgeInsets.all(16),
