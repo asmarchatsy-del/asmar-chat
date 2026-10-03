@@ -50,7 +50,7 @@ async function boot(signedUser=null){
     await loadAll();
   }finally{booting=false}
 }
-function showTab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$(id).classList.remove('hidden')}
+function showTab(id,btn){document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));const target=$(id);if(target)target.classList.remove('hidden');document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(id==='withdrawals'&&typeof loadFinance==='function')loadFinance();if(id==='badges'&&typeof loadBadges==='function')loadBadges()}
 
 async function loadAll(){
   const [profiles,wallets,rooms,frames,packages,vips,policy,promotions,agencies]=await Promise.all([
