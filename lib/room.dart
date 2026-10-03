@@ -13,6 +13,8 @@ const gold2 = Color(0xFFB77921);
 const bg = Color(0xFF090604);
 const card = Color(0xFF1B0E08);
 
+const allowedSeatCounts = <int>[4, 6, 8, 10, 12, 15, 20, 25, 30];
+
 class Room extends StatefulWidget {
   final String name;
   final String roomId;
@@ -24,8 +26,10 @@ class _RoomState extends State<Room> {
   final controller = TextEditingController();
   final messages = <Map<String, dynamic>>[];
   final profiles = <String, Map<String, dynamic>>{};
+  final seats = <Map<String, dynamic>>[];
   StreamSubscription<List<Map<String, dynamic>>>? messageSub;
   StreamSubscription<List<Map<String, dynamic>>>? giftSub;
+  StreamSubscription<List<Map<String, dynamic>>>? seatSub;
   final seenGifts = <String>{};
   lk.Room? voiceRoom;
   bool microphoneOn = false;
@@ -34,12 +38,16 @@ class _RoomState extends State<Room> {
   Map<String, dynamic>? roomInfo;
   final picker = ImagePicker();
   bool changingBackground = false;
+  bool loadingSeats = false;
+  bool managingSeat = false;
+  bool canManageRoom = false;
 
   @override
   void initState() {
     super.initState();
     _loadRoomInfo();
     _loadMessages();
+    _loadSeats();
     messageSub = Supabase.instance.client
         .from('room_messages')
         .stream(primaryKey: ['id'])
@@ -59,16 +67,37 @@ class _RoomState extends State<Room> {
         .eq('room_id', widget.roomId)
         .order('created_at')
         .listen(_handleGifts);
+    seatSub = Supabase.instance.client
+        .from('room_seats')
+        .stream(primaryKey: ['id'])
+        .eq('room_id', widget.roomId)
+        .order('seat_index')
+        .listen((rows) {
+          if (!mounted) return;
+          _applySeats(rows);
+        });
   }
 
   Future<void> _loadRoomInfo() async {
     try {
       final row = await Supabase.instance.client
           .from('rooms')
-          .select('id,name,owner_id,room_background_url,room_background_expires_at,seats_background_url,seats_background_expires_at')
+          .select('id,name,owner_id,seat_count,room_background_url,room_background_expires_at,seats_background_url,seats_background_expires_at')
           .eq('id', widget.roomId)
           .maybeSingle();
-      if (mounted) setState(() => roomInfo = row == null ? null : Map<String, dynamic>.from(row));
+      if (row != null && mounted) {
+        setState(() => roomInfo = Map<String, dynamic>.from(row));
+        try {
+          final result = await Supabase.instance.client.rpc(
+            'can_manage_room',
+            params: {'p_room_id': widget.roomId},
+          );
+          if (mounted) setState(() => canManageRoom = result == true);
+        } catch (_) {
+          final uid = Supabase.instance.client.auth.currentUser?.id;
+          if (mounted) setState(() => canManageRoom = uid != null && row['owner_id']?.toString() == uid);
+        }
+      }
     } catch (_) {}
   }
 
@@ -77,14 +106,52 @@ class _RoomState extends State<Room> {
     return DateTime.tryParse(expires)?.isAfter(DateTime.now()) ?? false;
   }
 
-  bool get _canManageBackground {
-    final uid = Supabase.instance.client.auth.currentUser?.id;
-    final owner = roomInfo?['owner_id']?.toString();
-    return uid != null && owner == uid;
+  Future<void> _loadSeats() async {
+    if (loadingSeats) return;
+    setState(() => loadingSeats = true);
+    try {
+      await Supabase.instance.client.rpc(
+        'ensure_room_seats',
+        params: {'p_room_id': widget.roomId},
+      );
+      final rows = await Supabase.instance.client
+          .from('room_seats')
+          .select('id,room_id,seat_index,occupant_id,is_locked,updated_at')
+          .eq('room_id', widget.roomId)
+          .order('seat_index');
+      await _applySeats(List<Map<String, dynamic>>.from(rows));
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => loadingSeats = false);
+    }
+  }
+
+  Future<void> _applySeats(List<Map<String, dynamic>> rows) async {
+    final list = rows.map((r) => Map<String, dynamic>.from(r)).toList()
+      ..sort((a, b) => (a['seat_index'] as int).compareTo(b['seat_index'] as int));
+    final ids = list
+        .map((s) => s['occupant_id']?.toString())
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    if (ids.isNotEmpty) {
+      try {
+        final ps = await Supabase.instance.client
+            .from('profiles')
+            .select('id,username,role,country_code,vip_level,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified')
+            .inFilter('id', ids);
+        profiles.addEntries(
+          List<Map<String, dynamic>>.from(ps)
+              .map((p) => MapEntry(p['id'].toString(), p)),
+        );
+      } catch (_) {}
+    }
+    if (mounted) setState(() { seats..clear()..addAll(list); });
   }
 
   Future<void> _changeBackground(String type) async {
-    if (changingBackground || !_canManageBackground) return;
+    if (changingBackground || !canManageRoom) return;
     final choice = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: card,
@@ -104,7 +171,6 @@ class _RoomState extends State<Room> {
       ),
     );
     if (choice == null || !mounted) return;
-
     final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (image == null || !mounted) return;
 
@@ -189,10 +255,242 @@ class _RoomState extends State<Room> {
     }
   }
 
+  Future<void> _joinSeat(int index) async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+    if (managingSeat) return;
+    setState(() => managingSeat = true);
+    try {
+      await Supabase.instance.client.rpc('join_room_seat', params: {
+        'p_room_id': widget.roomId,
+        'p_seat_index': index,
+      });
+      await _loadSeats();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_seatError(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => managingSeat = false);
+    }
+  }
+
+  Future<void> _leaveSeat(int index) async {
+    if (managingSeat) return;
+    setState(() => managingSeat = true);
+    try {
+      await Supabase.instance.client.rpc('leave_room_seat', params: {
+        'p_room_id': widget.roomId,
+        'p_seat_index': index,
+      });
+      await _loadSeats();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_seatError(e))));
+    } finally {
+      if (mounted) setState(() => managingSeat = false);
+    }
+  }
+
+  String _seatError(Object e) {
+    final s = e.toString();
+    if (s.contains('SEAT_LOCKED')) return 'هذا المقعد مقفول';
+    if (s.contains('SEAT_OCCUPIED')) return 'المقعد مشغول';
+    if (s.contains('NOT_YOUR_SEAT')) return 'هذا ليس مقعدك';
+    if (s.contains('FORBIDDEN')) return 'ليس لديك صلاحية';
+    return 'تعذر تنفيذ العملية';
+  }
+
+  Future<void> _seatManager(int index, Map<String, dynamic> seat) async {
+    if (!canManageRoom || managingSeat) return;
+    final locked = seat['is_locked'] == true;
+    final occupant = seat['occupant_id']?.toString();
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: card,
+      builder: (_) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: Icon(locked ? Icons.lock_open : Icons.lock, color: gold),
+            title: Text(locked ? 'فتح المقعد' : 'قفل المقعد'),
+            onTap: () => Navigator.pop(context, 'lock'),
+          ),
+          if (occupant != null)
+            ListTile(
+              leading: const Icon(Icons.person_remove, color: Colors.redAccent),
+              title: const Text('إنزال المستخدم من المقعد'),
+              onTap: () => Navigator.pop(context, 'remove'),
+            ),
+        ]),
+      ),
+    );
+    if (action == null) return;
+    setState(() => managingSeat = true);
+    try {
+      if (action == 'lock') {
+        await Supabase.instance.client.rpc('set_room_seat_locked', params: {
+          'p_room_id': widget.roomId,
+          'p_seat_index': index,
+          'p_locked': !locked,
+        });
+      } else {
+        await Supabase.instance.client.rpc('remove_room_seat', params: {
+          'p_room_id': widget.roomId,
+          'p_seat_index': index,
+        });
+      }
+      await _loadSeats();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_seatError(e))));
+    } finally {
+      if (mounted) setState(() => managingSeat = false);
+    }
+  }
+
+  Future<void> _changeSeatCount() async {
+    if (!canManageRoom) return;
+    final current = (roomInfo?['seat_count'] as num?)?.toInt() ?? 10;
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: card,
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: allowedSeatCounts.map((n) => ListTile(
+            leading: Icon(n == current ? Icons.radio_button_checked : Icons.radio_button_off, color: gold),
+            title: Text('$n مقاعد', style: const TextStyle(color: Colors.white)),
+            onTap: () => Navigator.pop(context, n),
+          )).toList(),
+        ),
+      ),
+    );
+    if (selected == null || selected == current) return;
+    setState(() => managingSeat = true);
+    try {
+      await Supabase.instance.client.rpc('set_room_seat_count', params: {
+        'p_room_id': widget.roomId,
+        'p_seat_count': selected,
+      });
+      await _loadRoomInfo();
+      await _loadSeats();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_seatError(e))));
+    } finally {
+      if (mounted) setState(() => managingSeat = false);
+    }
+  }
+
+  Widget _seatGrid() {
+    final count = (roomInfo?['seat_count'] as num?)?.toInt() ?? 10;
+    final byIndex = <int, Map<String, dynamic>>{
+      for (final s in seats) (s['seat_index'] as int): s,
+    };
+    final columns = count <= 4 ? 2 : count <= 8 ? 4 : 5;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xC9140805),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: gold2),
+      ),
+      child: Column(children: [
+        Row(children: [
+          const Icon(Icons.event_seat, color: gold, size: 20),
+          const SizedBox(width: 8),
+          Text('المقاعد • $count', style: const TextStyle(color: gold, fontWeight: FontWeight.w900)),
+          const Spacer(),
+          if (loadingSeats) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: gold)),
+          if (canManageRoom)
+            IconButton(
+              tooltip: 'عدد المقاعد',
+              onPressed: managingSeat ? null : _changeSeatCount,
+              icon: const Icon(Icons.settings, color: gold, size: 20),
+            ),
+        ]),
+        const SizedBox(height: 4),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: count,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisExtent: 74,
+            crossAxisSpacing: 6,
+            mainAxisSpacing: 6,
+          ),
+          itemBuilder: (_, i) {
+            final index = i + 1;
+            final seat = byIndex[index] ?? {'seat_index': index, 'is_locked': false};
+            return _seatTile(index, seat);
+          },
+        ),
+      ]),
+    );
+  }
+
+  Widget _seatTile(int index, Map<String, dynamic> seat) {
+    final locked = seat['is_locked'] == true;
+    final occupantId = seat['occupant_id']?.toString();
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final mine = occupantId != null && occupantId == uid;
+    final profile = occupantId == null ? null : profiles[occupantId];
+    return GestureDetector(
+      onTap: () {
+        if (canManageRoom && !mine) {
+          _seatManager(index, seat);
+        } else if (mine) {
+          _leaveSeat(index);
+        } else if (!locked) {
+          _joinSeat(index);
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: locked ? const Color(0xFF241D19) : (mine ? const Color(0xFF5B350E) : card),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: locked ? Colors.white24 : (mine ? gold : const Color(0xFF4C3019))),
+        ),
+        child: Stack(children: [
+          Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (profile != null)
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: const Color(0xFF422511),
+                  backgroundImage: (profile['avatar_url']?.toString() ?? '').isNotEmpty
+                      ? NetworkImage(profile['avatar_url'].toString())
+                      : null,
+                  child: (profile['avatar_url']?.toString() ?? '').isEmpty
+                      ? const Icon(Icons.person, color: gold, size: 18)
+                      : null,
+                )
+              else
+                Icon(locked ? Icons.lock : Icons.event_seat, color: locked ? Colors.white38 : gold, size: 25),
+              const SizedBox(height: 4),
+              Text(
+                profile?['username']?.toString() ?? 'مقعد $index',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: mine ? gold : Colors.white70, fontSize: 10, fontWeight: FontWeight.w700),
+              ),
+            ]),
+          ),
+          if (locked)
+            const Positioned(top: 5, right: 5, child: Icon(Icons.lock, color: Colors.white38, size: 13)),
+          if (mine)
+            const Positioned(top: 5, left: 5, child: Icon(Icons.mic, color: gold, size: 13)),
+        ]),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     messageSub?.cancel();
     giftSub?.cancel();
+    seatSub?.cancel();
     voiceRoom?.disconnect();
     controller.dispose();
     super.dispose();
@@ -266,14 +564,18 @@ class _RoomState extends State<Room> {
           foregroundColor: Colors.white,
           title: Text(widget.name, style: const TextStyle(color: gold, fontWeight: FontWeight.w900)),
           actions: [
-            if (_canManageBackground)
+            if (canManageRoom)
               PopupMenuButton<String>(
-                onSelected: _changeBackground,
+                onSelected: (v) {
+                  if (v == 'room' || v == 'seats') _changeBackground(v);
+                  if (v == 'count') _changeSeatCount();
+                },
                 itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'count', child: Text('عدد المقاعد')),
                   PopupMenuItem(value: 'room', child: Text('خلفية الروم • أسبوع/شهر')),
                   PopupMenuItem(value: 'seats', child: Text('خلفية المقاعد • أسبوع/شهر')),
                 ],
-                icon: const Icon(Icons.wallpaper, color: gold),
+                icon: const Icon(Icons.settings, color: gold),
               ),
           ],
         ),
@@ -308,6 +610,7 @@ class _RoomState extends State<Room> {
                     Icon(Icons.people, color: Colors.white70),
                   ]),
                 ),
+                _seatGrid(),
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -321,7 +624,7 @@ class _RoomState extends State<Room> {
                           : null,
                     ),
                     child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final row = messages[index];
