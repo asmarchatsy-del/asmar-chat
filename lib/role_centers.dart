@@ -60,7 +60,7 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
 
   Future<void> _action(String name) async {
     try {
-      if (name == 'الوكالات' && ['CEO', 'SUPER_ADMIN', 'MANAGER', 'BD'].contains(role)) {
+      if (name == 'الوكالات' && ['SUPER_ADMIN', 'MANAGER', 'BD'].contains(role)) {
         await _showAgencies();
         return;
       }
@@ -129,7 +129,7 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         return;
       }
       if (name == 'VIP 1 → VIP 6' && role == 'SUPER_ADMIN') {
-        await _grantVip();
+        await _showVipLevels();
         return;
       }
       _message('$name — الصلاحية جاهزة.');
@@ -266,8 +266,7 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
     await _sheet(
       'الوكالات',
       [
-        if (['CEO', 'SUPER_ADMIN', 'MANAGER', 'BD'].contains(role))
-          Align(alignment: Alignment.centerLeft, child: IconButton(onPressed: _openAgency, icon: const Icon(Icons.add_business, color: _gold))),
+        // Role centers are read-only. Only CEO uses AdminPanel for mutations.
         if (list.isEmpty) const Text('لا توجد وكالات حالياً', style: TextStyle(color: Colors.white70)),
         ...list.map((item) {
           final a = Map<String, dynamic>.from(item as Map);
@@ -347,6 +346,12 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
     if (!mounted) return;
     await _simpleList('👥 مستخدمو نطاق BD', rows,
       (r) => '${r['display_name'] ?? r['username'] ?? 'مستخدم'} • ${r['role']} • ${r['is_active'] == true ? 'نشط' : 'متوقف'}');
+  }
+
+  Future<void> _showVipLevels() async {
+    final rows = await Supabase.instance.client.from('vip_levels').select('level,required_coins').order('level').limit(20);
+    if (!mounted) return;
+    await _simpleList('⭐ مستويات VIP', rows, (x) => 'VIP ${x['level']} • الكوينز المطلوبة: ${x['required_coins'] ?? 0}');
   }
 
   Future<void> _showWalletOverview() async {
@@ -510,10 +515,10 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
               ),
             ),
             const SizedBox(height: 18),
-            if (role == 'SUPER_ADMIN') _infoCard('صلاحية VIP', 'يمكن منح VIP من 1 إلى 6 فقط.'),
-            if (role == 'MANAGER') _infoCard('التفويض', 'إدارة BD وAdmin والوكالات حسب الصلاحيات.'),
-            if (role == 'BD') _infoCard('BD', 'إدارة ومتابعة الوكالات ضمن نطاقك.'),
-            if (role == 'ADMIN') _infoCard('Admin', 'إدارة الأدوات المسموحة لك فقط.'),
+            if (role == 'SUPER_ADMIN') _infoCard('وضع العرض', 'عرض البيانات فقط. التحكم بالـVIP والكوينزات وإدارة النظام للـCEO فقط.'),
+            if (role == 'MANAGER') _infoCard('وضع العرض', 'عرض المستخدمين وBD والوكالة ضمن نطاقك فقط. لا يوجد حظر أو تعديل أو حذف.'),
+            if (role == 'BD') _infoCard('وضع العرض', 'عرض البيانات والوكالات ضمن نطاقك فقط. لا يوجد حظر أو تعديل أو حذف.'),
+            if (role == 'ADMIN') _infoCard('وضع العرض', 'عرض البيانات فقط. لا يوجد حظر أو تعديل أو حذف.'),
             if (role == 'AGENT') _infoCard('الوكيل', 'إدارة وكالتك ومضيفيك.'),
             if (role == 'HOST') _infoCard('المضيف', 'مركزك الشخصي للأرباح والبث والمهام والمستوى.'),
             const SizedBox(height: 10),
