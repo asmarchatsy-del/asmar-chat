@@ -1731,3 +1731,67 @@ revoke all on function public.trg_apply_role_benefits() from public;
 drop trigger if exists trg_profiles_role_benefits on public.profiles;
 create trigger trg_profiles_role_benefits after insert or update of role on public.profiles
 for each row execute function public.trg_apply_role_benefits();
+
+
+-- ============================================================
+-- Dynamic gift assets: Emoji / Image / Lottie / 3D / Custom
+-- CEO-only create/update; asset URL and license remain dashboard-driven.
+-- ============================================================
+alter table public.gifts
+  add column if not exists asset_type text not null default 'emoji',
+  add column if not exists asset_url text,
+  add column if not exists preview_url text,
+  add column if not exists source_repo text,
+  add column if not exists source_license text,
+  add column if not exists animation_loop boolean not null default true;
+
+create or replace function public.ceo_create_gift(
+  p_id text, p_name text, p_emoji text, p_price bigint, p_category text,
+  p_is_active boolean, p_banner_enabled boolean, p_banner_min_price bigint,
+  p_luck_min_win bigint, p_asset_type text, p_asset_url text,
+  p_preview_url text, p_source_repo text, p_source_license text, p_animation_loop boolean
+) returns public.gifts
+language plpgsql security definer set search_path=public as $$
+declare g public.gifts;
+begin
+  if not public.has_role(array['CEO']::public.app_role[]) then raise exception 'not authorized'; end if;
+  if p_price < 1 then raise exception 'price must be positive'; end if;
+  insert into public.gifts(id,name,emoji,price,category,is_active,banner_enabled,banner_min_price,luck_min_win,
+    asset_type,asset_url,preview_url,source_repo,source_license,animation_loop)
+  values(p_id,p_name,p_emoji,p_price,p_category,p_is_active,p_banner_enabled,p_banner_min_price,p_luck_min_win,
+    coalesce(nullif(p_asset_type,''),'emoji'),nullif(p_asset_url,''),nullif(p_preview_url,''),
+    nullif(p_source_repo,''),nullif(p_source_license,''),p_animation_loop)
+  returning * into g;
+  return g;
+end $$;
+
+create or replace function public.ceo_update_gift(
+  p_id text, p_name text, p_emoji text, p_price bigint, p_category text,
+  p_is_active boolean, p_banner_enabled boolean, p_banner_min_price bigint,
+  p_luck_min_win bigint, p_asset_type text, p_asset_url text,
+  p_preview_url text, p_source_repo text, p_source_license text, p_animation_loop boolean
+) returns public.gifts
+language plpgsql security definer set search_path=public as $$
+declare g public.gifts;
+begin
+  if not public.has_role(array['CEO']::public.app_role[]) then raise exception 'not authorized'; end if;
+  if p_price < 1 then raise exception 'price must be positive'; end if;
+  update public.gifts set
+    name=p_name, emoji=p_emoji, price=p_price, category=p_category,
+    is_active=p_is_active, banner_enabled=p_banner_enabled,
+    banner_min_price=p_banner_min_price, luck_min_win=p_luck_min_win,
+    asset_type=coalesce(nullif(p_asset_type,''),'emoji'), asset_url=nullif(p_asset_url,''),
+    preview_url=nullif(p_preview_url,''), source_repo=nullif(p_source_repo,''),
+    source_license=nullif(p_source_license,''), animation_loop=p_animation_loop
+  where id=p_id returning * into g;
+  if g.id is null then raise exception 'gift not found'; end if;
+  return g;
+end $$;
+
+revoke execute on function public.ceo_create_gift(text,text,text,bigint,text,boolean,boolean,bigint,bigint,text,text,text,text,text,boolean) from public,anon,authenticated;
+revoke execute on function public.ceo_update_gift(text,text,text,bigint,text,boolean,boolean,bigint,bigint,text,text,text,text,text,boolean) from public,anon,authenticated;
+grant execute on function public.ceo_create_gift(text,text,text,bigint,text,boolean,boolean,bigint,bigint,text,text,text,text,text,boolean) to authenticated;
+grant execute on function public.ceo_update_gift(text,text,text,bigint,text,boolean,boolean,bigint,bigint,text,text,text,text,text,boolean) to authenticated;
+
+revoke execute on function public.admin_update_gift(text,text,text,bigint,text,boolean,boolean,bigint,bigint) from public,anon,authenticated;
+
