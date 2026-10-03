@@ -43,7 +43,7 @@ function openRechargeMethodForm(id){
  '<input id="fm_min" type="number" min="0" step="0.01" placeholder="أقل مبلغ" value="'+Number(x.min_amount||0)+'"><input id="fm_max" type="number" min="0" step="0.01" placeholder="أقصى مبلغ" value="'+Number(x.max_amount||0)+'">'+
  '<input id="fm_rate" type="number" min="1" placeholder="كوين لكل وحدة" value="'+Number(x.coins_per_unit||10000)+'"><input id="fm_fields" placeholder="الحقول JSON" value="'+esc(JSON.stringify(x.fields||[]))+'">'+
  '<input id="fm_instructions" placeholder="تعليمات الدفع" value="'+esc(x.instructions||'')+'"><label><input id="fm_active" type="checkbox" '+(x.id?(x.is_active?'checked':''):'checked')+'> فعال</label></div>'+
- '<button onclick="saveRechargeMethod(\''+(id||'')+'\')">حفظ</button> <button class="ghost" onclick="$('financeMethodForm').classList.add('hidden')">إلغاء</button>';
+ '<button onclick="saveRechargeMethod(\''+(id||'')+'\')">حفظ</button> <button class="ghost" onclick="document.getElementById('financeMethodForm').classList.add('hidden')">إلغاء</button>';
 }
 function editRechargeMethod(id){openRechargeMethodForm(id)}
 async function saveRechargeMethod(id){
