@@ -55,7 +55,38 @@ async function savePackage(id){const {error}=await db.from('coin_packages').upda
 async function saveVip(id){const {error}=await db.from('vip_levels').update({price_coins:Number($('vc_'+id).value),is_active:$('va_'+id).checked,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message);else{alert('تم حفظ VIP');loadAll()}}
 
 function renderPolicy(items){$('policyTable').innerHTML='<table><tr><th>المستوى</th><th>الهدف</th><th>أساس المضيف</th><th>أساس الوكيل</th><th>إجمالي المضيف</th><th>إجمالي الوكيل</th></tr>'+items.map(x=>'<tr><td>'+x.level+'</td><td>'+Number(x.target).toLocaleString()+'</td><td>'+x.host_base+'</td><td>'+x.agent_base+'</td><td>'+x.host_total+'</td><td>'+x.agent_total+'</td></tr>').join('')+'</table>'}
-function renderUsers(ps){$('usersTable').innerHTML='<table><tr><th>الاسم</th><th>ID</th><th>الدور</th><th>الحالة</th><th>إجراء</th></tr>'+ps.map(p=>'<tr><td>'+esc(p.display_name||p.username||'—')+'</td><td><b>'+esc(p.public_id||'—')+'</b></td><td>'+esc(p.role)+'</td><td>'+(p.is_active?'فعال':'موقوف')+'</td><td><button onclick="changePublicId(\''+p.id+'\')">تغيير ID</button> <button onclick="toggleUserActive(\''+p.id+'\','+(!p.is_active)+')">'+(p.is_active?'إيقاف':'تفعيل')+'</button></td></tr>').join('')+'</table>'}
+let allUsers=[];
+function renderUsers(ps){allUsers=ps||[]; drawUsers(allUsers);}
+function drawUsers(ps){
+  $('usersTable').innerHTML='<table><tr><th>المستخدم</th><th>ID</th><th>الدور</th><th>الحالة</th><th>إجراءات</th></tr>'+
+  ps.map(p=>'<tr><td>'+esc(p.display_name||p.username||'—')+'<br><small>'+esc(p.username||'')+'</small></td><td><b>'+esc(p.public_id||'—')+'</b></td><td>'+esc(p.role||'USER')+'</td><td>'+(p.is_active?'🟢 فعال':'🔴 موقوف')+'</td><td><button onclick="openUserActions(\''+p.id+'\')">إدارة المستخدم</button></td></tr>').join('')+'</table>';
+}
+function filterUsers(){
+  const q=$('userSearch').value.trim().toLowerCase();
+  if(!q){drawUsers(allUsers);return}
+  const rows=allUsers.filter(p=>[p.public_id,p.display_name,p.username,p.id,p.role].some(v=>String(v||'').toLowerCase().includes(q)));
+  drawUsers(rows);
+}
+function clearUserSearch(){ $('userSearch').value=''; $('userActions').classList.add('hidden'); drawUsers(allUsers); }
+function openUserActions(id){
+  const p=allUsers.find(x=>x.id===id); if(!p)return;
+  const root=$('userActions'); root.classList.remove('hidden');
+  root.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h3>إدارة: '+esc(p.display_name||p.username||'مستخدم')+'</h3><p>ID: <b>'+esc(p.public_id||'—')+'</b> · الدور: '+esc(p.role||'USER')+'</p></div><button class="ghost" onclick="$(&quot;userActions&quot;).classList.add(&quot;hidden&quot;)">إغلاق</button></div>'+
+  '<div class="module-grid">'+
+  '<div class="card"><h3>👑 VIP</h3><select id="uaVip"><option value="">اختر VIP</option>'+['VIP1','VIP2','VIP3','VIP4','VIP5','VIP6','VIP7','VIP8','VIP9','VIP10','SVIP'].map(v=>'<option value="'+v+'" '+(p.vip_level===v?'selected':'')+'>'+v+'</option>').join('')+'</select><button onclick="grantVipToUser(\''+p.id+'\')">إهداء VIP</button></div>'+
+  '<div class="card"><h3>🆔 ID مميز</h3><input id="uaPublicId" value="'+esc(p.public_id||'')+'" placeholder="مثال VIP511"><button onclick="setSpecialId(\''+p.id+'\')">حفظ ID المميز</button></div>'+
+  '<div class="card"><h3>🏅 الشارات</h3><label><input id="uaVerified" type="checkbox" '+(p.is_verified?'checked':'')+'> موثق</label><label><input id="uaActivity" type="checkbox" '+(p.activity_admin_badge?'checked':'')+'> أدمن نشاط</label><label><input id="uaCS" type="checkbox" '+(p.customer_service_badge?'checked':'')+'> خدمة عملاء</label><button onclick="saveUserBadges(\''+p.id+'\')">حفظ الشارات</button></div>'+
+  '<div class="card"><h3>⚠️ تحذير</h3><input id="uaWarning" placeholder="سبب التحذير"><button onclick="warnUser(\''+p.id+'\')">إضافة تحذير</button></div>'+
+  '<div class="card"><h3>🪙 كوينز</h3><input id="uaCoins" type="number" placeholder="+ أو - كوين"><button onclick="adjustUserCoins(\''+p.id+'\')">تطبيق</button></div>'+
+  '<div class="card"><h3>🚦 الحساب</h3><button onclick="toggleUserActive(\''+p.id+'\','+(!p.is_active)+')">'+(p.is_active?'إيقاف الحساب':'تفعيل الحساب')+'</button></div>'+
+  '</div>';
+}
+async function grantVipToUser(id){const v=$('uaVip').value;if(!v){alert('اختر مستوى VIP');return}if(!confirm('تأكيد إهداء '+v+' لهذا المستخدم؟'))return;const {error}=await db.rpc('admin_grant_vip',{p_user_id:id,p_vip_level:v});if(error){alert('تعذر إهداء VIP: '+error.message);return}alert('تم إهداء '+v);await loadAll();openUserActions(id);}
+async function setSpecialId(id){const v=$('uaPublicId').value.trim();if(!v){alert('أدخل ID');return}const {error}=await db.rpc('admin_set_public_id',{p_user_id:id,p_public_id:v});if(error){alert('تعذر حفظ ID: '+error.message);return}alert('تم حفظ ID المميز');await loadAll();openUserActions(id);}
+async function saveUserBadges(id){const {error}=await db.from('profiles').update({is_verified:$('uaVerified').checked,activity_admin_badge:$('uaActivity').checked,customer_service_badge:$('uaCS').checked}).eq('id',id);if(error){alert('تعذر حفظ الشارات: '+error.message);return}alert('تم حفظ الشارات');await loadAll();openUserActions(id);}
+async function warnUser(id){const reason=$('uaWarning').value.trim();if(!reason){alert('اكتب سبب التحذير');return}const {error}=await db.rpc('admin_warn_user',{p_user_id:id,p_reason:reason});if(error){alert('تعذر إضافة التحذير: '+error.message);return}alert('تم تسجيل التحذير');$('uaWarning').value='';}
+async function adjustUserCoins(id){const n=Math.trunc(Number($('uaCoins').value));if(!Number.isFinite(n)||n===0){alert('أدخل قيمة كوين صحيحة');return}if(!confirm('تأكيد تعديل رصيد المستخدم؟'))return;const {error}=await db.rpc('admin_adjust_wallet',{p_user_id:id,p_amount:n});if(error){alert('تعذر تعديل الكوينز: '+error.message);return}alert('تم تعديل الرصيد');$('uaCoins').value='';await loadAll();openUserActions(id);}
+
 function renderRooms(rs){$('roomsTable').innerHTML='<table><tr><th>الغرفة</th><th>المالك</th><th>الحالة</th><th>إجراء</th></tr>'+rs.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.owner_id||'—')+'</td><td>'+(r.is_active?'نشطة':'مغلقة')+'</td><td><button onclick="toggleRoomActive(\''+r.id+'\','+(!r.is_active)+')">'+(r.is_active?'إغلاق':'تفعيل')+'</button></td></tr>').join('')+'</table>'}
 function renderWallets(ws,ps){const names=Object.fromEntries(ps.map(p=>[p.id,p.display_name||p.username||p.id]));$('walletsTable').innerHTML='<table><tr><th>المستخدم</th><th>الرصيد</th><th>تعديل</th></tr>'+ws.map(w=>'<tr><td>'+esc(names[w.user_id]||w.user_id)+'</td><td>'+Number(w.balance||0).toLocaleString()+'</td><td><input id="wa_'+w.user_id+'" type="number" step="1" placeholder="+/- كوين"><button onclick="adjustWallet(\''+w.user_id+'\')">تطبيق</button></td></tr>').join('')+'</table>'}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
