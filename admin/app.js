@@ -26,7 +26,7 @@ function showTab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.ad
 
 async function loadAll(){
   const [profiles,wallets,rooms,frames,packages,vips,policy,promotions,agencies]=await Promise.all([
-    db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified,recharge_points,svip_level').order('created_at',{ascending:false}),
+    db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified,recharge_points,svip_level,user_level').order('created_at',{ascending:false}),
     db.from('wallets').select('user_id,balance').order('balance',{ascending:false}),
     db.from('rooms').select('id,name,owner_id,is_active,created_at').order('created_at',{ascending:false}),
     db.from('frame_items').select('id,name,style_key,price,is_active').order('price'),
@@ -84,6 +84,17 @@ function openUserActions(id){
 }
 async function grantVipToUser(id){const v=$('uaVip').value;if(!v){alert('اختر مستوى VIP');return}if(!confirm('تأكيد إهداء '+v+' لهذا المستخدم؟'))return;const {error}=await db.rpc('admin_grant_vip',{p_user_id:id,p_vip_level:v});if(error){alert('تعذر إهداء VIP: '+error.message);return}alert('تم إهداء '+v);await loadAll();openUserActions(id);}
 async function setSpecialId(id){const v=$('uaPublicId').value.trim();if(!v){alert('أدخل ID');return}const {error}=await db.rpc('admin_set_public_id',{p_user_id:id,p_public_id:v});if(error){alert('تعذر حفظ ID: '+error.message);return}alert('تم حفظ ID المميز');await loadAll();openUserActions(id);}
+async function raiseUserLevel(id){
+  const current=(allUsers.find(u=>u.id===id)||{}).user_level||1;
+  const value=prompt('أدخل الليفل الجديد للمستخدم:',current);
+  if(value===null)return;
+  const level=Math.trunc(Number(value));
+  if(!Number.isInteger(level)||level<1||level>1000){alert('الليفل يجب أن يكون بين 1 و1000');return}
+  const {error}=await db.rpc('admin_set_user_level',{p_user_id:id,p_level:level});
+  if(error){alert(error.message);return}
+  alert('تم رفع لفل المستخدم إلى '+level);
+  await loadAll();
+}
 async function saveUserBadges(id){const {error}=await db.from('profiles').update({is_verified:$('uaVerified').checked,activity_admin_badge:$('uaActivity').checked,customer_service_badge:$('uaCS').checked}).eq('id',id);if(error){alert('تعذر حفظ الشارات: '+error.message);return}alert('تم حفظ الشارات');await loadAll();openUserActions(id);}
 async function warnUser(id){const reason=$('uaWarning').value.trim();if(!reason){alert('اكتب سبب التحذير');return}const {error}=await db.rpc('admin_warn_user',{p_user_id:id,p_reason:reason});if(error){alert('تعذر إضافة التحذير: '+error.message);return}alert('تم تسجيل التحذير');$('uaWarning').value='';}
 async function adjustUserCoins(id){const n=Math.trunc(Number($('uaCoins').value));if(!Number.isFinite(n)||n===0){alert('أدخل قيمة كوين صحيحة');return}if(!confirm('تأكيد تعديل رصيد المستخدم؟'))return;const {error}=await db.rpc('admin_adjust_wallet',{p_user_id:id,p_amount:n});if(error){alert('تعذر تعديل الكوينز: '+error.message);return}alert('تم تعديل الرصيد');$('uaCoins').value='';await loadAll();openUserActions(id);}
