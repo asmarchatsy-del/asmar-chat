@@ -8,9 +8,21 @@ async function loadFinance(){
     db.from('svip_levels').select('*').order('level'),
     db.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(100)
   ]);
-  const err=[rm,wm,rr,wr,sv,audit].find(x=>x.error);
-  if(err){const root=$('financeRoot');if(root)root.innerHTML='<div class="panel"><h3>⚠️ تعذر تحميل قسم الشحن والسحب</h3><p>'+esc(err.error?.message||'خطأ غير معروف')+'</p><button onclick="loadFinance()">إعادة المحاولة</button></div>';console.error('loadFinance',err.error);return}
-  financeCache={rechargeMethods:rm.data||[],withdrawalMethods:wm.data||[],recharges:rr.data||[],withdrawals:wr.data||[],svip:sv.data||[],audit:audit.data||[]};
+  const root=$('financeRoot');
+  const errors=[rm,wm,rr,wr,sv,audit].filter(x=>x&&x.error);
+  if(errors.length) console.warn('loadFinance partial errors',errors.map(x=>x.error));
+  if(root && rm.error && wm.error){
+    root.innerHTML='<div class="panel"><h3>⚠️ تعذر تحميل طرق الشحن والسحب</h3><p>'+esc(rm.error?.message||wm.error?.message||'خطأ غير معروف')+'</p><button onclick="loadFinance()">إعادة المحاولة</button></div>';
+    return;
+  }
+  financeCache={
+    rechargeMethods:rm.error?[]:(rm.data||[]),
+    withdrawalMethods:wm.error?[]:(wm.data||[]),
+    recharges:rr.error?[]:(rr.data||[]),
+    withdrawals:wr.error?[]:(wr.data||[]),
+    svip:sv.error?[]:(sv.data||[]),
+    audit:audit.error?[]:(audit.data||[])
+  };
   renderFinance();
 }
 function financeName(id){const p=allUsers.find(x=>x.id===id);return p?(p.display_name||p.username||p.public_id):id||'—'}
