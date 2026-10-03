@@ -27,7 +27,7 @@ function renderFinance(){
   '<div class="panel"><h3>🪙 طلبات الشحن</h3><div id="rechargeRequestsList"></div></div>'+
   '<div class="panel"><h3>💸 طلبات السحب</h3><div id="withdrawalRequestsList"></div></div>'+
   '<div class="panel"><h3>🧾 سجل العمليات</h3><div id="auditList"></div></div>';
-  renderMethodLists();renderRequests();renderAudit();
+  renderMethodLists();renderRequests();renderAudit();renderGlobalAuditTab(financeCache.audit||[]);
 }
 function renderMethodLists(){
  const r=financeCache.rechargeMethods,w=financeCache.withdrawalMethods;
@@ -83,6 +83,14 @@ async function approveRecharge(id,ok){
 async function setWithdrawalStatus(id,status){
  const note=prompt('ملاحظة (اختياري)')||null;
  const {error}=await db.rpc('admin_set_withdrawal_status',{p_request_id:id,p_status:status,p_note:note});if(error){alert(error.message);return}await loadFinance();await loadAll();
+}
+function renderGlobalAuditTab(items){
+ const root=document.getElementById('audit');
+ if(!root)return;
+ root.innerHTML='<div class="panel"><h3>🧾 سجل العمليات الفعلي</h3>'+
+ (items||[]).map(a=>'<div class="card"><b>'+esc(a.action||'—')+'</b> · '+esc(financeName(a.target_user_id))+
+ '<br><small>'+esc(a.created_at||'')+'</small><br><small>'+esc(JSON.stringify(a.metadata||{}))+'</small></div>').join('')+
+ ((items||[]).length?'':'<p>لا يوجد سجل عمليات.</p>')+'</div>';
 }
 function renderAudit(){
  $('auditList').innerHTML=financeCache.audit.map(a=>'<div class="card"><b>'+esc(a.action)+'</b> · '+esc(financeName(a.target_user_id))+' · '+esc(a.created_at)+'<br><small>'+esc(JSON.stringify(a.metadata||{}))+'</small></div>').join('')||'<p>لا يوجد سجل.</p>';
