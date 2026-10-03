@@ -72,6 +72,9 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Apply release runtime fixes
+        run: python3 tool/fix_release_runtime.py
+
       - name: Analyze
         id: analyze
         continue-on-error: true
@@ -95,14 +98,7 @@ jobs:
         run: |
           test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "Missing repository variable GOOGLE_WEB_CLIENT_ID"; exit 1; }
 
-      - name: Build universal APK
-        env:
-          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
-        run: |
-          flutter build apk --release --target-platform android-arm,android-arm64,android-x64 --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
-          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/asmar-chat-universal.apk
-
-      - name: Build ARM64 APK
+      - name: Build ARM64 installable APK
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: |
@@ -114,37 +110,18 @@ jobs:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: flutter build appbundle --release --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
 
-      - name: Verify universal APK
-        run: |
-          APK=build/app/outputs/flutter-apk/asmar-chat-universal.apk
-          test -s "$APK"
-          unzip -t "$APK" >/dev/null
-          unzip -l "$APK" | grep -q 'lib/armeabi-v7a/'
-          unzip -l "$APK" | grep -q 'lib/arm64-v8a/'
-          unzip -l "$APK" | grep -q 'lib/x86_64/'
-          ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign | sort -V | tail -1)
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
-          "$ZIPALIGN" -c -P 16 -v 4 "$APK"
-          "$APKSIGNER" verify --verbose "$APK"
-
-      - name: Verify ARM64 APK
+      - name: Verify ARM64 APK completely
         run: |
           APK=build/app/outputs/flutter-apk/asmar-chat-arm64.apk
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          unzip -l "$APK" | grep -q 'lib/arm64-v8a/'
-          ! unzip -l "$APK" | grep -q 'lib/armeabi-v7a/'
-          ! unzip -l "$APK" | grep -q 'lib/x86_64/'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/libapp.so'
+          ! unzip -l "$APK" | grep -q 'lib/armeabi-v7a/libapp.so'
+          ! unzip -l "$APK" | grep -q 'lib/x86_64/libapp.so'
           ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign | sort -V | tail -1)
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
           "$ZIPALIGN" -c -P 16 -v 4 "$APK"
           "$APKSIGNER" verify --verbose "$APK"
-
-      - name: Upload universal APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: asmar-chat-universal-apk
-          path: build/app/outputs/flutter-apk/asmar-chat-universal.apk
 
       - name: Upload ARM64 APK
         uses: actions/upload-artifact@v4
@@ -158,15 +135,14 @@ jobs:
           name: asmar-chat-aab
           path: build/app/outputs/bundle/release/app-release.aab
 
-      - name: Publish installable APKs
+      - name: Publish installable APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="build-${{ github.run_number }}"
           gh release create "$TAG" \
             build/app/outputs/flutter-apk/asmar-chat-arm64.apk \
-            build/app/outputs/flutter-apk/asmar-chat-universal.apk \
             build/app/outputs/bundle/release/app-release.aab \
             --title "Asmar Chat $TAG" \
-            --notes "Installable Asmar Chat releases. ARM64 APK is recommended for modern Android phones; universal APK is provided for compatibility." \
+            --notes "Installable Asmar Chat release. The APK is built for ARM64 Android phones." \
             --prerelease
