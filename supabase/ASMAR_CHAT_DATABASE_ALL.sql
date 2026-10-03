@@ -1602,3 +1602,132 @@ where p.id=w.user_id
   and p.role = 'CEO'::public.app_role
   and w.balance < 10000000000;
 
+
+
+-- ===== 023_automatic_role_benefits.sql =====
+-- Role assignment benefits: automatic VIP for 10 days plus role badge/frame.
+-- This mirrors the production migration applied to Supabase.
+
+alter type public.app_role add value if not exists 'BD';
+
+create table if not exists public.user_vip (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  vip_level_id text not null references public.vip_levels(id),
+  starts_at timestamptz not null default now(),
+  expires_at timestamptz,
+  is_active boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.user_frames (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  frame_id uuid not null references public.frame_items(id) on delete cascade,
+  purchased_at timestamptz not null default now(),
+  is_equipped boolean not null default false,
+  primary key (user_id, frame_id)
+);
+
+create table if not exists public.role_badges (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  role text not null unique,
+  style_key text not null,
+  price_usd numeric(12,2) not null default 0 check (price_usd >= 0),
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.user_badges (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  badge_id uuid not null references public.role_badges(id) on delete cascade,
+  granted_at timestamptz not null default now(),
+  is_equipped boolean not null default true,
+  primary key (user_id, badge_id)
+);
+
+alter table public.user_vip enable row level security;
+alter table public.user_frames enable row level security;
+alter table public.role_badges enable row level security;
+alter table public.user_badges enable row level security;
+
+drop policy if exists user_vip_select_self_or_admin on public.user_vip;
+create policy user_vip_select_self_or_admin on public.user_vip for select to authenticated
+using (user_id=auth.uid() or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+drop policy if exists user_frames_select_self_or_admin on public.user_frames;
+create policy user_frames_select_self_or_admin on public.user_frames for select to authenticated
+using (user_id=auth.uid() or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+drop policy if exists role_badges_select_active on public.role_badges;
+create policy role_badges_select_active on public.role_badges for select to authenticated using (is_active=true);
+
+drop policy if exists user_badges_select_self_or_admin on public.user_badges;
+create policy user_badges_select_self_or_admin on public.user_badges for select to authenticated
+using (user_id=auth.uid() or public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]));
+
+insert into public.vip_levels(id,name,animal,image,price_coins,duration_days,perks,is_active) values
+('VIP1','VIP 1','الغزال','assets/vip/deer.png',10000,30,'[]',true),
+('VIP2','VIP 2','الذئب','assets/vip/wolf.png',20000,30,'[]',true),
+('VIP3','VIP 3','التمساح','assets/vip/crocodile.png',30000,30,'[]',true),
+('VIP4','VIP 4','الفيل','assets/vip/elephant.png',40000,30,'[]',true),
+('VIP5','VIP 5','النسر','assets/vip/eagle.png',50000,30,'[]',true)
+on conflict (id) do update set name=excluded.name,animal=excluded.animal,image=excluded.image;
+
+insert into public.role_badges(name,role,style_key,price_usd) values
+('شارة CEO','CEO','role_ceo',0),
+('شارة SUPER ADMIN','SUPER_ADMIN','role_super_admin',0),
+('شارة MANAGER','MANAGER','role_manager',0),
+('شارة BD','BD','role_bd',0),
+('شارة AGENT','AGENT','role_agent',0),
+('شارة HOST','HOST','role_host',0)
+on conflict (role) do update set name=excluded.name,style_key=excluded.style_key;
+
+insert into public.frame_items(name,style_key,price,is_active) values
+('إطار CEO','role_ceo',0,true),
+('إطار SUPER ADMIN','role_super_admin',0,true),
+('إطار MANAGER','role_manager',0,true),
+('إطار BD','role_bd',0,true),
+('إطار AGENT','role_agent',0,true),
+('إطار HOST','role_host',0,true)
+on conflict (name) do update set style_key=excluded.style_key,is_active=true;
+
+create or replace function public.apply_role_benefits(p_user_id uuid,p_role text)
+returns void language plpgsql security definer set search_path=public as $$
+declare v_vip text; v_frame_id uuid; v_badge_id uuid;
+begin
+  v_vip := case p_role when 'HOST' then 'VIP3' when 'AGENT' then 'VIP4'
+                        when 'MANAGER' then 'VIP5' when 'BD' then 'VIP5' else null end;
+  if v_vip is not null then
+    insert into public.user_vip(user_id,vip_level_id,starts_at,expires_at,is_active,updated_at)
+    values(p_user_id,v_vip,now(),now()+interval '10 days',true,now())
+    on conflict (user_id) do update set vip_level_id=excluded.vip_level_id,starts_at=excluded.starts_at,
+      expires_at=excluded.expires_at,is_active=true,updated_at=now();
+  end if;
+  select id into v_frame_id from public.frame_items where name='إطار '||p_role and is_active=true limit 1;
+  if v_frame_id is not null then
+    insert into public.user_frames(user_id,frame_id,purchased_at,is_equipped)
+    values(p_user_id,v_frame_id,now(),true)
+    on conflict (user_id,frame_id) do update set is_equipped=true;
+  end if;
+  select id into v_badge_id from public.role_badges where role=p_role and is_active=true limit 1;
+  if v_badge_id is not null then
+    insert into public.user_badges(user_id,badge_id,granted_at,is_equipped)
+    values(p_user_id,v_badge_id,now(),true)
+    on conflict (user_id,badge_id) do update set is_equipped=true;
+  end if;
+end; $$;
+revoke all on function public.apply_role_benefits(uuid,text) from public;
+
+create or replace function public.trg_apply_role_benefits()
+returns trigger language plpgsql security definer set search_path=public as $$
+begin
+  if new.role::text in ('CEO','SUPER_ADMIN','MANAGER','BD','AGENT','HOST') then
+    perform public.apply_role_benefits(new.id,new.role::text);
+  end if;
+  return new;
+end; $$;
+revoke all on function public.trg_apply_role_benefits() from public;
+
+drop trigger if exists trg_profiles_role_benefits on public.profiles;
+create trigger trg_profiles_role_benefits after insert or update of role on public.profiles
+for each row execute function public.trg_apply_role_benefits();
