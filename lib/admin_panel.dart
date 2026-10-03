@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_finance.dart';
+import 'admin_svip.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -333,6 +334,11 @@ class _AdminPanelState extends State<AdminPanel> {
           'إدارة الوكالات',
           Icons.business,
           _manageAgencies,
+        ),
+        _action(
+          'إدارة SVIP والهدايا',
+          Icons.workspace_premium,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminSvipPage())),
         ),
       ],
     );
