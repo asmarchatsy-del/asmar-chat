@@ -47,8 +47,6 @@ class _RoleCenterPageState extends State<RoleCenterPage> {
         return ['المستخدمون', 'المضيفون', 'الوكالات', 'BD', 'Admin'];
       case 'BD':
         return ['المستخدمون', 'الوكالات', 'متابعة الوكالات'];
-      case 'BD':
-        return ['الوكالات', 'متابعة الوكالات'];
       case 'ADMIN':
         return ['المستخدمون', 'الغرف', 'المضيفون'];
       case 'AGENT':
