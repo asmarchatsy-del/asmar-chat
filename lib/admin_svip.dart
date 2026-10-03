@@ -64,7 +64,21 @@ class _AdminSvipPageState extends State<AdminSvipPage>{
     return Container(margin:const EdgeInsets.only(bottom:14),padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:const Color(0xFF160A06),borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFF4C2B12))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Row(children:[Text('SVIP '+n.toString(),style:const TextStyle(color:Color(0xFFFFD36A),fontSize:19,fontWeight:FontWeight.w900)),const SizedBox(width:8),Expanded(child:Text(req.toString()+' نقطة = '+(req*100).toString()+' Coins',style:const TextStyle(color:Colors.white54,fontSize:10))),IconButton(onPressed:()=>_saveLevel(n),icon:const Icon(Icons.edit,color:Color(0xFFFFD36A)))]),
       const Text('بكج الهدايا',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900)),const SizedBox(height:8),
-      ...gifts.map((g)=>SwitchListTile(dense:true,contentPadding:EdgeInsets.zero,value:selected[n]?.contains(g['id'].toString())==true,onChanged:(v)=>_toggleGift(n,g,v),secondary:Text((g['emoji']??'🎁').toString(),style:const TextStyle(fontSize:24)),title:Text(g['name'].toString(),style:const TextStyle(color:Colors.white,fontSize:12)),subtitle:Text((g['asset_type']??'').toString(),style:const TextStyle(color:Colors.white38,fontSize:9)),trailing:selected[n]?.contains(g['id'].toString())==true?IconButton(onPressed:()=>_quantity(n,g),icon:Text('×'+(quantities[n]?[g['id'].toString()]??1).toString(),style:const TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.w900))):null)),
+      ...gifts.map((g){
+        final id=g['id'].toString();
+        final enabled=selected[n]?.contains(id)==true;
+        return ListTile(
+          dense:true,
+          contentPadding:EdgeInsets.zero,
+          leading:Text((g['emoji']??'🎁').toString(),style:const TextStyle(fontSize:24)),
+          title:Text(g['name'].toString(),style:const TextStyle(color:Colors.white,fontSize:12)),
+          subtitle:Text((g['asset_type']??'').toString(),style:const TextStyle(color:Colors.white38,fontSize:9)),
+          trailing:Row(mainAxisSize:MainAxisSize.min,children:[
+            if(enabled) IconButton(onPressed:()=>_quantity(n,g),icon:Text('×'+(quantities[n]?[id]??1).toString(),style:const TextStyle(color:Color(0xFFFFD36A),fontWeight:FontWeight.w900))),
+            Switch(value:enabled,onChanged:(v)=>_toggleGift(n,g,v)),
+          ]),
+        );
+      }),
     ]));
   }
   void _msg(String x)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(x)));
