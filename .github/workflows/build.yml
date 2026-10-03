@@ -1,5 +1,8 @@
 name: Build Asmar Chat
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -126,3 +129,15 @@ jobs:
         with:
           name: asmar-chat-aab
           path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Publish installable APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="build-${{ github.run_number }}"
+          gh release create "$TAG" \
+            build/app/outputs/flutter-apk/app-release.apk \
+            build/app/outputs/bundle/release/app-release.aab \
+            --title "Asmar Chat $TAG" \
+            --notes "Installable Asmar Chat release built by CI." \
+            --prerelease
