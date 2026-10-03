@@ -258,7 +258,6 @@ class _AdminPanelState extends State<AdminPanel> {
           children: const [
             _RoleBadge(title: 'CEO', icon: Icons.workspace_premium),
             _RoleBadge(title: 'SUPER ADMIN', icon: Icons.shield),
-            _RoleBadge(title: 'ADMIN', icon: Icons.admin_panel_settings),
             _RoleBadge(title: 'MANAGER', icon: Icons.manage_accounts),
             _RoleBadge(title: 'HOST', icon: Icons.mic),
             _RoleBadge(title: 'AGENT', icon: Icons.business),
@@ -440,7 +439,6 @@ class _AdminPanelState extends State<AdminPanel> {
       case 'CEO': return 'CEO';
       case 'SUPER_ADMIN': return 'SUPER ADMIN';
       case 'MANAGER': return 'MANAGER';
-      case 'ADMIN': return 'ADMIN';
       case 'HOST': return 'HOST';
       case 'AGENT': return 'AGENT';
       case 'BD': return 'BD';
@@ -453,7 +451,6 @@ class _AdminPanelState extends State<AdminPanel> {
       case 'CEO': return ['إدارة كاملة', 'الكوينزات', 'المستخدمون', 'الغرف', 'المضيفون', 'الوكالات', 'الصلاحيات'];
       case 'SUPER_ADMIN': return ['المستخدمون', 'الغرف', 'المضيفون', 'الوكالات', 'الإعدادات'];
       case 'MANAGER': return ['المضيفون', 'الوكالات', 'الغرف'];
-      case 'ADMIN': return ['المستخدمون', 'الغرف'];
       case 'HOST': return ['إدارة الغرفة', 'المضيفون'];
       case 'AGENT': return ['الوكالات', 'المضيفون'];
       default: return ['الدردشة'];
@@ -551,7 +548,7 @@ class _AdminPanelState extends State<AdminPanel> {
               const SizedBox(height: 6),
               const Text('صلاحيات واجهة الإدارة الحالية — تحتاج حماية Backend عند ربط قاعدة البيانات.', style: TextStyle(color: Colors.white54, fontSize: 12)),
               const SizedBox(height: 16),
-              ...['CEO','SUPER_ADMIN','MANAGER','ADMIN','HOST','AGENT','USER'].map((role) => Container(
+              ...['CEO','SUPER_ADMIN','MANAGER','BD','AGENT','HOST','USER'].map((role) => Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF4C3019))),
@@ -724,7 +721,7 @@ class _AdminPanelState extends State<AdminPanel> {
     }
   }
 
-  Future<void> _changeRole(Map<String,dynamic> u) async { final roles = ['USER','HOST','AGENT','ADMIN','BD','MANAGER','SUPER_ADMIN']; String selected = (u['role'] ?? 'USER').toString(); final value = await showDialog<String>(context: context, builder: (ctx)=>AlertDialog(backgroundColor: card,title: Text('تغيير رتبة '+u['name'].toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w900)),content: StatefulBuilder(builder:(ctx,setState)=>DropdownButtonFormField<String>(value: roles.contains(selected) ? selected : 'USER',dropdownColor: card,items: roles.map((r)=>DropdownMenuItem(value:r,child:Text(r))).toList(),onChanged:(v){if(v!=null){selected=v;setState((){});}})),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,selected),child:const Text('حفظ'))],)); if(value==null || value==u['role']) return; try { await Supabase.instance.client.rpc('admin_set_user_role', params: {'p_user_id':u['id'],'p_role':value}); await _loadData(); _message('تم تغيير الرتبة إلى '+value); } catch(e){_message('فشل تغيير الرتبة: $e');} }
+  Future<void> _changeRole(Map<String,dynamic> u) async { final roles = ['USER','HOST','AGENT','BD','MANAGER','SUPER_ADMIN']; String selected = (u['role'] ?? 'USER').toString(); final value = await showDialog<String>(context: context, builder: (ctx)=>AlertDialog(backgroundColor: card,title: Text('تغيير رتبة '+u['name'].toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w900)),content: StatefulBuilder(builder:(ctx,setState)=>DropdownButtonFormField<String>(value: roles.contains(selected) ? selected : 'USER',dropdownColor: card,items: roles.map((r)=>DropdownMenuItem(value:r,child:Text(r))).toList(),onChanged:(v){if(v!=null){selected=v;setState((){});}})),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,selected),child:const Text('حفظ'))],)); if(value==null || value==u['role']) return; try { await Supabase.instance.client.rpc('admin_set_user_role', params: {'p_user_id':u['id'],'p_role':value}); await _loadData(); _message('تم تغيير الرتبة إلى '+value); } catch(e){_message('فشل تغيير الرتبة: $e');} }
 
   void _coinHistory() {
     showModalBottomSheet<void>(
