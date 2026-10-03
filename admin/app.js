@@ -4,19 +4,27 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 
 async function login(){
+  $('loginMsg').textContent='جاري التحقق من الحساب...';
   const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
-  if(error){$('loginMsg').textContent=error.message;return}
+  if(error){$('loginMsg').textContent='تعذر تسجيل الدخول: '+error.message;return}
   await boot();
 }
 async function logout(){await db.auth.signOut();location.reload()}
 async function boot(){
-  const {data:{user}}=await db.auth.getUser();
+  $('loginMsg').textContent='';
+  const {data:{user},error:authError}=await db.auth.getUser();
+  if(authError){$('loginMsg').textContent='خطأ في جلسة الدخول: '+authError.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
   if(!user){$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
   const {data:p,error}=await db.from('profiles').select('display_name,role,is_active').eq('id',user.id).maybeSingle();
-  if(error||!p||!p.is_active||!['CEO','SUPER_ADMIN'].includes(p.role)){
+  if(error){
+    $('loginMsg').textContent='تم تسجيل الدخول، لكن تعذر قراءة صلاحية لوحة الإدارة: '+error.message;
+    $('login').classList.remove('hidden');$('app').classList.add('hidden');
+    return;
+  }
+  if(!p||!p.is_active||!['CEO','SUPER_ADMIN'].includes(p.role)){
     await db.auth.signOut();
     $('login').classList.remove('hidden');$('app').classList.add('hidden');
-    $('loginMsg').textContent=error?.message||'هذا الحساب ليس لديه صلاحية لوحة الإدارة';
+    $('loginMsg').textContent='هذا الحساب ليس لديه صلاحية لوحة الإدارة';
     return;
   }
   $('login').classList.add('hidden');$('app').classList.remove('hidden');
