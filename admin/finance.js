@@ -33,7 +33,7 @@ function renderMethodLists(){
  const r=financeCache.rechargeMethods,w=financeCache.withdrawalMethods;
  $('rechargeMethodsList').innerHTML=r.map(x=>'<div class="card"><b>'+esc(x.name)+'</b><small>'+esc(x.currency)+' · '+Number(x.coins_per_unit).toLocaleString()+' كوين/وحدة</small><div>'+esc(x.instructions||'')+'</div><button onclick="editRechargeMethod(\''+x.id+'\')">تعديل</button> '+(x.is_active?'🟢':'🔴')+'</div>').join('')||'<p>لا توجد طرق شحن.</p>';
  $('withdrawalMethodsList').innerHTML=w.map(x=>'<div class="card"><b>'+esc(x.name)+'</b><small>'+esc(x.currency)+' · حد '+Number(x.min_amount).toLocaleString()+'—'+Number(x.max_amount).toLocaleString()+' · رسم '+x.fee+'</small><button onclick="editWithdrawalMethod(\''+x.id+'\')">تعديل</button> '+(x.is_active?'🟢':'🔴')+'</div>').join('')||'<p>لا توجد طرق سحب.</p>';
- $('svipLevelsList').innerHTML=financeCache.svip.map(x=>'<div class="card"><b>SVIP '+x.level+'</b><input id="sv_'+x.level+'" type="number" min="0" value="'+Number(x.min_recharge_points||0)+'" placeholder="الحد الأدنى لنقاط الشحن"><button onclick="saveSvipThreshold('+x.level+')">حفظ</button></div>').join('');
+ $('svipLevelsList').innerHTML=financeCache.svip.map(x=>'<div class="card"><b>SVIP '+x.level+'</b><input id="sv_'+x.level+'" type="number" min="0" value="'+Number(x.min_recharge_points||0)+'" placeholder="الحد الأدنى لنقاط الشحن"><label><input id="sva_'+x.level+'" type="checkbox" '+(x.is_active?'checked':'')+'> فعال</label><button onclick="saveSvipThreshold('+x.level+')">حفظ</button></div>').join('');
 }
 function openRechargeMethodForm(id){
  const x=financeCache.rechargeMethods.find(v=>v.id===id)||{};
@@ -69,7 +69,7 @@ async function saveWithdrawalMethod(id){
 }
 async function saveSvipThreshold(level){
  const n=Math.trunc(Number($('sv_'+level).value));if(!Number.isFinite(n)||n<0){alert('أدخل نقاط صحيحة');return}
- const {error}=await db.rpc('admin_set_svip_threshold',{p_level:level,p_min_points:n});if(error){alert(error.message);return}await loadFinance();
+ const {error}=await db.rpc('admin_set_svip_level_config',{p_level:level,p_min_points:n,p_active:$('sva_'+level).checked});if(error){alert(error.message);return}await loadFinance();
 }
 function renderRequests(){
  const names=id=>esc(financeName(id));
