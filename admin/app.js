@@ -1,12 +1,24 @@
 const SUPABASE_URL='https://jojxsqsgmpaggfnnyuyy.supabase.co';
 const SUPABASE_KEY='sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL';
-const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let db=null;
+function showRuntimeError(message){
+  const m=document.getElementById('loginMsg');
+  if(m) m.textContent=message;
+}
+window.addEventListener('error',e=>showRuntimeError('خطأ JavaScript: '+(e.message||'خطأ غير معروف')));
+window.addEventListener('unhandledrejection',e=>showRuntimeError('خطأ: '+(e.reason?.message||e.reason||'خطأ غير معروف')));
+if(typeof supabase==='undefined' || typeof supabase.createClient!=='function'){
+  showRuntimeError('مكتبة Supabase لم تُحمّل. أعد فتح الصفحة بعد لحظات.');
+}else{
+  db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+}
 const $=id=>document.getElementById(id);
 
 let booting=false;
 async function login(){
   const btn=document.querySelector('button[onclick="login()"]');
   const email=$('email').value.trim(), password=$('password').value;
+  if(!db){$('loginMsg').textContent='Supabase غير جاهز — أعد تحميل الصفحة.';return}
   if(!email||!password){$('loginMsg').textContent='أدخل البريد الإلكتروني وكلمة المرور.';return}
   if(btn) btn.disabled=true;
   $('loginMsg').textContent='جاري التحقق من الحساب...';
@@ -106,7 +118,7 @@ async function raiseUserLevel(id){
   const value=prompt('أدخل الليفل الجديد للمستخدم:',current);
   if(value===null)return;
   const level=Math.trunc(Number(value));
-  if(!Number.isInteger(level)||level<1||level>150){alert('الليفل يجب أن يكون بين 1 و1000');return}
+  if(!Number.isInteger(level)||level<1||level>150){alert('الليفل يجب أن يكون بين 1 و150');return}
   const {error}=await db.rpc('admin_set_user_level',{p_user_id:id,p_level:level});
   if(error){alert(error.message);return}
   alert('تم رفع لفل المستخدم إلى '+level);
