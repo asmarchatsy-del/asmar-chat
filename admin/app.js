@@ -109,6 +109,7 @@ function openUserActions(id){
   '<div class="card"><h3>⚠️ تحذير</h3><input id="uaWarning" placeholder="سبب التحذير"><button onclick="warnUser(\''+p.id+'\')">إضافة تحذير</button></div>'+
   '<div class="card"><h3>🪙 كوينز</h3><input id="uaCoins" type="number" placeholder="+ أو - كوين"><button onclick="adjustUserCoins(\''+p.id+'\')">تطبيق</button></div>'+
   '<div class="card"><h3>🚦 الحساب</h3><button onclick="toggleUserActive(\''+p.id+'\','+(!p.is_active)+')">'+(p.is_active?'إيقاف الحساب':'تفعيل الحساب')+'</button></div>'+
+  '<div class="card"><h3>📈 المستوى 1—150</h3><p>الرفع اليدوي متاح للـCEO فقط.</p><button onclick="raiseUserLevel(\''+p.id+'\')">تغيير المستوى</button></div>'+
   '</div>';
 }
 async function grantVipToUser(id){const v=$('uaVip').value;if(!v){alert('اختر مستوى VIP');return}if(!confirm('تأكيد إهداء '+v+' لهذا المستخدم؟'))return;const {error}=await db.rpc('admin_grant_vip',{p_user_id:id,p_vip_level:v});if(error){alert('تعذر إهداء VIP: '+error.message);return}alert('تم إهداء '+v);await loadAll();openUserActions(id);}
