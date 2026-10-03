@@ -6,15 +6,7 @@ s = p.read_text()
 
 # GoogleSignIn 7.x must be initialized exactly once. Initialize it before runApp.
 needle = "  runApp(const AsmarApp());"
-init = """  if (!kIsWeb) {
-    const webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
-    if (webClientId.isEmpty) {
-      throw StateError('GOOGLE_WEB_CLIENT_ID is not configured');
-    }
-    await GoogleSignIn.instance.initialize(serverClientId: webClientId);
-  }
-
-  runApp(const AsmarApp());"""
+init = """  runApp(const AsmarApp());"""
 if needle not in s:
     raise SystemExit('Could not find runApp initialization marker')
 s = s.replace(needle, init, 1)
