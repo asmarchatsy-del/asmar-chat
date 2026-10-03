@@ -3,32 +3,40 @@ const SUPABASE_KEY='sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 
+let booting=false;
 async function login(){
+  const btn=document.querySelector('button[onclick="login()"]');
+  const email=$('email').value.trim(), password=$('password').value;
+  if(!email||!password){$('loginMsg').textContent='أدخل البريد الإلكتروني وكلمة المرور.';return}
+  if(btn) btn.disabled=true;
   $('loginMsg').textContent='جاري التحقق من الحساب...';
-  const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
-  if(error){$('loginMsg').textContent='تعذر تسجيل الدخول: '+error.message;return}
-  await boot();
+  try{
+    const {data,error}=await db.auth.signInWithPassword({email,password});
+    if(error){$('loginMsg').textContent='تعذر تسجيل الدخول: '+error.message;return}
+    await boot(data?.user);
+  }catch(e){$('loginMsg').textContent='حدث خطأ أثناء تسجيل الدخول: '+(e?.message||e)}
+  finally{if(btn) btn.disabled=false}
 }
 async function logout(){await db.auth.signOut();location.reload()}
-async function boot(){
-  $('loginMsg').textContent='';
-  const {data:{user},error:authError}=await db.auth.getUser();
-  if(authError){$('loginMsg').textContent='خطأ في جلسة الدخول: '+authError.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
-  if(!user){$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
-  const {data:p,error}=await db.from('profiles').select('display_name,role,is_active').eq('id',user.id).maybeSingle();
-  if(error){
-    $('loginMsg').textContent='تم تسجيل الدخول، لكن تعذر قراءة صلاحية لوحة الإدارة: '+error.message;
-    $('login').classList.remove('hidden');$('app').classList.add('hidden');
-    return;
-  }
-  if(!p||!p.is_active||!['CEO','SUPER_ADMIN'].includes(p.role)){
-    await db.auth.signOut();
-    $('login').classList.remove('hidden');$('app').classList.add('hidden');
-    $('loginMsg').textContent='هذا الحساب ليس لديه صلاحية لوحة الإدارة';
-    return;
-  }
-  $('login').classList.add('hidden');$('app').classList.remove('hidden');
-  await loadAll();
+async function boot(signedUser=null){
+  if(booting)return;
+  booting=true;
+  try{
+    $('loginMsg').textContent='';
+    const authResult=signedUser?{data:{user:signedUser},error:null}:await db.auth.getUser();
+    const user=authResult.data?.user, authError=authResult.error;
+    if(authError){$('loginMsg').textContent='خطأ في جلسة الدخول: '+authError.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    if(!user){$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    const {data:p,error}=await db.from('profiles').select('display_name,role,is_active').eq('id',user.id).maybeSingle();
+    if(error){$('loginMsg').textContent='تم تسجيل الدخول، لكن تعذر قراءة صلاحية لوحة الإدارة: '+error.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    if(!p||!p.is_active||!['CEO','SUPER_ADMIN'].includes(p.role)){
+      await db.auth.signOut();
+      $('loginMsg').textContent='هذا الحساب ليس لديه صلاحية لوحة الإدارة';
+      $('login').classList.remove('hidden');$('app').classList.add('hidden');return;
+    }
+    $('login').classList.add('hidden');$('app').classList.remove('hidden');
+    await loadAll();
+  }finally{booting=false}
 }
 function showTab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$(id).classList.remove('hidden')}
 
@@ -128,7 +136,7 @@ async function changePublicId(id){
 async function toggleUserActive(id,active){const {error}=await db.rpc('admin_set_user_active',{p_user_id:id,p_active:active});if(error){alert('تعذر تنفيذ العملية: '+error.message);return}await loadAll()}
 async function toggleRoomActive(id,active){const {error}=await db.rpc('admin_set_room_active',{p_room_id:id,p_active:active});if(error){alert('تعذر تنفيذ العملية: '+error.message);return}await loadAll()}
 async function adjustWallet(id){const amount=Number($('wa_'+id).value);if(!Number.isFinite(amount)||amount===0){alert('أدخل عدد كوينز موجب أو سالب');return}if(!confirm('تأكيد تعديل رصيد الكوين؟'))return;const {data,error}=await db.rpc('admin_adjust_wallet',{p_user_id:id,p_amount:Math.trunc(amount)});if(error){alert('تعذر تعديل الرصيد: '+error.message);return}alert('تم تحديث الرصيد إلى '+Number(data||0).toLocaleString());await loadAll()}
-db.auth.onAuthStateChange((event)=>{if(event==='SIGNED_IN'||event==='SIGNED_OUT')boot()});
+db.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT')boot()});
 boot();
 
 function renderRoles(ps){
