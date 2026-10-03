@@ -386,3 +386,58 @@ begin
 end$$;
 revoke all on function public.admin_set_public_id(uuid,text) from public,anon;
 grant execute on function public.admin_set_public_id(uuid,text) to authenticated;
+
+
+-- USER MANAGEMENT CENTER: warnings + admin user actions
+create table if not exists public.user_warnings(
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references public.profiles(id) on delete cascade,
+ admin_id uuid not null references public.profiles(id),
+ reason text not null,
+ is_active boolean not null default true,
+ created_at timestamptz not null default now()
+);
+create index if not exists user_warnings_user_idx on public.user_warnings(user_id,created_at desc);
+alter table public.user_warnings enable row level security;
+drop policy if exists user_warnings_admin_read on public.user_warnings;
+create policy user_warnings_admin_read on public.user_warnings for select to authenticated
+using(public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN','BD']::public.app_role[]));
+create or replace function public.admin_warn_user(p_user_id uuid,p_reason text)
+returns uuid language plpgsql security definer set search_path=public as $$
+declare wid uuid;
+begin
+ if not public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN','BD']::public.app_role[]) then raise exception 'not authorized'; end if;
+ if trim(coalesce(p_reason,''))='' then raise exception 'warning reason is required'; end if;
+ if not exists(select 1 from public.profiles where id=p_user_id) then raise exception 'user not found'; end if;
+ insert into public.user_warnings(user_id,admin_id,reason) values(p_user_id,auth.uid(),trim(p_reason)) returning id into wid;
+ return wid;
+end$$;
+grant execute on function public.admin_warn_user(uuid,text) to authenticated;
+
+-- Allow admins to edit the three dashboard badges through the controlled user-management flow.
+drop policy if exists profiles_admin_badges on public.profiles;
+create policy profiles_admin_badges on public.profiles for update to authenticated
+using(public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN','BD']::public.app_role[]))
+with check(public.has_role(array['CEO','SUPER_ADMIN','MANAGER','ADMIN','BD']::public.app_role[]));
+
+-- VIP grant supports VIP1..VIP10 and SVIP for CEO; SUPER_ADMIN can grant VIP1..VIP6.
+create or replace function public.admin_grant_vip(p_user_id uuid,p_vip_level text)
+returns text language plpgsql security definer set search_path=public as $$
+declare actor_role public.app_role; target_level integer; normalized text; max_level integer;
+begin
+ select role into actor_role from public.profiles where id=auth.uid() and is_active;
+ if actor_role is null then raise exception 'not authorized'; end if;
+ normalized:=upper(trim(p_vip_level));
+ if normalized='SVIP' then
+   if actor_role<>'CEO' then raise exception 'SVIP can only be granted by CEO'; end if;
+ elsif normalized ~ '^VIP[0-9]+$' then
+   target_level:=substring(normalized from 4)::integer;
+   max_level:=case actor_role when 'CEO' then 10 when 'SUPER_ADMIN' then 6 else 0 end;
+   if target_level<1 or target_level>max_level then raise exception 'VIP level not permitted for this role'; end if;
+ else raise exception 'invalid VIP level'; end if;
+ if not exists(select 1 from public.profiles where id=p_user_id) then raise exception 'user not found'; end if;
+ update public.profiles set vip_level=normalized,updated_at=now() where id=p_user_id;
+ return normalized;
+end$$;
+grant execute on function public.admin_grant_vip(uuid,text) to authenticated;
+revoke execute on function public.admin_warn_user(uuid,text) from anon;
