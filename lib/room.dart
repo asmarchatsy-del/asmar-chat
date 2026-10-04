@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,6 +8,7 @@ import 'country_flag.dart';
 import 'rank_frame.dart';
 import 'gifts.dart';
 import 'profile_badges.dart';
+import 'asmar_keyboard.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -41,6 +43,7 @@ class _RoomState extends State<Room> {
   bool loadingSeats = false;
   bool managingSeat = false;
   bool canManageRoom = false;
+  bool keyboardOpen = false;
 
   @override
   void initState() {
@@ -350,7 +353,7 @@ class _RoomState extends State<Room> {
 
   Future<void> _changeSeatCount() async {
     if (!canManageRoom) return;
-    final current = (roomInfo?['seat_count'] as num?)?.toInt() ?? 10;
+    final current = (roomInfo?['seat_count'] as num?)?.toInt() ?? 8;
     final selected = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: card,
@@ -382,50 +385,19 @@ class _RoomState extends State<Room> {
   }
 
   Widget _seatGrid() {
-    final count = (roomInfo?['seat_count'] as num?)?.toInt() ?? 10;
-    final byIndex = <int, Map<String, dynamic>>{
-      for (final s in seats) (s['seat_index'] as int): s,
-    };
-    final columns = count <= 4 ? 2 : count <= 8 ? 4 : 5;
+    final count = (roomInfo?['seat_count'] as num?)?.toInt() ?? 8;
+    final byIndex = <int, Map<String, dynamic>>{for (final s in seats) (s['seat_index'] as int): s};
+    final visible = count == 8 ? 8 : count;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xC9140805),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: gold2),
-      ),
-      child: Column(children: [
-        Row(children: [
-          const Icon(Icons.event_seat, color: gold, size: 20),
-          const SizedBox(width: 8),
-          Text('المقاعد • $count', style: const TextStyle(color: gold, fontWeight: FontWeight.w900)),
-          const Spacer(),
-          if (loadingSeats) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: gold)),
-          if (canManageRoom)
-            IconButton(
-              tooltip: 'عدد المقاعد',
-              onPressed: managingSeat ? null : _changeSeatCount,
-              icon: const Icon(Icons.settings, color: gold, size: 20),
-            ),
-        ]),
-        const SizedBox(height: 4),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: count,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            mainAxisExtent: 74,
-            crossAxisSpacing: 6,
-            mainAxisSpacing: 6,
-          ),
-          itemBuilder: (_, i) {
-            final index = i + 1;
-            final seat = byIndex[index] ?? {'seat_index': index, 'is_locked': false};
-            return _seatTile(index, seat);
-          },
-        ),
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+      decoration: BoxDecoration(color: const Color(0xC9140805),borderRadius: BorderRadius.circular(24),border: Border.all(color: gold2)),
+      child: Column(children:[
+        Row(children:[const Icon(Icons.event_seat,color:gold,size:20),const SizedBox(width:8),Text('المقاعد • $visible',style:const TextStyle(color:gold,fontWeight:FontWeight.w900)),const Spacer(),if(loadingSeats)const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2,color:gold)),if(canManageRoom)IconButton(onPressed:managingSeat?null:_changeSeatCount,icon:const Icon(Icons.settings,color:gold,size:20))]),
+        SizedBox(height:310,child:LayoutBuilder(builder:(context,c){final cx=c.maxWidth/2,cy=145.0,r=c.maxWidth<380?112.0:130.0;return Stack(children:[
+          Positioned(left:cx-38,top:8,child:Container(width:76,height:40,alignment:Alignment.center,decoration:BoxDecoration(color:const Color(0xFF4A250A),borderRadius:BorderRadius.circular(20),border:Border.all(color:gold,width:2)),child:const Text('المضيف',style:TextStyle(color:gold,fontWeight:FontWeight.w900)))),
+          for(int i=0;i<visible;i++)Positioned(left:cx-37+r*math.cos(i*2*3.1415926535/visible-1.5707963268),top:cy-37+r*math.sin(i*2*3.1415926535/visible-1.5707963268),child:SizedBox(width:74,height:74,child:_seatTile(i+1,byIndex[i+1]??{'seat_index':i+1,'is_locked':false})))
+        ]);}))
       ]),
     );
   }
@@ -643,13 +615,8 @@ class _RoomState extends State<Room> {
                         icon: Icon(joiningVoice ? Icons.hourglass_top : (microphoneOn ? Icons.mic : Icons.mic_off), color: gold),
                       ),
                       IconButton(
-                        onPressed: () => showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => GiftSheet(roomId: widget.roomId),
-                        ),
-                        icon: const Icon(Icons.card_giftcard, color: gold),
+                        onPressed: () => setState(() => keyboardOpen = !keyboardOpen),
+                        icon: Icon(keyboardOpen ? Icons.keyboard_hide : Icons.keyboard, color: gold),
                       ),
                       Expanded(
                         child: TextField(
@@ -673,6 +640,16 @@ class _RoomState extends State<Room> {
                     ]),
                   ),
                 ),
+                if (keyboardOpen)
+                  AsmarKeyboard(
+                    controller: controller,
+                    roomId: widget.roomId,
+                    onSend: _sendMessage,
+                    onGiftSent: (gift) {
+                      setState(() => giftOverlay = {'emoji': gift['emoji'], 'name': gift['name'], 'amount': gift['price_coins']});
+                      Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => giftOverlay = null); });
+                    },
+                  ),
               ],
             ),
             if (giftOverlay != null)
