@@ -12,16 +12,8 @@ abstract final class AsmarTheme {
         useMaterial3: true,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: background,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: gold,
-          brightness: Brightness.dark,
-          surface: surface,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: background,
-          foregroundColor: gold,
-          elevation: 0,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: gold, brightness: Brightness.dark),
+        appBarTheme: const AppBarTheme(backgroundColor: background, foregroundColor: gold, elevation: 0),
       );
 
   static BoxDecoration card({double radius = 16}) => BoxDecoration(
@@ -31,11 +23,7 @@ abstract final class AsmarTheme {
       );
 
   static BoxDecoration goldCard({double radius = 16}) => BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3A250F), Color(0xFF120B06)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: const LinearGradient(colors: [Color(0xFF3A250F), Color(0xFF120B06)], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: goldDark),
       );
