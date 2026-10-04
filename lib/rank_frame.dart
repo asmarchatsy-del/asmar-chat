@@ -125,12 +125,6 @@ class _RankFrameState extends State<RankFrame>
                         ),
                       ),
                     ),
-                    if (_remoteMediaUrl != null && _remoteMediaUrl!.isNotEmpty)
-                      SizedBox(
-                        width: outer,
-                        height: outer,
-                        child: IgnorePointer(child: Image.network(_remoteMediaUrl!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox.shrink())),
-                      ),
                     Container(
                       width: outer - 8,
                       height: outer - 8,
@@ -154,6 +148,12 @@ class _RankFrameState extends State<RankFrame>
                       ),
                       child: ClipOval(child: child),
                     ),
+                    if (_remoteMediaUrl != null && _remoteMediaUrl!.isNotEmpty)
+                      SizedBox(
+                        width: outer,
+                        height: outer,
+                        child: IgnorePointer(child: Image.network(_remoteMediaUrl!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+                      ),
                     Positioned(
                       top: 1,
                       right: 7,
