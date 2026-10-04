@@ -10,7 +10,7 @@ if 'SecretAdminAvatarTrigger' not in s:
     m=re.search(pattern,s,re.S)
     if not m:
         raise SystemExit('Could not locate Me avatar RankFrame')
-    replacement="SecretAdminAvatarTrigger(publicId:publicId,child:RankFrame(role:'USER',vipLevel:aristocracy.isEmpty?null:aristocracy,size:96,child:CircleAvatar("+m.group(1)+")),const SizedBox"
+    replacement="SecretAdminAvatarTrigger(publicId:publicId,child:RankFrame(role:'USER',vipLevel:aristocracy.isEmpty?null:aristocracy,size:96,child:CircleAvatar("+m.group(1)+"))),const SizedBox"
     s=s[:m.start()]+replacement+s[m.end():]
     me.write_text(s)
 
