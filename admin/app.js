@@ -39,9 +39,9 @@ async function boot(signedUser=null){
     const user=authResult.data?.user, authError=authResult.error;
     if(authError){$('loginMsg').textContent='خطأ في جلسة الدخول: '+authError.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
     if(!user){$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
-    const {data:p,error}=await db.from('profiles').select('display_name,role,is_active').eq('id',user.id).maybeSingle();
-    if(error){$('loginMsg').textContent='تم تسجيل الدخول، لكن تعذر قراءة صلاحية لوحة الإدارة: '+error.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
-    if(!p||!p.is_active||!['CEO','SUPER_ADMIN'].includes(p.role)){
+    const {data:canAdmin,error}=await db.rpc('admin_can_manage_dashboard');
+    if(error){$('loginMsg').textContent='تعذر التحقق من صلاحية لوحة الإدارة: '+error.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    if(!canAdmin){
       await db.auth.signOut();
       $('loginMsg').textContent='هذا الحساب ليس لديه صلاحية لوحة الإدارة';
       $('login').classList.remove('hidden');$('app').classList.add('hidden');return;
