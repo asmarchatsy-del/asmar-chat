@@ -8,12 +8,9 @@ class BackendConfig {
   static const supabasePublishableKey =
       'sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL';
 
-  static bool get isConfigured =>
-      supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
+  static bool get isConfigured => supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
 
   static void validate() {
-    if (!isConfigured) {
-      debugPrint('Asmar Chat: Supabase backend is not configured.');
-    }
+    if (!isConfigured) debugPrint('Asmar Chat: Supabase backend is not configured.');
   }
 }
