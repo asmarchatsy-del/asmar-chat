@@ -8,7 +8,7 @@ if "import 'gift_banner.dart';" not in s:
     s = s.replace(marker, marker + "\nimport 'gift_banner.dart';", 1)
 if 'GlobalGiftBanner(' not in s:
     old = '      child: Scaffold(\n        backgroundColor: bg,'
-    new = '      child: GlobalGiftBanner(\n        child: Scaffold(\n        backgroundColor: bg,'
+    new = "      child: GlobalGiftBanner(\n        onRoomTap: (roomId, roomName) {\n          Navigator.of(context).push(MaterialPageRoute(builder: (_) => Room(name: roomName, roomId: roomId)));\n        },\n        child: Scaffold(\n        backgroundColor: bg,"
     if old not in s: raise SystemExit('room Scaffold marker not found')
     s = s.replace(old, new, 1)
     old_end = '      ),\n    );\n  }\n\n  Widget _message'
