@@ -78,6 +78,8 @@ jobs:
         run: flutter pub get
       - name: Apply release runtime fixes
         run: python3 tool/fix_release_runtime.py
+      - name: Integrate global gift banner and admin threshold
+        run: python3 tool/integrate_global_gift_bar.py
       # Room voice integration is temporarily disabled; LiveKit code remains unchanged.
       - name: Analyze
         id: analyze
