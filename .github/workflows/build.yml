@@ -78,6 +78,8 @@ jobs:
         run: flutter pub get
       - name: Apply release runtime fixes
         run: python3 tool/fix_release_runtime.py
+      - name: Repair Dart syntax only
+        run: python3 tool/fix_404_syntax.py
       - name: Analyze
         id: analyze
         continue-on-error: true
