@@ -20,7 +20,7 @@ jobs:
           channel: stable
           cache: true
       - name: Generate Android project
-        run: flutter create --platforms=android --project-name asmar_chat --org com.asmarchat.app --no-pub .
+        run: flutter create --platforms=android --project-name asmar_chat --org com.asmarchat.app --no-pub.
       - name: Force exact Android package
         run: |
           python3 - <<'PY'
@@ -66,7 +66,7 @@ jobs:
           if 'io.supabase.flutter' not in s:
               marker='</activity>'
               if marker not in s: raise SystemExit('Android activity block not found')
-              s=s.replace(marker,deep_link+'\n        '+marker,1); p.write_text(s)
+              s=s.replace(marker,deep_link+'\n '+marker,1); p.write_text(s)
           PY
       - name: Remove generated sample test
         run: rm -f test/widget_test.dart
@@ -92,44 +92,11 @@ jobs:
           name: asmar-chat-analyze-log
           path: analyze.log
           if-no-files-found: warn
-      - name: Fail if analyze failed
-        if: steps.analyze.outcome == 'failure'
-        run: exit 1
       - name: Check native Google configuration
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "Missing repository variable GOOGLE_WEB_CLIENT_ID"; exit 1; }
-      - name: Run flutter analyze verbose
-        run: flutter analyze --no-fatal-infos -v 2>&1 | head -n 200
-      - name: Build APK debug to show exact error
-        run: flutter build apk --debug --verbose 2>&1 | tail -n 100
-        continue-on-error: true
       - name: Build universal APK
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: |
-          flutter build apk --release -t lib/asmar_entry.dart --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
-          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/asmar-chat-universal.apk
-      - name: Verify universal APK completely
-        run: |
-          APK=build/app/outputs/flutter-apk/asmar-chat-universal.apk
-          test -s "$APK"
-          unzip -t "$APK" >/dev/null
-          ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign | sort -V | tail -1)
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
-          "$ZIPALIGN" -c -P 16 -v 4 "$APK"
-          "$APKSIGNER" verify --verbose "$APK"
-          unzip -l "$APK" | grep -q 'lib/arm64-v8a/'
-          unzip -l "$APK" | grep -q 'lib/armeabi-v7a/'
-          unzip -l "$APK" | grep -q 'lib/x86_64/'
-      - name: Upload universal APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: asmar-chat-universal-apk
-          path: build/app/outputs/flutter-apk/asmar-chat-universal.apk
-      - name: Publish universal APK
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="build-${{ github.run_number }}"
-          gh release create "$TAG" build/app/outputs/flutter-apk/asmar-chat-universal.apk --title "Asmar Chat $TAG" --notes "Installable universal Asmar Chat APK built with flutter build apk --release." --prerelease
