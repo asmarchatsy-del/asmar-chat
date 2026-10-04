@@ -7,6 +7,7 @@ import 'me_page.dart';
 import 'admin_gate.dart';
 import 'messages.dart';
 import 'room.dart';
+import 'asmar/asmar_shell.dart';
 
 const gold = Color(0xFFFFD36A);
 const gold2 = Color(0xFFB77921);
@@ -33,7 +34,7 @@ class AsmarChatApp extends StatelessWidget {
 }
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
-  @override Widget build(BuildContext context){final client=Supabase.instance.client;return StreamBuilder<AuthState>(stream:client.auth.onAuthStateChange,builder:(context,_){if(client.auth.currentSession!=null)return const _Shell();return const legacy.LoginPage();});}
+  @override Widget build(BuildContext context){final client=Supabase.instance.client;return StreamBuilder<AuthState>(stream:client.auth.onAuthStateChange,builder:(context,_){if(client.auth.currentSession!=null)return const AsmarBuild452Shell();return const legacy.LoginPage();});}
 }
 class _Shell extends StatefulWidget{const _Shell();@override State<_Shell> createState()=>_ShellState();}
 class _ShellState extends State<_Shell>{int index=0;late final pages=<Widget>[const _RoomHome(),const MessagesPage(),const _Moments(),const MePage()];@override Widget build(BuildContext context)=>Scaffold(body:IndexedStack(index:index,children:pages),bottomNavigationBar:NavigationBar(selectedIndex:index,onDestinationSelected:(i)=>setState(()=>index=i),destinations:const[NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'الرئيسية'),NavigationDestination(icon:Icon(Icons.forum_outlined),selectedIcon:Icon(Icons.forum),label:'الرسائل'),NavigationDestination(icon:Icon(Icons.auto_awesome_outlined),selectedIcon:Icon(Icons.auto_awesome),label:'لحظات'),NavigationDestination(icon:Icon(Icons.person_outline),selectedIcon:Icon(Icons.person),label:'أنا')]));}
