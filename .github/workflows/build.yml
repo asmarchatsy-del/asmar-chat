@@ -14,39 +14,44 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
       - name: Generate Android project
         run: flutter create --platforms=android --project-name asmar_chat --org com.asmarchat.app --no-pub .
-
+      - name: Force exact Android package
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('android/app/build.gradle')
+          s=p.read_text()
+          s,n=re.subn(r'applicationId\s+["\'][^"\']+["\']', 'applicationId "com.asmarchat.app"', s, count=1)
+          if n != 1: raise SystemExit('applicationId not found')
+          p.write_text(s)
+          PY
       - name: Apply Asmar Chat logo and branding
         run: python3 tool/apply_branding.py
-
       - name: Set Android app display name
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          p = Path('android/app/src/main/AndroidManifest.xml')
-          s = p.read_text()
-          s, n = re.subn(r'(<application\b[^>]*\bandroid:label=")[^"]*(")', r'\1Asmar Chat\2', s, count=1)
-          if n != 1:
-              raise SystemExit('Could not set Android application label')
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          s=p.read_text()
+          s,n=re.subn(r'(<application\b[^>]*\bandroid:label=")[^"]*(")', r'\1Asmar Chat\2', s, count=1)
+          if n != 1: raise SystemExit('Could not set Android application label')
           p.write_text(s)
           PY
-
       - name: Configure Supabase Android callback
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('android/app/src/main/AndroidManifest.xml')
-          s = p.read_text()
-          deep_link = '''
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          s=p.read_text()
+          deep_link='''
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -54,32 +59,25 @@ jobs:
                 <data android:scheme="io.supabase.flutter" android:host="login-callback" />
             </intent-filter>'''
           if 'io.supabase.flutter' not in s:
-              marker = '</activity>'
-              if marker not in s:
-                  raise SystemExit('Android activity block not found')
-              s = s.replace(marker, deep_link + '\n        ' + marker, 1)
+              marker='</activity>'
+              if marker not in s: raise SystemExit('Android activity block not found')
+              s=s.replace(marker,deep_link+'\n        '+marker,1)
               p.write_text(s)
           PY
-
       - name: Remove generated sample test
         run: rm -f test/widget_test.dart
-
       - name: Clean previous build outputs
         run: |
           flutter clean
           rm -rf build android/.gradle
-
       - name: Get dependencies
         run: flutter pub get
-
       - name: Apply release runtime fixes
         run: python3 tool/fix_release_runtime.py
-
       - name: Analyze
         id: analyze
         continue-on-error: true
         run: flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee analyze.log
-
       - name: Upload analyze log
         if: always()
         uses: actions/upload-artifact@v4
@@ -87,24 +85,19 @@ jobs:
           name: asmar-chat-analyze-log
           path: analyze.log
           if-no-files-found: warn
-
       - name: Fail if analyze failed
         if: steps.analyze.outcome == 'failure'
         run: exit 1
-
       - name: Check native Google configuration
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
-        run: |
-          test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "Missing repository variable GOOGLE_WEB_CLIENT_ID"; exit 1; }
-
+        run: test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "Missing repository variable GOOGLE_WEB_CLIENT_ID"; exit 1; }
       - name: Build universal APK
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: |
           flutter build apk --release -t lib/asmar_entry.dart --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
           cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/asmar-chat-universal.apk
-
       - name: Verify universal APK completely
         run: |
           APK=build/app/outputs/flutter-apk/asmar-chat-universal.apk
@@ -117,20 +110,14 @@ jobs:
           unzip -l "$APK" | grep -q 'lib/arm64-v8a/'
           unzip -l "$APK" | grep -q 'lib/armeabi-v7a/'
           unzip -l "$APK" | grep -q 'lib/x86_64/'
-
       - name: Upload universal APK
         uses: actions/upload-artifact@v4
         with:
           name: asmar-chat-universal-apk
           path: build/app/outputs/flutter-apk/asmar-chat-universal.apk
-
       - name: Publish universal APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="build-${{ github.run_number }}"
-          gh release create "$TAG" \
-            build/app/outputs/flutter-apk/asmar-chat-universal.apk \
-            --title "Asmar Chat $TAG" \
-            --notes "Installable universal Asmar Chat APK built with flutter build apk --release." \
-            --prerelease
+          gh release create "$TAG" build/app/outputs/flutter-apk/asmar-chat-universal.apk --title "Asmar Chat $TAG" --notes "Installable universal Asmar Chat APK built with flutter build apk --release." --prerelease
