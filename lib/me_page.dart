@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'avatar_picker.dart';
+import 'admin_gate.dart';
 import 'rank_frame.dart';
 import 'store.dart';
 import 'wallet.dart';
-import 'private_chat.dart';
-import 'admin_gate.dart';
 
-const Color _gold = Color(0xFFFFD36A);
-const Color _goldDark = Color(0xFFB77921);
-const Color _bg = Color(0xFF120A06);
-const Color _card = Color(0xFF211108);
+const _gold = Color(0xFFFFD36A);
+const _goldDark = Color(0xFFB77921);
+const _bg = Color(0xFF120A06);
+const _card = Color(0xFF211108);
 
 class MePage extends StatefulWidget {
   const MePage({super.key});
+
   @override
   State<MePage> createState() => _MePageState();
 }
@@ -32,13 +31,15 @@ class _MePageState extends State<MePage> {
   Future<Map<String, dynamic>> _loadProfile() async {
     final id = _db.auth.currentUser?.id;
     if (id == null) throw Exception('لا توجد جلسة دخول');
-    final row = await _db.from('profiles').select('id,username,display_name,bio,avatar_url,public_id,vip_level,svip_level,user_level,coins,diamonds,golden_frame,special_frame').eq('id', id).maybeSingle();
+
+    final row = await _db
+        .from('profiles')
+        .select('id,username,display_name,bio,avatar_url,public_id,vip_level,svip_level,user_level,coins,diamonds,golden_frame,special_frame')
+        .eq('id', id)
+        .maybeSingle();
+
     if (row == null) throw Exception('لم يتم العثور على الملف الشخصي');
     return Map<String, dynamic>.from(row);
-  }
-
-  void _reload() {
-    setState(() => _future = _loadProfile());
   }
 
   Future<Map<String, int>> _stats(String id) async {
@@ -55,24 +56,36 @@ class _MePageState extends State<MePage> {
   Future<void> _copyId(String id) async {
     await Clipboard.setData(ClipboardData(text: id));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ الـID')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم نسخ الـID')),
+    );
   }
 
-  Widget _stat(String title, int value, IconData icon, VoidCallback tap) {
+  Widget _stat(String title, int value, IconData icon) {
     return Expanded(
-      child: InkWell(
-        onTap: tap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14)),
-          child: Column(children: [
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
             Icon(icon, color: _gold),
             const SizedBox(height: 5),
-            Text('$value', style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
-            Text(title, style: const TextStyle(fontSize: 10, color: Colors.white60)),
-          ]),
+            Text(
+              '$value',
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 10, color: Colors.white60),
+            ),
+          ],
         ),
       ),
     );
@@ -86,12 +99,22 @@ class _MePageState extends State<MePage> {
         child: Container(
           height: 74,
           margin: const EdgeInsets.symmetric(horizontal: 3),
-          decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14), border: Border.all(color: _goldDark)),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon, color: _gold, size: 25),
-            const SizedBox(height: 5),
-            Text(title, style: const TextStyle(fontSize: 11, color: Colors.white70)),
-          ]),
+          decoration: BoxDecoration(
+            color: _card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _goldDark),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: _gold, size: 25),
+              const SizedBox(height: 5),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 11, color: Colors.white70),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -114,129 +137,235 @@ class _MePageState extends State<MePage> {
         backgroundColor: _bg,
         appBar: AppBar(
           backgroundColor: _bg,
-          title: const Text('أنا', style: TextStyle(fontWeight: FontWeight.w900)),
-          actions: [
-            IconButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())),
-              icon: const Icon(Icons.settings_outlined),
-            ),
-          ],
+          title: const Text(
+            'أنا',
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
         ),
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator(color: _gold));
+              return const Center(
+                child: CircularProgressIndicator(color: _gold),
+              );
             }
+
             if (snapshot.hasError || snapshot.data == null) {
-              return Center(child: Text('تعذر تحميل الملف: ${snapshot.error ?? ''}'));
+              return Center(
+                child: Text(
+                  'تعذر تحميل الملف: ${snapshot.error ?? ''}',
+                ),
+              );
             }
 
             final p = snapshot.data!;
             final uid = p['id'].toString();
             final publicId = p['public_id']?.toString() ?? '---';
-            final name = (p['display_name']?.toString().isNotEmpty == true)
+            final name = p['display_name']?.toString().isNotEmpty == true
                 ? p['display_name'].toString()
-                : (p['username']?.toString() ?? 'مستخدم');
+                : p['username']?.toString() ?? 'مستخدم';
             final avatar = p['avatar_url']?.toString() ?? '';
             final vip = p['vip_level']?.toString() ?? '';
-            final svip = (p['svip_level'] as num?)?.toInt() ?? 0;
             final level = (p['user_level'] as num?)?.toInt() ?? 1;
 
             return RefreshIndicator(
               color: _gold,
               onRefresh: () async {
-                _reload();
+                setState(() => _future = _loadProfile());
                 await _future;
               },
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(14, 8, 14, 28),
                 children: [
                   InkWell(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EditProfilePage(profile: p))).then((_) => _reload()),
                     borderRadius: BorderRadius.circular(24),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFF3A1C08), Color(0xFF160B06)]),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3A1C08), Color(0xFF160B06)],
+                        ),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: _goldDark),
                       ),
-                      child: Row(children: [
-                        SecretAdminAvatarTrigger(
-                          publicId: publicId,
-                          child: RankFrame(
-                            role: 'USER',
-                            vipLevel: vip.isEmpty ? null : vip,
-                            size: 96,
-                            child: CircleAvatar(
-                              radius: 34,
-                              backgroundColor: const Color(0xFF100804),
-                              backgroundImage: avatar.isEmpty ? null : NetworkImage(avatar),
-                              child: avatar.isEmpty ? const Icon(Icons.person, color: _gold, size: 34) : null,
+                      child: Row(
+                        children: [
+                          SecretAdminAvatarTrigger(
+                            publicId: publicId,
+                            child: RankFrame(
+                              role: 'USER',
+                              vipLevel: vip.isEmpty ? null : vip,
+                              size: 96,
+                              child: CircleAvatar(
+                                radius: 34,
+                                backgroundColor: const Color(0xFF100804),
+                                backgroundImage: avatar.isEmpty
+                                    ? null
+                                    : NetworkImage(avatar),
+                                child: avatar.isEmpty
+                                    ? const Icon(
+                                        Icons.person,
+                                        color: _gold,
+                                        size: 34,
+                                      )
+                                    : null,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-                            Row(children: [
-                              Text('ID: $publicId', style: const TextStyle(color: _gold, fontWeight: FontWeight.w800)),
-                              IconButton(onPressed: () => _copyId(publicId), icon: const Icon(Icons.copy, size: 18, color: _gold)),
-                            ]),
-                            Text(p['bio']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white60, fontSize: 12)),
-                          ]),
-                        ),
-                        const Icon(Icons.edit_outlined, color: _gold),
-                      ]),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'ID: $publicId',
+                                      style: const TextStyle(
+                                        color: _gold,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () => _copyId(publicId),
+                                      icon: const Icon(
+                                        Icons.copy,
+                                        size: 18,
+                                        color: _gold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  p['bio']?.toString() ?? '',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   FutureBuilder<Map<String, int>>(
                     future: _stats(uid),
                     builder: (context, s) {
-                      final st = s.data ?? const {'visitors': 0, 'following': 0, 'followers': 0};
-                      return Row(children: [
-                        _stat('الزوار', st['visitors']!, Icons.visibility_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => VisitorsPage(profileId: uid)))),
-                        _stat('المتابَعون', st['following']!, Icons.person_add_alt_1_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => RelationshipPage(title: 'المتابَعون', followerId: uid)))),
-                        _stat('المتابعون', st['followers']!, Icons.people_outline, () => Navigator.push(context, MaterialPageRoute(builder: (_) => RelationshipPage(title: 'المتابعون', followingId: uid)))),
-                      ]);
+                      final st = s.data ?? const {
+                        'visitors': 0,
+                        'following': 0,
+                        'followers': 0,
+                      };
+                      return Row(
+                        children: [
+                          _stat(
+                            'الزوار',
+                            st['visitors']!,
+                            Icons.visibility_outlined,
+                          ),
+                          _stat(
+                            'المتابَعون',
+                            st['following']!,
+                            Icons.person_add_alt_1_outlined,
+                          ),
+                          _stat(
+                            'المتابعون',
+                            st['followers']!,
+                            Icons.people_outline,
+                          ),
+                        ],
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
-                  Row(children: [
-                    _quick('المحفظة', Icons.account_balance_wallet_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage()))),
-                    _quick('المتجر', Icons.storefront_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorePage()))),
-                    _quick('الشنطة', Icons.shopping_bag_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyBagPage()))),
-                  ]),
-                  const SizedBox(height: 10),
-                  Card(
-                    color: _card,
-                    child: Column(children: [
-                      _menu('العائلة', Icons.family_restroom, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FamilyCenterPage()))),
-                      _menu('CP', Icons.favorite_outline, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CpCenterPage()))),
-                      _menu('الأخ والأخت', Icons.people_alt_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SiblingsPage()))),
-                      _menu('المستوى', Icons.stars_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LevelCenterPage()))),
-                      _menu('مركز المضيف', Icons.mic_external_on_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HostCenterPage()))),
-                      _menu('تواصل مع المسؤول الرسمي', Icons.support_agent_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerServicePage()))),
-                      _menu('الإعدادات', Icons.settings_outlined, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()))),
-                    ]),
+                  Row(
+                    children: [
+                      _quick(
+                        'المحفظة',
+                        Icons.account_balance_wallet_outlined,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const WalletPage(),
+                          ),
+                        ),
+                      ),
+                      _quick(
+                        'المتجر',
+                        Icons.storefront_outlined,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const StorePage(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  Row(children: [
-                    Expanded(child: _MembershipCard(title: 'أرستقراطية', subtitle: vip.isEmpty ? 'اشترِ العضوية' : 'المستوى $vip', icon: Icons.workspace_premium_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AristocracyStorePage(special: false))).then((_) => _reload()))),
-                    const SizedBox(width: 8),
-                    Expanded(child: _MembershipCard(title: 'أرستقراطية مميزة', subtitle: svip > 0 ? 'المستوى $svip' : 'الدخول المميز', icon: Icons.diamond_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AristocracyStorePage(special: true))).then((_) => _reload()))),
-                  ]),
+                  Card(
+                    color: _card,
+                    child: Column(
+                      children: [
+                        _menu(
+                          'المحفظة',
+                          Icons.account_balance_wallet_outlined,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const WalletPage(),
+                            ),
+                          ),
+                        ),
+                        _menu(
+                          'المتجر',
+                          Icons.storefront_outlined,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const StorePage(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 12),
-                  Text('مستوى المستخدم $level', style: const TextStyle(color: _gold, fontWeight: FontWeight.w800)),
+                  Text(
+                    'مستوى المستخدم $level',
+                    style: const TextStyle(
+                      color: _gold,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 5),
                   FutureBuilder<Map<String, dynamic>?>(
-                    future: _db.from('user_exp').select().eq('user_id', uid).maybeSingle(),
+                    future: _db
+                        .from('user_exp')
+                        .select()
+                        .eq('user_id', uid)
+                        .maybeSingle(),
                     builder: (_, e) {
                       final exp = (e.data?['user_exp'] as num?)?.toInt() ?? 0;
-                      return LinearProgressIndicator(value: (exp % 1000) / 1000, color: _gold, backgroundColor: Colors.white12);
+                      final progress = (exp % 1000) / 1000;
+                      return LinearProgressIndicator(
+                        value: progress,
+                        color: _gold,
+                        backgroundColor: Colors.white12,
+                      );
                     },
                   ),
                 ],
@@ -247,14 +376,4 @@ class _MePageState extends State<MePage> {
       ),
     );
   }
-}
-
-class _MembershipCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-  const _MembershipCard({required this.title, required this.subtitle, required this.icon, required this.onTap});
-  @override
-  Widget build(BuildContext context) => InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _goldDark)), child: Row(children: [Icon(icon, color: _gold, size: 30), const SizedBox(width: 8), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: _gold, fontWeight: FontWeight.w900)), Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.white60))]))]));
 }
