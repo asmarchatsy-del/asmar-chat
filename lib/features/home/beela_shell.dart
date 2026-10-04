@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-class BeelaShellHome extends StatelessWidget {
-  const BeelaShellHome({super.key});
+
+class BeelaShell extends StatelessWidget {
+  const BeelaShell({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Home OK')));
+    return const Scaffold(
+      body: Center(child: Text('BeelaShell OK')),
+    );
   }
 }
