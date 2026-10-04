@@ -113,7 +113,7 @@ function openUserActions(id){
   const root=$('userActions'); root.classList.remove('hidden');
   root.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h3>إدارة: '+esc(p.display_name||p.username||'مستخدم')+'</h3><p>ID: <b>'+esc(p.public_id||'—')+'</b> · الدور: '+esc(p.role||'USER')+'</p></div><button class="ghost" onclick="$(&quot;userActions&quot;).classList.add(&quot;hidden&quot;)">إغلاق</button></div>'+
   '<div class="module-grid">'+
-  '<div class="card"><h3>👑 VIP</h3><select id="uaVip"><option value="">اختر VIP</option>'+['VIP1','VIP2','VIP3','VIP4','VIP5','VIP6','VIP7','VIP8','VIP9','VIP10'].map(v=>'<option value="'+v+'" '+(p.vip_level===v?'selected':'')+'>'+v+'</option>').join('')+'</select><button onclick="grantVipToUser(\''+p.id+'\')">إهداء VIP</button></div>'+
+  '<div class="card"><h3>👑 VIP</h3><select id="uaVip"><option value="">اختر VIP</option>'+['VIP1','VIP2','VIP3','VIP4','VIP5','VIP6','VIP7','VIP8','VIP9','VIP10'].map(v=>'<option value="'+v+'" '+(p.vip_level===v?'selected':'')+'>'+v+'</option>').join('')+'</select><button onclick="grantVipToUser(\''+p.id+'\')">إهداء VIP</button></div>'+'<div class="card"><h3>💎 SVIP 1—8</h3><select id="uaSvip"><option value="0">بدون SVIP</option>'+[1,2,3,4,5,6,7,8].map(v=>'<option value="'+v+'" '+(Number(p.svip_level||0)===v?'selected':'')+'>SVIP '+v+'</option>').join('')+'</select><button onclick="setSvipToUser(\''+p.id+'\')">حفظ SVIP</button></div>'+
   '<div class="card"><h3>🆔 ID مميز</h3><input id="uaPublicId" value="'+esc(p.public_id||'')+'" placeholder="مثال VIP511"><button onclick="setSpecialId(\''+p.id+'\')">حفظ ID المميز</button></div>'+
   '<div class="card"><h3>🏅 الشارات</h3><label><input id="uaVerified" type="checkbox" '+(p.is_verified?'checked':'')+'> موثق</label><label><input id="uaActivity" type="checkbox" '+(p.activity_admin_badge?'checked':'')+'> أدمن نشاط</label><label><input id="uaCS" type="checkbox" '+(p.customer_service_badge?'checked':'')+'> خدمة عملاء</label><button onclick="saveUserBadges(\''+p.id+'\')">حفظ الشارات</button></div>'+
   '<div class="card"><h3>⚠️ تحذير</h3><input id="uaWarning" placeholder="سبب التحذير"><button onclick="warnUser(\''+p.id+'\')">إضافة تحذير</button></div>'+
@@ -121,6 +121,12 @@ function openUserActions(id){
   '<div class="card"><h3>🚦 الحساب</h3><button onclick="toggleUserActive(\''+p.id+'\','+(!p.is_active)+')">'+(p.is_active?'إيقاف الحساب':'تفعيل الحساب')+'</button></div>'+
   '<div class="card"><h3>📈 المستوى 1—150</h3><p>الرفع اليدوي متاح للـCEO فقط.</p><button onclick="raiseUserLevel(\''+p.id+'\')">تغيير المستوى</button></div>'+
   '</div>';
+}
+async function setSvipToUser(id){
+  const level=Math.trunc(Number($('uaSvip').value||0));
+  const {error}=await db.rpc('admin_set_user_svip',{p_user_id:id,p_level:level});
+  if(error){alert('تعذر حفظ SVIP: '+error.message);return;}
+  alert('تم حفظ SVIP '+level);await loadAll();openUserActions(id);
 }
 async function grantVipToUser(id){const v=$('uaVip').value;if(!v){alert('اختر مستوى VIP');return}if(!confirm('تأكيد إهداء '+v+' لهذا المستخدم؟'))return;const {error}=await db.rpc('admin_grant_vip',{p_user_id:id,p_vip_level:v});if(error){alert('تعذر إهداء VIP: '+error.message);return}alert('تم إهداء '+v);await loadAll();openUserActions(id);}
 async function setSpecialId(id){const v=$('uaPublicId').value.trim();if(!v){alert('أدخل ID');return}const {error}=await db.rpc('admin_set_public_id',{p_user_id:id,p_public_id:v});if(error){alert('تعذر حفظ ID: '+error.message);return}alert('تم حفظ ID المميز');await loadAll();openUserActions(id);}
