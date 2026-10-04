@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend_config.dart';
 import 'main.dart' as legacy;
 import 'me_page.dart';
+import 'admin_gate.dart';
 import 'messages.dart';
 import 'room.dart';
 
@@ -27,7 +28,7 @@ class AsmarChatApp extends StatelessWidget {
     debugShowCheckedModeBanner:false,
     title:'Asmar Chat',
     theme:ThemeData(useMaterial3:true,brightness:Brightness.dark,scaffoldBackgroundColor:bg,colorScheme:ColorScheme.fromSeed(seedColor:gold,brightness:Brightness.dark)),
-    home:const _AuthGate(),
+    initialRoute:kIsWeb?(Uri.base.path.isEmpty?'/':Uri.base.path):'/',routes:{'/':(_)=>const _AuthGate(),'/admin':(_)=>const SuperAdminGate()},
   );
 }
 class _AuthGate extends StatelessWidget {
