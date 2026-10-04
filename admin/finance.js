@@ -48,7 +48,7 @@ function renderMethodLists(){
   const r=financeCache.rechargeMethods,w=financeCache.withdrawalMethods;
   $('rechargeMethodsList').innerHTML=r.length?r.map(x=>`<div class="card"><b>${esc(x.name)}</b><small>${esc(x.currency||'USD')} · ${Number(x.coins_per_unit||0).toLocaleString()} كوين/وحدة</small><div>${esc(x.instructions||'')}</div><button onclick="openRechargeMethodForm('${x.id}')">تعديل</button> ${x.is_active?'🟢 فعال':'🔴 متوقف'}</div>`).join(''):'<p>لا توجد طرق شحن.</p>';
   $('withdrawalMethodsList').innerHTML=w.length?w.map(x=>`<div class="card"><b>${esc(x.name)}</b><small>${esc(x.currency||'USD')} · حد ${Number(x.min_amount||0).toLocaleString()}—${Number(x.max_amount||0).toLocaleString()} · رسم ${Number(x.fee||0)}</small><button onclick="openWithdrawalMethodForm('${x.id}')">تعديل</button> ${x.is_active?'🟢 فعال':'🔴 متوقف'}</div>`).join(''):'<p>لا توجد طرق سحب.</p>';
-  $('svipLevelsList').innerHTML=financeCache.svip.length?financeCache.svip.map(x=>`<div class="card"><b>SVIP ${x.level}</b><input id="sv_${x.level}" type="number" min="0" value="${Number(x.min_recharge_points||0)}" placeholder="الحد الأدنى لنقاط الشحن"><label><input id="sva_${x.level}" type="checkbox" ${x.is_active?'checked':''}> فعال</label><button onclick="saveSvipThreshold(${x.level})">حفظ</button></div>`).join(''):'<p>لا توجد إعدادات SVIP.</p>';
+  $('svipLevelsList').innerHTML=financeCache.svip.length?financeCache.svip.map(x=>`<div class="card svip-admin-card"><b>SVIP ${x.level}</b><input id="sv_name_${x.level}" placeholder="اسم المستوى" value="${esc(x.name||('SVIP '+x.level))}"><input id="sv_price_${x.level}" type="number" min="0" value="${Number(x.price_coins||0)}" placeholder="السعر بالكويـنز"><input id="sv_media_${x.level}" placeholder="رابط GIF المتحرك (اختياري)" value="${esc(x.media_url||'')}"><input id="sv_file_${x.level}" type="file" accept="image/gif,image/png,image/webp,image/jpeg"><label><input id="sv_glow_${x.level}" type="checkbox" ${x.glow_enabled!==false?'checked':''}> لمعان</label><label><input id="sv_motion_${x.level}" type="checkbox" ${x.motion_enabled!==false?'checked':''}> حركة</label><label><input id="sva_${x.level}" type="checkbox" ${x.is_active?'checked':''}> فعال</label><button class="primary" onclick="saveSvipConfig(${x.level})">حفظ المستوى</button></div>`).join(''):'<p>لا توجد إعدادات SVIP.</p>';
 }
 
 function showFinanceForm(html){const f=$('financeMethodForm');f.classList.remove('hidden');f.innerHTML=html;f.scrollIntoView({behavior:'smooth',block:'start'});}
@@ -95,10 +95,27 @@ async function saveWithdrawalMethod(id){
   if(error){alert('تعذر حفظ طريقة السحب: '+error.message);return;}
   alert('تم حفظ طريقة السحب بنجاح');await loadFinance();
 }
-async function saveSvipThreshold(level){
-  const n=Math.trunc(Number($('sv_'+level).value));if(!Number.isFinite(n)||n<0){alert('أدخل نقاط صحيحة');return;}
-  const {error}=await db.rpc('admin_set_svip_level_config',{p_level:level,p_min_points:n,p_active:$('sva_'+level).checked});
-  if(error){alert(error.message);return;}await loadFinance();
+async function saveSvipConfig(level){
+  const price=Math.trunc(Number($('sv_price_'+level).value));
+  if(!Number.isFinite(price)||price<0){alert('أدخل سعرًا صحيحًا');return;}
+  let mediaUrl=$('sv_media_'+level).value.trim()||null;
+  const file=$('sv_file_'+level).files[0];
+  if(file){
+    try{
+      const ext=(file.name.split('.').pop()||'gif').toLowerCase();
+      const path=`svip/${level}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const {error:upErr}=await db.storage.from('asmar-media').upload(path,file,{upsert:false,contentType:file.type||'image/gif'});
+      if(upErr)throw upErr;
+      mediaUrl=db.storage.from('asmar-media').getPublicUrl(path).data.publicUrl;
+    }catch(e){alert('تعذر رفع تصميم SVIP: '+e.message);return;}
+  }
+  const {error}=await db.rpc('admin_set_svip_level_config',{
+    p_level:level,p_price_coins:price,p_name:$('sv_name_'+level).value.trim()||('SVIP '+level),
+    p_active:$('sva_'+level).checked,p_media_url:mediaUrl,p_media_type:file?.type||'gif',
+    p_glow_enabled:$('sv_glow_'+level).checked,p_motion_enabled:$('sv_motion_'+level).checked
+  });
+  if(error){alert('تعذر حفظ SVIP: '+error.message);return;}
+  alert('تم حفظ SVIP '+level+' بنجاح');await loadFinance();
 }
 
 function renderRequests(){
