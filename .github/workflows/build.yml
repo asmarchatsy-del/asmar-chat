@@ -99,6 +99,11 @@ jobs:
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "Missing repository variable GOOGLE_WEB_CLIENT_ID"; exit 1; }
+      - name: Run flutter analyze verbose
+        run: flutter analyze --no-fatal-infos -v 2>&1 | head -n 200
+      - name: Build APK debug to show exact error
+        run: flutter build apk --debug --verbose 2>&1 | tail -n 100
+        continue-on-error: true
       - name: Build universal APK
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
