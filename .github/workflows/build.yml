@@ -99,6 +99,34 @@ jobs:
           manifest.write_text(text, encoding="utf-8")
           PY
 
+      - name: Set Asmar Chat launcher icon
+        run: |
+          set -e
+          mkdir -p android/app/src/main/res/drawable
+          convert -background none assets/asmar_launcher.svg android/app/src/main/res/drawable/asmar_launcher.png
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          text = manifest.read_text(encoding="utf-8")
+          text, count = re.subn(
+              r'(<application\b[^>]*?)\sandroid:icon="[^"]*"',
+              r'\1 android:icon="@drawable/asmar_launcher"',
+              text,
+              count=1,
+          )
+          if count == 0:
+              text, count = re.subn(
+                  r'<application\b',
+                  '<application android:icon="@drawable/asmar_launcher"',
+                  text,
+                  count=1,
+              )
+          if count != 1:
+              raise SystemExit("Could not set Android launcher icon")
+          manifest.write_text(text, encoding="utf-8")
+          PY
+
       - name: Clean and get dependencies
         run: |
           rm -f test/widget_test.dart
