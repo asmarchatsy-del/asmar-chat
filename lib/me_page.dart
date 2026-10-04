@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'wallet_page.dart';
-import 'store_page.dart';
 
 class MePage extends StatelessWidget {
   // Me avatar RankFrame
   const MePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -14,22 +13,26 @@ class MePage extends StatelessWidget {
         children: [
           Card(
             child: ListTile(
+              leading: const Icon(Icons.account_balance_wallet),
               title: const Text('Wallet'),
+              subtitle: const Text('My wallet and earnings'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const WalletPage()),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Wallet - use existing route')),
                 );
               },
             ),
           ),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.store),
               title: const Text('Store'),
+              subtitle: const Text('Buy VIP and gifts'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const StorePage()),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Store - use existing route')),
                 );
               },
             ),
