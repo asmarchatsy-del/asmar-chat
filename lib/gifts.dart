@@ -14,184 +14,48 @@ class GiftItem {
 }
 
 const gifts = <GiftItem>[
-  GiftItem(id:'rose',name:'وردة',emoji:'🌹',price:100,category:'normal'),
-  GiftItem(id:'heart',name:'قلب',emoji:'❤️',price:500,category:'love'),
-  GiftItem(id:'kiss',name:'قبلة',emoji:'💋',price:1000,category:'love'),
-  GiftItem(id:'diamond',name:'ماسة',emoji:'💎',price:2500,category:'luxury'),
-  GiftItem(id:'love_letter',name:'رسالة حب',emoji:'💌',price:4000,category:'love',banner:true),
-  GiftItem(id:'cp',name:'CP',emoji:'🫶',price:4000,category:'cp',banner:true),
-  GiftItem(id:'brother',name:'علاقة أخوة',emoji:'🤝',price:4000,category:'brotherhood',banner:true),
-  GiftItem(id:'crown',name:'تاج ملكي',emoji:'👑',price:10000,category:'luxury',banner:true),
-  GiftItem(id:'dragon',name:'تنين',emoji:'🐉',price:10000,category:'normal',banner:true),
-  GiftItem(id:'lion',name:'أسد',emoji:'🦁',price:25000,category:'normal',banner:true),
-  GiftItem(id:'love_couple',name:'ثنائي الحب',emoji:'💞',price:50000,category:'love',banner:true),
-  GiftItem(id:'royal_car',name:'سيارة ملكية',emoji:'🚘',price:50000,category:'luxury',banner:true),
-  GiftItem(id:'gold_castle',name:'قصر ذهبي',emoji:'🏰',price:100000,category:'luxury',banner:true),
-  GiftItem(id:'brother_royal',name:'رابطة إخوة ملكية',emoji:'🛡️',price:100000,category:'brotherhood',banner:true),
-  GiftItem(id:'gold_dragon',name:'تنين ذهبي',emoji:'🐉',price:250000,category:'luxury',banner:true),
-  GiftItem(id:'royal_throne',name:'عرش ملكي',emoji:'👑',price:500000,category:'luxury',banner:true),
-  GiftItem(id:'asmar_kingdom',name:'مملكة Asmar',emoji:'🏯',price:1000000,category:'luxury',banner:true),
-  GiftItem(id:'luck_10',name:'حظ 10',emoji:'🍀',price:10,category:'luck'),
-  GiftItem(id:'luck_50',name:'حظ 50',emoji:'🍀',price:50,category:'luck'),
-  GiftItem(id:'luck_100',name:'حظ 100',emoji:'🍀',price:100,category:'luck'),
-  GiftItem(id:'luck_500',name:'حظ 500',emoji:'🎰',price:500,category:'luck'),
-  GiftItem(id:'luck_1000',name:'حظ 1,000',emoji:'🎰',price:1000,category:'luck'),
-  GiftItem(id:'luck_3000',name:'حظ 3,000',emoji:'✨',price:3000,category:'luck'),
-  GiftItem(id:'luck_5000',name:'حظ 5,000',emoji:'✨',price:5000,category:'luck',banner:true),
+  GiftItem(id:'rose',name:'وردة',emoji:'🌹',price:100,category:'normal'), GiftItem(id:'heart',name:'قلب',emoji:'❤️',price:500,category:'love'), GiftItem(id:'kiss',name:'قبلة',emoji:'💋',price:1000,category:'love'), GiftItem(id:'diamond',name:'ماسة',emoji:'💎',price:2500,category:'luxury'), GiftItem(id:'love_letter',name:'رسالة حب',emoji:'💌',price:4000,category:'love',banner:true), GiftItem(id:'cp',name:'CP',emoji:'🫶',price:4000,category:'cp',banner:true), GiftItem(id:'brother',name:'علاقة أخوة',emoji:'🤝',price:4000,category:'brotherhood',banner:true), GiftItem(id:'crown',name:'تاج ملكي',emoji:'👑',price:10000,category:'luxury',banner:true), GiftItem(id:'dragon',name:'تنين',emoji:'🐉',price:10000,category:'normal',banner:true), GiftItem(id:'lion',name:'أسد',emoji:'🦁',price:25000,category:'normal',banner:true), GiftItem(id:'love_couple',name:'ثنائي الحب',emoji:'💞',price:50000,category:'love',banner:true), GiftItem(id:'royal_car',name:'سيارة ملكية',emoji:'🚘',price:50000,category:'luxury',banner:true), GiftItem(id:'gold_castle',name:'قصر ذهبي',emoji:'🏰',price:100000,category:'luxury',banner:true), GiftItem(id:'brother_royal',name:'رابطة إخوة ملكية',emoji:'🛡️',price:100000,category:'brotherhood',banner:true), GiftItem(id:'gold_dragon',name:'تنين ذهبي',emoji:'🐉',price:250000,category:'luxury',banner:true), GiftItem(id:'royal_throne',name:'عرش ملكي',emoji:'👑',price:500000,category:'luxury',banner:true), GiftItem(id:'asmar_kingdom',name:'مملكة Asmar',emoji:'🏯',price:1000000,category:'luxury',banner:true), GiftItem(id:'luck_10',name:'حظ 10',emoji:'🍀',price:10,category:'luck'), GiftItem(id:'luck_50',name:'حظ 50',emoji:'🍀',price:50,category:'luck'), GiftItem(id:'luck_100',name:'حظ 100',emoji:'🍀',price:100,category:'luck'), GiftItem(id:'luck_500',name:'حظ 500',emoji:'🎰',price:500,category:'luck'), GiftItem(id:'luck_1000',name:'حظ 1,000',emoji:'🎰',price:1000,category:'luck'), GiftItem(id:'luck_3000',name:'حظ 3,000',emoji:'✨',price:3000,category:'luck'), GiftItem(id:'luck_5000',name:'حظ 5,000',emoji:'✨',price:5000,category:'luck',banner:true),
 ];
 
-String giftCategoryLabel(String c) => switch (c) {
-  'love' => '❤️ علاقة حب',
-  'brotherhood' => '🤝 علاقة أخوة',
-  'cp' => '🫶 CP',
-  'luck' => '🍀 هدايا الحظ',
-  'luxury' => '👑 فاخرة',
-  _ => '🎁 عادية',
-};
+String giftCategoryLabel(String c) => switch (c) {'love'=>'❤️ علاقة حب','brotherhood'=>'🤝 علاقة أخوة','cp'=>'🫶 CP','luck'=>'🍀 هدايا الحظ','luxury'=>'👑 فاخرة',_=>'🎁 عادية'};
+
+Future<void> _emitGlobalGiftEvent({required String roomId, required String giftName, required int giftValue, required String receiverId}) async {
+  final db = Supabase.instance.client;
+  try {
+    final setting = await db.from('app_settings').select('int_value').eq('key','min_gift_value_for_banner').maybeSingle();
+    final threshold = (setting?['int_value'] as num?)?.toInt() ?? 10000;
+    if (giftValue < threshold) return;
+    final senderId = db.auth.currentUser?.id;
+    if (senderId == null) return;
+    final rows = await Future.wait([
+      db.from('profiles').select('display_name,username').eq('id',senderId).maybeSingle(),
+      db.from('profiles').select('display_name,username').eq('id',receiverId).maybeSingle(),
+      db.from('rooms').select('name').eq('id',roomId).maybeSingle(),
+    ]);
+    final sender = Map<String,dynamic>.from(rows[0] as Map? ?? {});
+    final receiver = Map<String,dynamic>.from(rows[1] as Map? ?? {});
+    final room = Map<String,dynamic>.from(rows[2] as Map? ?? {});
+    await db.from('global_gift_events').insert({
+      'sender_id': senderId,
+      'sender_name': sender['display_name'] ?? sender['username'] ?? senderId,
+      'receiver_id': receiverId,
+      'receiver_name': receiver['display_name'] ?? receiver['username'] ?? receiverId,
+      'gift_name': giftName,
+      'gift_value': giftValue,
+      'room_id': roomId,
+      'room_name': room['name'] ?? roomId,
+    });
+  } catch (_) {}
+}
 
 class GiftHistoryPage extends StatelessWidget {
   const GiftHistoryPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(title: const Text('سجل الهدايا 🎁')),
-      body: user == null
-          ? const Center(child: Text('يجب تسجيل الدخول'))
-          : StreamBuilder<List<Map<String, dynamic>>>(
-              stream: Supabase.instance.client.from('gift_transactions').stream(primaryKey: ['id']).order('created_at', ascending: false),
-              builder: (context, snapshot) {
-                final rows = (snapshot.data ?? []).where((x) => x['sender_id'] == user.id || x['recipient_id'] == user.id).take(100).toList();
-                if (rows.isEmpty) return const Center(child: Text('لا توجد هدايا بعد 🎁'));
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: rows.length,
-                  itemBuilder: (context, index) {
-                    final row = rows[index];
-                    final mine = row['sender_id'] == user.id;
-                    return Card(
-                      color: _card,
-                      child: ListTile(
-                        leading: const Text('🎁', style: TextStyle(fontSize: 30)),
-                        title: Text(mine ? 'أرسلت هدية' : 'استلمت هدية'),
-                        subtitle: Text('هدية: ${row['gift_id']}'),
-                        trailing: Text('${row['amount']} 🪙', style: const TextStyle(color: _gold, fontWeight: FontWeight.bold)),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-    );
-  }
+  @override Widget build(BuildContext context) { final user=Supabase.instance.client.auth.currentUser; return Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('سجل الهدايا 🎁')),body:user==null?const Center(child:Text('يجب تسجيل الدخول')):StreamBuilder<List<Map<String,dynamic>>>(stream:Supabase.instance.client.from('gift_transactions').stream(primaryKey:['id']).order('created_at',ascending:false),builder:(context,snapshot){final rows=(snapshot.data??[]).where((x)=>x['sender_id']==user.id||x['recipient_id']==user.id).take(100).toList();if(rows.isEmpty)return const Center(child:Text('لا توجد هدايا بعد 🎁'));return ListView.builder(padding:const EdgeInsets.all(16),itemCount:rows.length,itemBuilder:(context,index){final row=rows[index];final mine=row['sender_id']==user.id;return Card(color:_card,child:ListTile(leading:const Text('🎁',style:TextStyle(fontSize:30)),title:Text(mine?'أرسلت هدية':'استلمت هدية'),subtitle:Text('هدية: ${row['gift_id']}'),trailing:Text('${row['amount']} 🪙',style:const TextStyle(color:_gold,fontWeight:FontWeight.bold))));});}})); }
 }
 
-class GiftSheet extends StatefulWidget {
-  final String roomId;
-  final void Function(GiftItem gift)? onSent;
-  const GiftSheet({super.key, required this.roomId, this.onSent});
-  @override State<GiftSheet> createState() => _GiftSheetState();
-}
-
-class _GiftSheetState extends State<GiftSheet> {
-  String? recipient;
-  int balance = 0;
-  bool sending = false;
-  String category = 'all';
-
-  @override
-  void initState() { super.initState(); _load(); }
-
-  Future<void> _load() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-    try {
-      final row = await Supabase.instance.client.from('wallets').select('balance').eq('user_id', user.id).maybeSingle();
-      if (mounted) setState(() => balance = (row?['balance'] as num?)?.toInt() ?? 0);
-    } catch (_) {}
-  }
-
-  Future<void> _send(GiftItem gift) async {
-    final target = recipient;
-    if (target == null || target.isEmpty || sending) return;
-    setState(() => sending = true);
-    try {
-      await Supabase.instance.client.rpc('send_gift', params: {'p_room_id': widget.roomId, 'p_recipient_id': target, 'p_gift_id': gift.id});
-      await _load();
-      if (mounted) {
-        widget.onSent?.call(gift);
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم إرسال ${gift.emoji} ${gift.name} • ${gift.price} 🪙')));
-      }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إرسال الهدية: $e')));
-    } finally {
-      if (mounted) setState(() => sending = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final shown = gifts.where((g) => category == 'all' || g.category == category).toList();
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 14, 12, 20),
-        decoration: const BoxDecoration(color: Color(0xFF120805), borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Row(children: [
-            const Text('الهدايا الفاخرة 🎁', style: TextStyle(color: _gold, fontSize: 21, fontWeight: FontWeight.w900)),
-            const Spacer(),
-            Text('$balance 🪙', style: const TextStyle(color: _gold, fontWeight: FontWeight.bold)),
-            IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GiftHistoryPage())), icon: const Icon(Icons.history, color: _gold)),
-          ]),
-          TextField(
-            onChanged: (v) => setState(() => recipient = v.trim().isEmpty ? null : v.trim()),
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(labelText: 'ID أو اسم المستخدم للمستلم', prefixIcon: Icon(Icons.person_search)),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 42,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                for (final c in const ['all','normal','love','cp','brotherhood','luck','luxury'])
-                  Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: ChoiceChip(label: Text(giftCategoryLabel(c)), selected: category == c, onSelected: (_) => setState(() => category = c))),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Flexible(
-            child: GridView.builder(
-              shrinkWrap: true,
-              itemCount: shown.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, childAspectRatio: .82, crossAxisSpacing: 8, mainAxisSpacing: 8),
-              itemBuilder: (context, index) {
-                final gift = shown[index];
-                return InkWell(
-                  onTap: sending ? null : () => _send(gift),
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      gradient: LinearGradient(colors: gift.banner ? const [Color(0xFF5C310B), Color(0xFF1A0A05)] : const [Color(0xFF241207), Color(0xFF100805)]),
-                      border: Border.all(color: gift.banner ? _gold : _gold2, width: gift.banner ? 1.5 : 1),
-                      boxShadow: gift.banner ? const [BoxShadow(color: Color(0x66442200), blurRadius: 12)] : null,
-                    ),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text(gift.emoji, style: const TextStyle(fontSize: 38)),
-                      Text(gift.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
-                      Text('${gift.price} 🪙', style: const TextStyle(color: _gold, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ]),
-                  ),
-                );
-              },
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
+class GiftSheet extends StatefulWidget { final String roomId; final void Function(GiftItem gift)? onSent; const GiftSheet({super.key,required this.roomId,this.onSent}); @override State<GiftSheet> createState()=>_GiftSheetState(); }
+class _GiftSheetState extends State<GiftSheet>{ String? recipient; int balance=0; bool sending=false; String category='all'; @override void initState(){super.initState();_load();}
+Future<void> _load() async { final user=Supabase.instance.client.auth.currentUser;if(user==null)return;try{final row=await Supabase.instance.client.from('wallets').select('balance').eq('user_id',user.id).maybeSingle();if(mounted)setState(()=>balance=(row?['balance'] as num?)?.toInt()??0);}catch(_){} }
+Future<void> _send(GiftItem gift) async {final target=recipient;if(target==null||target.isEmpty||sending)return;setState(()=>sending=true);try{await Supabase.instance.client.rpc('send_gift',params:{'p_room_id':widget.roomId,'p_recipient_id':target,'p_gift_id':gift.id});await _emitGlobalGiftEvent(roomId:widget.roomId,giftName:gift.name,giftValue:gift.price,receiverId:target);await _load();if(mounted){widget.onSent?.call(gift);Navigator.pop(context);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم إرسال ${gift.emoji} ${gift.name} • ${gift.price} 🪙')));}}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إرسال الهدية: $e')));}finally{if(mounted)setState(()=>sending=false);}}
+@override Widget build(BuildContext context){final shown=gifts.where((g)=>category=='all'||g.category==category).toList();return Directionality(textDirection:TextDirection.rtl,child:Container(padding:const EdgeInsets.fromLTRB(12,14,12,20),decoration:const BoxDecoration(color:Color(0xFF120805),borderRadius:BorderRadius.vertical(top:Radius.circular(28))),child:Column(mainAxisSize:MainAxisSize.min,children:[Row(children:[const Text('الهدايا الفاخرة 🎁',style:TextStyle(color:_gold,fontSize:21,fontWeight:FontWeight.w900)),const Spacer(),Text('$balance 🪙',style:const TextStyle(color:_gold,fontWeight:FontWeight.bold)),IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const GiftHistoryPage())),icon:const Icon(Icons.history,color:_gold))]),TextField(onChanged:(v)=>setState(()=>recipient=v.trim().isEmpty?null:v.trim()),style:const TextStyle(color:Colors.white),decoration:const InputDecoration(labelText:'ID أو اسم المستخدم للمستلم',prefixIcon:Icon(Icons.person_search))),const SizedBox(height:10),SizedBox(height:42,child:ListView(scrollDirection:Axis.horizontal,children:[for(final c in const ['all','normal','love','cp','brotherhood','luck','luxury'])Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:ChoiceChip(label:Text(giftCategoryLabel(c)),selected:category==c,onSelected:(_)=>setState(()=>category=c)))])),const SizedBox(height:8),Flexible(child:GridView.builder(shrinkWrap:true,itemCount:shown.length,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:3,childAspectRatio:.82,crossAxisSpacing:8,mainAxisSpacing:8),itemBuilder:(context,index){final gift=shown[index];return InkWell(onTap:sending?null:()=>_send(gift),borderRadius:BorderRadius.circular(18),child:Container(decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:LinearGradient(colors:gift.banner?const[Color(0xFF5C310B),Color(0xFF1A0A05)]:const[Color(0xFF241207),Color(0xFF100805)]),border:Border.all(color:gift.banner?_gold:_gold2,width:gift.banner?1.5:1),boxShadow:gift.banner?const[BoxShadow(color:Color(0x66442200),blurRadius:12)]:null),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(gift.emoji,style:const TextStyle(fontSize:38)),Text(gift.name,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:11)),Text('${gift.price} 🪙',style:const TextStyle(color:_gold,fontSize:10,fontWeight:FontWeight.bold))])));}))])));}
 }
