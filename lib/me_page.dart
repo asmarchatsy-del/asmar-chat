@@ -1,75 +1,801 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'avatar_picker.dart';
-import 'rank_frame.dart';
-import 'store.dart';
-import 'wallet.dart';
-import 'private_chat.dart';
 import 'admin_gate.dart';
 
-const _gold = Color(0xFFFFD36A);
-const _gold2 = Color(0xFFB77921);
-const _bg = Color(0xFF120A06);
-const _card = Color(0xFF211108);
+const Color _meGold = Color(0xFFFFD36A);
+const Color _meGoldDark = Color(0xFFB77921);
+const Color _meBg = Color(0xFF120A06);
+const Color _meCard = Color(0xFF211108);
 
-class MePage extends StatefulWidget { const MePage({super.key}); @override State<MePage> createState() => _MePageState(); }
-class _MePageState extends State<MePage> {
-  Future<Map<String,dynamic>>? _future;
-  @override void initState(){super.initState();_reload();}
-  void _reload()=>setState(()=>_future=_loadProfile());
-  Future<Map<String,dynamic>> _loadProfile() async { final uid=Supabase.instance.client.auth.currentUser?.id; if(uid==null)throw Exception('لا توجد جلسة دخول'); final row=await Supabase.instance.client.from('profiles').select('id,username,display_name,bio,avatar_url,avatar_is_animated,public_id,vip_level,svip_level,user_level,recharge_points,coins,diamonds,golden_frame,special_frame').eq('id',uid).maybeSingle(); if(row==null)throw Exception('لم يتم العثور على الملف الشخصي'); return Map<String,dynamic>.from(row); }
-  Future<Map<String,int>> _stats(String uid) async { final visitors=await Supabase.instance.client.from('visitors').select('visitor_id').eq('profile_id',uid); final following=await Supabase.instance.client.from('follows').select('following_id').eq('follower_id',uid); final followers=await Supabase.instance.client.from('follows').select('follower_id').eq('following_id',uid); return {'visitors':visitors.length,'following':following.length,'followers':followers.length}; }
-  Future<void> _copyId(String id) async {await Clipboard.setData(ClipboardData(text:id));if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم نسخ الـID')));}
-  @override Widget build(BuildContext context)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(backgroundColor:_bg,appBar:AppBar(backgroundColor:_bg,title:const Text('أنا',style:TextStyle(fontWeight:FontWeight.w900)),actions:[IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const SettingsPage())),icon:const Icon(Icons.settings_outlined))]),body:FutureBuilder<Map<String,dynamic>>(future:_future,builder:(context,snap){
-    if(snap.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator(color:_gold));
-    if(snap.hasError||snap.data==null)return Center(child:Text('تعذر تحميل الملف: ${snap.error??''}'));
-    final p=snap.data!;final uid=p['id'].toString();final publicId=p['public_id']?.toString()??'---';final name=(p['display_name']?.toString().isNotEmpty==true)?p['display_name'].toString():(p['username']?.toString()??'مستخدم');final avatar=p['avatar_url']?.toString()??'';final level=(p['user_level'] as num?)?.toInt()??1;final aristocracy=p['vip_level']?.toString()??'';final specialLevel=(p['svip_level'] as num?)?.toInt()??0;
-    return RefreshIndicator(color:_gold,onRefresh:() async{_reload();await _future;},child:ListView(padding:const EdgeInsets.fromLTRB(14,8,14,28),children:[
-      InkWell(onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>EditProfilePage(profile:p))).then((_)=>_reload()),borderRadius:BorderRadius.circular(24),child:Container(padding:const EdgeInsets.all(16),decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xFF3A1C08),Color(0xFF160B06)]),borderRadius:BorderRadius.circular(24),border:Border.all(color:_gold2)),child:Row(children:[SecretAdminAvatarTrigger(publicId:publicId,child:RankFrame(role:'USER',vipLevel:aristocracy.isEmpty?null:aristocracy,size:96,child:CircleAvatar(radius:34,backgroundColor:const Color(0xFF100804),backgroundImage:avatar.isEmpty?null:NetworkImage(avatar),child:avatar.isEmpty?const Icon(Icons.person,color:_gold,size:34):null))),const SizedBox(width:14),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(name,style:const TextStyle(fontSize:22,fontWeight:FontWeight.w900)),Row(children:[Text('ID: $publicId',style:const TextStyle(color:_gold,fontWeight:FontWeight.w800)),IconButton(visualDensity:VisualDensity.compact,onPressed:()=>_copyId(publicId),icon:const Icon(Icons.copy,size:18,color:_gold))]),Text(p['bio']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white60,fontSize:12))])),const Icon(Icons.edit_outlined,color:_gold)]))),
-      const SizedBox(height:12),FutureBuilder<Map<String,int>>(future:_stats(uid),builder:(context,s){final st=s.data??const {'visitors':0,'following':0,'followers':0};return Row(children:[Expanded(child:_StatButton('الزوار',st['visitors']!,Icons.visibility_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>VisitorsPage(profileId:uid))))),Expanded(child:_StatButton('المتابَعون',st['following']!,Icons.person_add_alt_1_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RelationshipPage(title:'المتابَعون',followerId:uid))))),Expanded(child:_StatButton('المتابعون',st['followers']!,Icons.people_outline,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RelationshipPage(title:'المتابعون',followingId:uid)))))]);}),
-      const SizedBox(height:12),Row(children:[Expanded(child:_MembershipCard(title:'أرستقراطية',subtitle:aristocracy.isEmpty?'اشترِ العضوية':'المستوى $aristocracy',icon:Icons.workspace_premium_outlined,onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AristocracyStorePage(special:false))).then((_)=>_reload()))),const SizedBox(width:8),Expanded(child:_MembershipCard(title:'أرستقراطية مميزة',subtitle:specialLevel>0?'المستوى $specialLevel':'الدخول المميز',icon:Icons.diamond_outlined,onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AristocracyStorePage(special:true))).then((_)=>_reload())))]),
-      const SizedBox(height:12),_QuickRow([_QuickAction('المحفظة',Icons.account_balance_wallet_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const WalletPage()))),_QuickAction('المتجر',Icons.storefront_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const StorePage()))),_QuickAction('الشنطة',Icons.shopping_bag_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MyBagPage())))]),
-      const SizedBox(height:10),_MenuCard([_MenuItem('العائلة',Icons.family_restroom,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const FamilyCenterPage()))),_MenuItem('CP',Icons.favorite_outline,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const CpCenterPage()))),_MenuItem('الأخ والأخت',Icons.people_alt_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const SiblingsPage()))),_MenuItem('المستوى',Icons.stars_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const LevelCenterPage()))),_MenuItem('مركز المضيف',Icons.mic_external_on_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HostCenterPage()))),_MenuItem('تواصل مع المسؤول الرسمي',Icons.support_agent_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const CustomerServicePage()))),_MenuItem('الإعدادات',Icons.settings_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const SettingsPage())))]),
-      const SizedBox(height:12),Text('مستوى المستخدم $level',style:const TextStyle(color:_gold,fontWeight:FontWeight.w800)),const SizedBox(height:5),FutureBuilder<Map<String,dynamic>?>(future:Supabase.instance.client.from('user_exp').select().eq('user_id',uid).maybeSingle(),builder:(_,e){final exp=(e.data?['user_exp'] as num?)?.toInt()??0;return LinearProgressIndicator(value:(exp%1000)/1000,color:_gold,backgroundColor:Colors.white12);}),
-    ]));
-  }));
+class MePage extends StatefulWidget {
+  const MePage({super.key});
+
+  @override
+  State<MePage> createState() => _MePageState();
 }
-class _StatButton extends StatelessWidget{final String label;final int value;final IconData icon;final VoidCallback onTap;const _StatButton(this.label,this.value,this.icon,this.onTap);@override Widget build(BuildContext context)=>InkWell(onTap:onTap,child:Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Column(children:[Text('$value',style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900)),const SizedBox(height:3),Icon(icon,color:_gold2,size:20),Text(label,style:const TextStyle(color:Colors.white60,fontSize:11))])));}
-class _MembershipCard extends StatelessWidget{final String title,subtitle;final IconData icon;final VoidCallback onTap;const _MembershipCard({required this.title,required this.subtitle,required this.icon,required this.onTap});@override Widget build(BuildContext context)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(14),child:Container(height:70,decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xFF2E1607),Color(0xFF130904)]),borderRadius:BorderRadius.circular(14),border:Border.all(color:_gold2)),child:Row(children:[const SizedBox(width:10),Icon(icon,color:_gold,size:27),const SizedBox(width:8),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(color:_gold,fontWeight:FontWeight.w900)),Text(subtitle,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white60,fontSize:10))]))])));}
-class _QuickAction{final String label;final IconData icon;final VoidCallback onTap;const _QuickAction(this.label,this.icon,this.onTap);}
-class _QuickRow extends StatelessWidget{final List<_QuickAction> items;const _QuickRow(this.items);@override Widget build(BuildContext context)=>Row(children:items.map((e)=>Expanded(child:Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:InkWell(onTap:e.onTap,borderRadius:BorderRadius.circular(14),child:Container(height:74,decoration:BoxDecoration(color:_card,borderRadius:BorderRadius.circular(14),border:Border.all(color:const Color(0xFF5A3515))),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(e.icon,color:_gold,size:25),const SizedBox(height:5),Text(e.label,style:const TextStyle(fontSize:11,color:Colors.white70))]))))).toList());}
-class _MenuItem{final String title;final IconData icon;final VoidCallback onTap;const _MenuItem(this.title,this.icon,this.onTap);}
-class _MenuCard extends StatelessWidget{final List<_MenuItem> items;const _MenuCard(this.items);@override Widget build(BuildContext context)=>Container(decoration:BoxDecoration(color:_card,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFF4C2B12))),child:Column(children:items.map((e)=>ListTile(onTap:e.onTap,trailing:Icon(e.icon,color:_gold2),title:Text(e.title,style:const TextStyle(color:Colors.white70)),leading:const Icon(Icons.chevron_left,color:_gold))).toList()));}
 
-class EditProfilePage extends StatefulWidget{final Map<String,dynamic> profile;const EditProfilePage({super.key,required this.profile});@override State<EditProfilePage> createState()=>_EditProfilePageState();}
-class _EditProfilePageState extends State<EditProfilePage>{late final TextEditingController name,bio;bool saving=false;@override void initState(){super.initState();name=TextEditingController(text:widget.profile['display_name']?.toString()??widget.profile['username']?.toString()??'');bio=TextEditingController(text:widget.profile['bio']?.toString()??'');}@override void dispose(){name.dispose();bio.dispose();super.dispose();}Future<void> _save() async{final uid=Supabase.instance.client.auth.currentUser!.id;setState(()=>saving=true);try{await Supabase.instance.client.from('profiles').update({'display_name':name.text.trim(),'username':name.text.trim(),'bio':bio.text.trim()}).eq('id',uid);if(mounted)Navigator.pop(context);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر الحفظ: $e')));}finally{if(mounted)setState(()=>saving=false);}}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('تعديل الملف الشخصي')),body:ListView(padding:const EdgeInsets.all(18),children:[Center(child:AvatarPickerButton(avatarUrl:widget.profile['avatar_url']?.toString(),isAnimated:widget.profile['avatar_is_animated']==true,vipLevel:widget.profile['vip_level']?.toString(),role:'USER',publicId:widget.profile['public_id']?.toString(),onSaved:()=>setState((){}))),const SizedBox(height:20),TextField(controller:name,decoration:const InputDecoration(labelText:'الاسم')),const SizedBox(height:12),TextField(controller:bio,minLines:3,maxLines:5,decoration:const InputDecoration(labelText:'النبذة')),const SizedBox(height:22),FilledButton.icon(onPressed:saving?null:_save,icon:const Icon(Icons.save_outlined),label:const Text('حفظ'),style:FilledButton.styleFrom(backgroundColor:_gold,foregroundColor:Colors.black))]));}
+class _MePageState extends State<MePage> {
+  late Future<Map<String, dynamic>> _profileFuture;
 
-class VisitorsPage extends StatelessWidget{final String profileId;const VisitorsPage({super.key,required this.profileId});@override Widget build(BuildContext context)=>RelationshipPage(title:'الزوار',visitorProfileId:profileId);}
-class RelationshipPage extends StatelessWidget{final String title;final String? followerId,followingId,visitorProfileId;const RelationshipPage({super.key,required this.title,this.followerId,this.followingId,this.visitorProfileId});Future<List<Map<String,dynamic>>> _load() async{final c=Supabase.instance.client;if(visitorProfileId!=null){final rows=await c.from('visitors').select('visitor_id,visited_at').eq('profile_id',visitorProfileId!).order('visited_at',ascending:false);return _profiles(rows,'visitor_id');}final rows=followingId!=null?await c.from('follows').select('follower_id').eq('following_id',followingId!):await c.from('follows').select('following_id').eq('follower_id',followerId!);return _profiles(rows,followingId!=null?'follower_id':'following_id');}Future<List<Map<String,dynamic>>> _profiles(List rows,String key) async{final ids=rows.map((e)=>e[key].toString()).toList();if(ids.isEmpty)return [];final p=await Supabase.instance.client.from('profiles').select('id,display_name,username,avatar_url,public_id').inFilter('id',ids);return List<Map<String,dynamic>>.from(p);}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:Text(title)),body:FutureBuilder<List<Map<String,dynamic>>>(future:_load(),builder:(context,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator(color:_gold));if(s.hasError)return Center(child:Text('تعذر التحميل: ${s.error}'));final rows=s.data??[];if(rows.isEmpty)return const Center(child:Text('لا توجد بيانات بعد',style:TextStyle(color:Colors.white54)));return ListView.separated(itemCount:rows.length,separatorBuilder:(_,__)=>const Divider(color:Colors.white10),itemBuilder:(_,i){final p=rows[i];final a=p['avatar_url']?.toString()??'';return ListTile(leading:CircleAvatar(backgroundImage:a.isEmpty?null:NetworkImage(a),child:a.isEmpty?const Icon(Icons.person):null),title:Text((p['display_name']??p['username']??'مستخدم').toString()),subtitle:Text('ID: ${p['public_id']??'---'}'));});}));}
+  SupabaseClient get _db => Supabase.instance.client;
 
-class AristocracyStorePage extends StatelessWidget{final bool special;const AristocracyStorePage({super.key,required this.special});Future<void> _buy(BuildContext context,Map<String,dynamic> p) async{try{final r=await Supabase.instance.client.rpc('purchase_aristocracy_package',params:{'p_package_id':p['id']});if(context.mounted){final m=Map<String,dynamic>.from(r as Map);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم الشراء الحقيقي. الرصيد الجديد: ${m['balance']}')));Navigator.pop(context);}}catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر الشراء: $e')));}}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:Text(special?'أرستقراطية مميزة':'أرستقراطية')),body:FutureBuilder(future:Supabase.instance.client.from('aristocracy_packages').select().eq('tier',special?'aristocracy_special':'aristocracy').eq('is_active',true).order('price_usd'),builder:(context,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator(color:_gold));if(s.hasError)return Center(child:Text('تعذر تحميل الباقات: ${s.error}'));final rows=List<Map<String,dynamic>>.from(s.data??const[]);return ListView(padding:const EdgeInsets.all(16),children:rows.map((p)=>Card(color:_card,child:ListTile(leading:Icon(special?Icons.diamond:Icons.workspace_premium,color:_gold,size:34),title:Text(p['name'].toString(),style:const TextStyle(color:_gold,fontWeight:FontWeight.w900)),subtitle:Text('${p['billing_period']=='monthly'?'شهري':'سنوي'} • \$${p['price_usd']} • ${p['coin_price']??'-'} كوين'),trailing:FilledButton(onPressed:()=>_buy(context,p),child:const Text('شراء')))).toList());}));}
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = _loadProfile();
+  }
 
-class MyBagPage extends StatelessWidget{const MyBagPage({super.key});@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('شنطتي')),body:FutureBuilder(future:Supabase.instance.client.from('user_items').select().eq('user_id',Supabase.instance.client.auth.currentUser!.id).order('purchased_at',ascending:false),builder:(context,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator(color:_gold));if(s.hasError)return Center(child:Text('تعذر التحميل: ${s.error}'));final rows=List<Map<String,dynamic>>.from(s.data??const[]);if(rows.isEmpty)return const Center(child:Text('شنطتك فارغة',style:TextStyle(color:Colors.white54)));return ListView.builder(itemCount:rows.length,itemBuilder:(_,i)=>ListTile(leading:const Icon(Icons.inventory_2_outlined,color:_gold),title:Text(rows[i]['item_name'].toString()),subtitle:Text(rows[i]['item_type'].toString())));}));}
+  Future<Map<String, dynamic>> _loadProfile() async {
+    final userId = _db.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('لا توجد جلسة دخول');
+    }
 
-class FamilyCenterPage extends StatefulWidget{const FamilyCenterPage({super.key});@override State<FamilyCenterPage> createState()=>_FamilyCenterPageState();}
-class _FamilyCenterPageState extends State<FamilyCenterPage>{final name=TextEditingController();Future<void> _create() async{final uid=Supabase.instance.client.auth.currentUser!.id;if(name.text.trim().isEmpty)return;try{final f=await Supabase.instance.client.from('families').insert({'name':name.text.trim(),'owner_id':uid}).select().single();await Supabase.instance.client.from('family_members').insert({'family_id':f['id'],'user_id':uid,'role':'owner'});name.clear();setState((){});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إنشاء العائلة: $e')));}}@override void dispose(){name.dispose();super.dispose();}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('مركز العائلة')),body:ListView(padding:const EdgeInsets.all(16),children:[Row(children:[Expanded(child:TextField(controller:name,decoration:const InputDecoration(labelText:'اسم العائلة'))),const SizedBox(width:8),FilledButton(onPressed:_create,child:const Text('إنشاء'))]),const SizedBox(height:18),FutureBuilder(future:Supabase.instance.client.from('families').select('id,name,owner_id,description,created_at').order('created_at',ascending:false),builder:(_,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator(color:_gold));if(s.hasError)return Text('تعذر التحميل: ${s.error}');final rows=List<Map<String,dynamic>>.from(s.data??const[]);return Column(children:rows.map((f)=>Card(color:_card,child:ListTile(title:Text(f['name'].toString()),subtitle:Text('المالك: ${f['owner_id']}'),trailing:FilledButton(onPressed:()=>Supabase.instance.client.from('family_members').insert({'family_id':f['id'],'user_id':Supabase.instance.client.auth.currentUser!.id}).then((_)=>setState((){})),child:const Text('انضم'))))).toList());})]));}
+    final row = await _db
+        .from('profiles')
+        .select('id,username,display_name,bio,avatar_url,public_id,vip_level,svip_level,user_level,coins,diamonds,golden_frame,special_frame')
+        .eq('id', userId)
+        .maybeSingle();
 
-class CpCenterPage extends StatefulWidget{const CpCenterPage({super.key});@override State<CpCenterPage> createState()=>_CpCenterPageState();}
-class _CpCenterPageState extends State<CpCenterPage>{final id=TextEditingController();Future<void> _send() async{final me=Supabase.instance.client.auth.currentUser!.id;final rows=await Supabase.instance.client.from('profiles').select('id').eq('public_id',id.text.trim()).limit(1);if(rows.isEmpty)return;try{await Supabase.instance.client.from('cp_relations').insert({'requester_id':me,'partner_id':rows.first['id']});if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إرسال طلب CP')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إرسال الطلب: $e')));}}@override void dispose(){id.dispose();super.dispose();}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('CP')),body:ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:id,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'ID الشريك')),const SizedBox(height:10),FilledButton(onPressed:_send,child:const Text('إرسال طلب')),const SizedBox(height:20),FutureBuilder(future:Supabase.instance.client.from('cp_relations').select().or('requester_id.eq.${Supabase.instance.client.auth.currentUser!.id},partner_id.eq.${Supabase.instance.client.auth.currentUser!.id}').order('created_at',ascending:false),builder:(_,s){if(s.connectionState!=ConnectionState.done)return const CircularProgressIndicator();if(s.hasError)return Text('${s.error}');final rows=List<Map<String,dynamic>>.from(s.data??const[]);return Column(children:rows.map((r)=>ListTile(title:Text(r['status'].toString()),subtitle:Text('${r['requester_id']} → ${r['partner_id']}'),trailing:r['status']=='pending'&&r['partner_id']==Supabase.instance.client.auth.currentUser!.id?FilledButton(onPressed:()=>Supabase.instance.client.from('cp_relations').update({'status':'accepted','accepted_at':DateTime.now().toIso8601String()}).eq('id',r['id']).then((_)=>setState((){})),child:const Text('قبول')):null)).toList());})]));}
+    if (row == null) {
+      throw Exception('لم يتم العثور على الملف الشخصي');
+    }
 
-class SiblingsPage extends StatefulWidget{const SiblingsPage({super.key});@override State<SiblingsPage> createState()=>_SiblingsPageState();}
-class _SiblingsPageState extends State<SiblingsPage>{final id=TextEditingController();Future<void> _send(String relation) async{final me=Supabase.instance.client.auth.currentUser!.id;final rows=await Supabase.instance.client.from('profiles').select('id').eq('public_id',id.text.trim()).limit(1);if(rows.isEmpty)return;try{await Supabase.instance.client.from('siblings').insert({'user_id':me,'sibling_id':rows.first['id'],'relation':relation});setState((){});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر الطلب: $e')));}}@override void dispose(){id.dispose();super.dispose();}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('الأخ والأخت')),body:ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:id,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'ID')),const SizedBox(height:8),Row(children:[Expanded(child:FilledButton(onPressed:()=>_send('brother'),child:const Text('إضافة أخ'))),const SizedBox(width:8),Expanded(child:FilledButton(onPressed:()=>_send('sister'),child:const Text('إضافة أخت')))]),const SizedBox(height:18),FutureBuilder(future:Supabase.instance.client.from('siblings').select().or('user_id.eq.${Supabase.instance.client.auth.currentUser!.id},sibling_id.eq.${Supabase.instance.client.auth.currentUser!.id}'),builder:(_,s){if(s.connectionState!=ConnectionState.done)return const CircularProgressIndicator();if(s.hasError)return Text('${s.error}');final rows=List<Map<String,dynamic>>.from(s.data??const[]);return Column(children:rows.map((r)=>ListTile(title:Text(r['relation'].toString()),subtitle:Text(r['status'].toString()),trailing:r['status']=='pending'&&r['sibling_id']==Supabase.instance.client.auth.currentUser!.id?FilledButton(onPressed:()=>Supabase.instance.client.from('siblings').update({'status':'accepted'}).eq('id',r['id']).then((_)=>setState((){})),child:const Text('قبول')):null)).toList());})]));}
+    return Map<String, dynamic>.from(row);
+  }
 
-class LevelCenterPage extends StatelessWidget{const LevelCenterPage({super.key});@override Widget build(BuildContext context)=>FutureBuilder(future:Supabase.instance.client.from('user_exp').select().eq('user_id',Supabase.instance.client.auth.currentUser!.id).maybeSingle(),builder:(_,s){if(s.connectionState!=ConnectionState.done)return const Scaffold(body:Center(child:CircularProgressIndicator()));final d=Map<String,dynamic>.from(s.data??{'user_exp':0,'host_exp':0});return Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('مركز المستوى')),body:ListView(padding:const EdgeInsets.all(18),children:[_LevelCard('مستوى المستخدم',(d['user_exp'] as num?)?.toInt()??0),const SizedBox(height:12),_LevelCard('مستوى المضيف',(d['host_exp'] as num?)?.toInt()??0)]));}}
-class _LevelCard extends StatelessWidget{final String title;final int exp;const _LevelCard(this.title,this.exp);@override Widget build(BuildContext context){final level=(exp~/1000)+1;return Card(color:_card,child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(color:_gold,fontWeight:FontWeight.w900)),Text('المستوى $level'),const SizedBox(height:10),LinearProgressIndicator(value:(exp%1000)/1000,color:_gold,backgroundColor:Colors.white12),const SizedBox(height:6),Text('$exp XP',style:const TextStyle(color:Colors.white54))])));}}
+  void _reload() {
+    setState(() {
+      _profileFuture = _loadProfile();
+    });
+  }
 
-class HostCenterPage extends StatelessWidget{const HostCenterPage({super.key});@override Widget build(BuildContext context)=>FutureBuilder(future:Supabase.instance.client.from('host_earnings').select().eq('host_id',Supabase.instance.client.auth.currentUser!.id).order('created_at',ascending:false),builder:(_,s){if(s.connectionState!=ConnectionState.done)return const Scaffold(body:Center(child:CircularProgressIndicator()));if(s.hasError)return Scaffold(body:Center(child:Text('${s.error}')));final rows=List<Map<String,dynamic>>.from(s.data??const[]);final total=rows.fold<int>(0,(a,r)=>a+(r['host_amount'] as num?)?.toInt()??0);return Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('مركز المضيف')),body:ListView(padding:const EdgeInsets.all(16),children:[Card(color:_card,child:ListTile(title:const Text('الأرباح'),trailing:Text('$total'))),const SizedBox(height:12),FilledButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HostWithdrawPage())),child:const Text('سحب'))]));}}
-class HostWithdrawPage extends StatefulWidget{const HostWithdrawPage({super.key});@override State<HostWithdrawPage> createState()=>_HostWithdrawPageState();}
-class _HostWithdrawPageState extends State<HostWithdrawPage>{final amount=TextEditingController();@override void dispose(){amount.dispose();super.dispose();}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('طلب سحب')),body:Padding(padding:const EdgeInsets.all(16),child:Column(children:[TextField(controller:amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المبلغ')),const SizedBox(height:12),FilledButton(onPressed:() async{final uid=Supabase.instance.client.auth.currentUser!.id;final value=int.tryParse(amount.text.trim())??0;if(value<=0)return;try{await Supabase.instance.client.from('withdrawal_requests').insert({'user_id':uid,'amount':value,'status':'pending'});if(context.mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إنشاء طلب السحب الحقيقي')));Navigator.pop(context);}}catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إنشاء الطلب: $e')));}},child:const Text('إرسال الطلب'))])));}
+  Future<void> _copyId(String value) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم نسخ الـID')),
+    );
+  }
 
-class CustomerServicePage extends StatelessWidget { const CustomerServicePage({super.key}); Future<String?> _supportId() async { final rows=await Supabase.instance.client.from('profiles').select('id').eq('customer_service_badge',true).eq('is_active',true).limit(1); return rows.isEmpty?null:rows.first['id']?.toString(); } @override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('خدمة العملاء')),body:FutureBuilder<String?>(future:_supportId(),builder:(context,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator(color:_gold));if(s.hasError||s.data==null)return const Center(child:Text('لا يوجد مسؤول خدمة عملاء متاح الآن'));return Center(child:FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>PrivateChatPage(friendId:s.data!))),icon:const Icon(Icons.chat),label:const Text('فتح المحادثة')));})); }
-class SettingsPage extends StatefulWidget { const SettingsPage({super.key}); @override State<SettingsPage> createState()=>_SettingsPageState(); }
-class _SettingsPageState extends State<SettingsPage>{String language='العربية';@override void initState(){super.initState();_loadLanguage();}Future<void> _loadLanguage() async{final uid=Supabase.instance.client.auth.currentUser?.id;if(uid==null)return;final p=await Supabase.instance.client.from('profiles').select('language').eq('id',uid).maybeSingle();if(mounted)setState(()=>language=p?['language']=='en'?'English':'العربية');}Future<void> _setLanguage(String code) async{final uid=Supabase.instance.client.auth.currentUser?.id;if(uid==null)return;await Supabase.instance.client.from('profiles').update({'language':code}).eq('id',uid);if(mounted)setState(()=>language=code=='en'?'English':'العربية');}Future<void> _logout() async{await Supabase.instance.client.auth.signOut();if(mounted)Navigator.of(context).popUntil((r)=>r.isFirst);}Future<void> _delete() async{try{await Supabase.instance.client.rpc('deactivate_my_account');await Supabase.instance.client.auth.signOut();if(mounted)Navigator.of(context).popUntil((r)=>r.isFirst);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر حذف الحساب: $e')));}}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('الإعدادات')),body:ListView(children:[ListTile(title:const Text('اللغة'),subtitle:Text(language),trailing:const Icon(Icons.language),onTap:() async{final v=await showModalBottomSheet<String>(context:context,builder:(_)=>Column(mainAxisSize:MainAxisSize.min,children:[ListTile(title:const Text('العربية'),onTap:()=>Navigator.pop(context,'ar')),ListTile(title:const Text('English'),onTap:()=>Navigator.pop(context,'en'))]));if(v!=null)await _setLanguage(v);}),ListTile(title:const Text('القائمة السوداء'),trailing:const Icon(Icons.block_outlined),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const BlacklistPage()))),ListTile(title:const Text('تسجيل الخروج'),trailing:const Icon(Icons.logout),onTap:_logout),ListTile(title:const Text('حذف الحساب',style:TextStyle(color:Colors.redAccent)),trailing:const Icon(Icons.delete_forever,color:Colors.redAccent),onTap:_delete)]));}
-class BlacklistPage extends StatefulWidget{const BlacklistPage({super.key});@override State<BlacklistPage> createState()=>_BlacklistPageState();}
-class _BlacklistPageState extends State<BlacklistPage>{final id=TextEditingController();Future<List<Map<String,dynamic>>> _load() async{final me=Supabase.instance.client.auth.currentUser!.id;final rows=await Supabase.instance.client.from('blacklist').select('blocked_user_id,created_at').eq('user_id',me).order('created_at',ascending:false);final ids=rows.map((r)=>r['blocked_user_id'].toString()).toList();if(ids.isEmpty)return [];final p=await Supabase.instance.client.from('profiles').select('id,display_name,username,public_id,avatar_url').inFilter('id',ids);return List<Map<String,dynamic>>.from(p);}Future<void> _block() async{final me=Supabase.instance.client.auth.currentUser!.id;final rows=await Supabase.instance.client.from('profiles').select('id').eq('public_id',id.text.trim()).limit(1);if(rows.isEmpty)return;try{await Supabase.instance.client.from('blacklist').insert({'user_id':me,'blocked_user_id':rows.first['id']});id.clear();if(mounted)setState((){});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر الحظر: $e')));}}Future<void> _unblock(String blocked) async{await Supabase.instance.client.from('blacklist').delete().eq('user_id',Supabase.instance.client.auth.currentUser!.id).eq('blocked_user_id',blocked);if(mounted)setState((){});}@override void dispose(){id.dispose();super.dispose();}@override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(title:const Text('القائمة السوداء')),body:ListView(padding:const EdgeInsets.all(16),children:[Row(children:[Expanded(child:TextField(controller:id,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'ID المستخدم'))),const SizedBox(width:8),FilledButton(onPressed:_block,child:const Text('حظر'))]),const SizedBox(height:18),FutureBuilder<List<Map<String,dynamic>>>(future:_load(),builder:(context,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator(color:_gold));if(s.hasError)return Text('${s.error}');final rows=s.data??[];if(rows.isEmpty)return const Text('القائمة السوداء فارغة',style:TextStyle(color:Colors.white54));return Column(children:rows.map((p){final a=p['avatar_url']?.toString()??'';return ListTile(leading:CircleAvatar(backgroundImage:a.isEmpty?null:NetworkImage(a)),title:Text((p['display_name']??p['username']??'مستخدم').toString()),subtitle:Text('ID: ${p['public_id']??'---'}'),trailing:IconButton(onPressed:()=>_unblock(p['id'].toString()),icon:const Icon(Icons.remove_circle_outline,color:Colors.redAccent)));}).toList());})]));}
+  Future<Map<String, int>> _loadStats(String profileId) async {
+    final visitors = await _db
+        .from('visitors')
+        .select('visitor_id')
+        .eq('profile_id', profileId);
+    final following = await _db
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', profileId);
+    final followers = await _db
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', profileId);
+
+    return <String, int>{
+      'visitors': visitors.length,
+      'following': following.length,
+      'followers': followers.length,
+    };
+  }
+
+  Future<void> _openEditProfile(Map<String, dynamic> profile) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => EditProfilePage(profile: profile)),
+    );
+    if (mounted) _reload();
+  }
+
+  Future<void> _openStats(String title, String profileId, String type) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MeRelationPage(
+          title: title,
+          profileId: profileId,
+          type: type,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _meBg,
+        appBar: AppBar(
+          backgroundColor: _meBg,
+          title: const Text('أنا', style: TextStyle(fontWeight: FontWeight.w900)),
+          actions: [
+            IconButton(
+              onPressed: _reload,
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        body: FutureBuilder<Map<String, dynamic>>(
+          future: _profileFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(
+                child: CircularProgressIndicator(color: _meGold),
+              );
+            }
+            if (snapshot.hasError || snapshot.data == null) {
+              return Center(
+                child: Text('تعذر تحميل الملف: ${snapshot.error ?? ''}'),
+              );
+            }
+
+            final profile = snapshot.data!;
+            final profileId = profile['id'].toString();
+            final publicId = profile['public_id']?.toString() ?? '---';
+            final displayName = profile['display_name']?.toString().trim();
+            final username = profile['username']?.toString().trim();
+            final name = displayName?.isNotEmpty == true
+                ? displayName!
+                : (username?.isNotEmpty == true ? username! : 'مستخدم');
+            final avatar = profile['avatar_url']?.toString() ?? '';
+            final vipLevel = (profile['vip_level'] as num?)?.toInt() ?? 0;
+            final specialLevel = (profile['svip_level'] as num?)?.toInt() ?? 0;
+            final userLevel = (profile['user_level'] as num?)?.toInt() ?? 1;
+            final coins = (profile['coins'] as num?)?.toInt() ?? 0;
+            final diamonds = (profile['diamonds'] as num?)?.toInt() ?? 0;
+
+            return RefreshIndicator(
+              color: _meGold,
+              onRefresh: () async {
+                _reload();
+                await _profileFuture;
+              },
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 30),
+                children: [
+                  InkWell(
+                    onTap: () => _openEditProfile(profile),
+                    borderRadius: BorderRadius.circular(24),
+                    child: _ProfileCard(
+                      publicId: publicId,
+                      name: name,
+                      bio: profile['bio']?.toString() ?? '',
+                      avatarUrl: avatar,
+                      vipLevel: vipLevel,
+                      onAvatarTap: () {},
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FutureBuilder<Map<String, int>>(
+                    future: _loadStats(profileId),
+                    builder: (context, statsSnapshot) {
+                      final stats = statsSnapshot.data ?? const <String, int>{};
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _StatButton(
+                              label: 'الزوار',
+                              value: stats['visitors'] ?? 0,
+                              icon: Icons.visibility_outlined,
+                              onTap: () => _openStats('الزوار', profileId, 'visitors'),
+                            ),
+                          ),
+                          Expanded(
+                            child: _StatButton(
+                              label: 'المتابَعون',
+                              value: stats['following'] ?? 0,
+                              icon: Icons.person_add_alt_1_outlined,
+                              onTap: () => _openStats('المتابَعون', profileId, 'following'),
+                            ),
+                          ),
+                          Expanded(
+                            child: _StatButton(
+                              label: 'المتابعون',
+                              value: stats['followers'] ?? 0,
+                              icon: Icons.people_outline,
+                              onTap: () => _openStats('المتابعون', profileId, 'followers'),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MembershipCard(
+                          title: 'أرستقراطية',
+                          subtitle: vipLevel > 0 ? 'المستوى $vipLevel' : 'فتح العضوية',
+                          icon: Icons.workspace_premium_outlined,
+                          onTap: () => _openPackages(context, false),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _MembershipCard(
+                          title: 'أرستقراطية مميزة',
+                          subtitle: specialLevel > 0 ? 'المستوى $specialLevel' : 'الدخول المميز',
+                          icon: Icons.diamond_outlined,
+                          onTap: () => _openPackages(context, true),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _BalanceCard(coins: coins, diamonds: diamonds),
+                  const SizedBox(height: 10),
+                  _ActionCard(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'المحفظة',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'المحفظة')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.storefront_outlined,
+                    title: 'المتجر',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'المتجر')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.shopping_bag_outlined,
+                    title: 'الشنطة',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'الشنطة')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.family_restroom,
+                    title: 'العائلة',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'مركز العائلة')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.favorite_outline,
+                    title: 'CP',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'CP')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.people_alt_outlined,
+                    title: 'الأخ والأخت',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'الأخ والأخت')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.stars_outlined,
+                    title: 'المستوى $userLevel',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'مركز المستوى')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.mic_external_on_outlined,
+                    title: 'مركز المضيف',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'مركز المضيف')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.support_agent,
+                    title: 'تواصل مع المسؤول الرسمي',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'خدمة العملاء')),
+                    ),
+                  ),
+                  _ActionCard(
+                    icon: Icons.settings_outlined,
+                    title: 'الإعدادات',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const _SimplePage(title: 'الإعدادات')),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPackages(BuildContext context, bool special) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MembershipPackagesPage(special: special),
+      ),
+    );
+    if (mounted) _reload();
+  }
+}
+
+class _ProfileCard extends StatelessWidget {
+  final String publicId;
+  final String name;
+  final String bio;
+  final String avatarUrl;
+  final int vipLevel;
+  final VoidCallback onAvatarTap;
+
+  const _ProfileCard({
+    required this.publicId,
+    required this.name,
+    required this.bio,
+    required this.avatarUrl,
+    required this.vipLevel,
+    required this.onAvatarTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3A1C08), Color(0xFF160B06)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _meGoldDark),
+      ),
+      child: Row(
+        children: [
+          SecretAdminAvatarTrigger(
+            publicId: publicId,
+            child: GestureDetector(
+              onTap: onAvatarTap,
+              child: Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _meGold, width: 3),
+                  boxShadow: const [BoxShadow(color: _meGoldDark, blurRadius: 12)],
+                ),
+                child: CircleAvatar(
+                  backgroundColor: const Color(0xFF100804),
+                  backgroundImage: avatarUrl.isEmpty ? null : NetworkImage(avatarUrl),
+                  child: avatarUrl.isEmpty
+                      ? const Icon(Icons.person, color: _meGold, size: 36)
+                      : null,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                Row(
+                  children: [
+                    Text('ID: $publicId', style: const TextStyle(color: _meGold, fontWeight: FontWeight.w800)),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: publicId));
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('تم نسخ الـID')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 18, color: _meGold),
+                    ),
+                  ],
+                ),
+                if (vipLevel > 0)
+                  Text('أرستقراطية $vipLevel', style: const TextStyle(color: _meGold, fontSize: 12, fontWeight: FontWeight.w800)),
+                Text(
+                  bio,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.edit_outlined, color: _meGold),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatButton extends StatelessWidget {
+  final String label;
+  final int value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _StatButton({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            Text('$value', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 3),
+            Icon(icon, color: _meGoldDark, size: 20),
+            Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MembershipCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _MembershipCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        height: 78,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [Color(0xFF2E1607), Color(0xFF130904)]),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _meGoldDark),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 10),
+            Icon(icon, color: _meGold, size: 27),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: _meGold, fontWeight: FontWeight.w900)),
+                  Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white60, fontSize: 10)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BalanceCard extends StatelessWidget {
+  final int coins;
+  final int diamonds;
+
+  const _BalanceCard({required this.coins, required this.diamonds});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: _meCard,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Expanded(child: _BalanceItem(icon: '🪙', title: 'كوينز', value: coins)),
+            Expanded(child: _BalanceItem(icon: '💎', title: 'ألماس', value: diamonds)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BalanceItem extends StatelessWidget {
+  final String icon;
+  final String title;
+  final int value;
+
+  const _BalanceItem({required this.icon, required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 25)),
+        Text('$value', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _meGold)),
+        Text(title, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+      ],
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _ActionCard({required this.icon, required this.title, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: _meCard,
+      margin: const EdgeInsets.only(bottom: 6),
+      child: ListTile(
+        onTap: onTap,
+        leading: Icon(icon, color: _meGold),
+        title: Text(title),
+        trailing: const Icon(Icons.chevron_left, color: _meGoldDark),
+      ),
+    );
+  }
+}
+
+class EditProfilePage extends StatefulWidget {
+  final Map<String, dynamic> profile;
+
+  const EditProfilePage({super.key, required this.profile});
+
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  late final TextEditingController nameController;
+  late final TextEditingController bioController;
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController(text: widget.profile['display_name']?.toString() ?? widget.profile['username']?.toString() ?? '');
+    bioController = TextEditingController(text: widget.profile['bio']?.toString() ?? '');
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    bioController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    setState(() => saving = true);
+    try {
+      await Supabase.instance.client.from('profiles').update({
+        'display_name': nameController.text.trim(),
+        'username': nameController.text.trim(),
+        'bio': bioController.text.trim(),
+      }).eq('id', userId);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الحفظ: $e')));
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _meBg,
+        appBar: AppBar(title: const Text('تعديل الملف الشخصي')),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            CircleAvatar(
+              radius: 48,
+              backgroundImage: (widget.profile['avatar_url']?.toString() ?? '').isEmpty
+                  ? null
+                  : NetworkImage(widget.profile['avatar_url'].toString()),
+              child: (widget.profile['avatar_url']?.toString() ?? '').isEmpty
+                  ? const Icon(Icons.person, size: 42, color: _meGold)
+                  : null,
+            ),
+            const SizedBox(height: 20),
+            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'الاسم')),
+            const SizedBox(height: 12),
+            TextField(controller: bioController, minLines: 3, maxLines: 5, decoration: const InputDecoration(labelText: 'النبذة')),
+            const SizedBox(height: 22),
+            FilledButton.icon(
+              onPressed: saving ? null : _save,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MeRelationPage extends StatelessWidget {
+  final String title;
+  final String profileId;
+  final String type;
+
+  const MeRelationPage({super.key, required this.title, required this.profileId, required this.type});
+
+  Future<List<Map<String, dynamic>>> _load() async {
+    final db = Supabase.instance.client;
+    if (type == 'visitors') {
+      final rows = await db.from('visitors').select('visitor_id').eq('profile_id', profileId);
+      return _profiles(rows, 'visitor_id');
+    }
+    if (type == 'following') {
+      final rows = await db.from('follows').select('following_id').eq('follower_id', profileId);
+      return _profiles(rows, 'following_id');
+    }
+    final rows = await db.from('follows').select('follower_id').eq('following_id', profileId);
+    return _profiles(rows, 'follower_id');
+  }
+
+  Future<List<Map<String, dynamic>>> _profiles(List rows, String key) async {
+    final ids = rows.map((row) => row[key].toString()).toList();
+    if (ids.isEmpty) return <Map<String, dynamic>>[];
+    final result = await Supabase.instance.client
+        .from('profiles')
+        .select('id,display_name,username,avatar_url,public_id')
+        .inFilter('id', ids);
+    return List<Map<String, dynamic>>.from(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _meBg,
+        appBar: AppBar(title: Text(title)),
+        body: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _load(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator(color: _meGold));
+            }
+            if (snapshot.hasError) return Center(child: Text('تعذر التحميل: ${snapshot.error}'));
+            final rows = snapshot.data ?? const <Map<String, dynamic>>[];
+            if (rows.isEmpty) return const Center(child: Text('لا توجد بيانات بعد', style: TextStyle(color: Colors.white54)));
+            return ListView.separated(
+              itemCount: rows.length,
+              separatorBuilder: (_, __) => const Divider(color: Colors.white10),
+              itemBuilder: (_, index) {
+                final row = rows[index];
+                final image = row['avatar_url']?.toString() ?? '';
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: image.isEmpty ? null : NetworkImage(image),
+                    child: image.isEmpty ? const Icon(Icons.person) : null,
+                  ),
+                  title: Text((row['display_name'] ?? row['username'] ?? 'مستخدم').toString()),
+                  subtitle: Text('ID: ${row['public_id'] ?? '---'}'),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class MembershipPackagesPage extends StatelessWidget {
+  final bool special;
+
+  const MembershipPackagesPage({super.key, required this.special});
+
+  Future<List<Map<String, dynamic>>> _load() async {
+    final result = await Supabase.instance.client
+        .from('vip_packages')
+        .select('id,name,tier,billing_period,price_usd,coin_price,is_active')
+        .eq('is_active', true)
+        .order('price_usd');
+    final rows = List<Map<String, dynamic>>.from(result);
+    final wantedTier = special ? 'special' : 'normal';
+    return rows.where((row) => row['tier']?.toString() == wantedTier || row['tier']?.toString() == (special ? 'svip' : 'vip')).toList();
+  }
+
+  Future<void> _buy(BuildContext context, Map<String, dynamic> package) async {
+    try {
+      await Supabase.instance.client.rpc(
+        'purchase_aristocracy_package',
+        params: {'p_package_id': package['id']},
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تنفيذ الشراء')));
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تنفيذ الشراء: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _meBg,
+        appBar: AppBar(title: Text(special ? 'أرستقراطية مميزة' : 'أرستقراطية')),
+        body: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _load(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator(color: _meGold));
+            if (snapshot.hasError) return Center(child: Text('تعذر تحميل الباقات: ${snapshot.error}'));
+            final packages = snapshot.data ?? const <Map<String, dynamic>>[];
+            if (packages.isEmpty) return const Center(child: Text('لا توجد باقات متاحة حالياً'));
+            return ListView.builder(
+              padding: const EdgeInsets.all(14),
+              itemCount: packages.length,
+              itemBuilder: (_, index) {
+                final package = packages[index];
+                return Card(
+                  color: _meCard,
+                  child: ListTile(
+                    leading: Icon(special ? Icons.diamond : Icons.workspace_premium, color: _meGold),
+                    title: Text(package['name']?.toString() ?? 'باقة'),
+                    subtitle: Text('${package['billing_period'] ?? ''} • ${package['price_usd'] ?? 0} USD'),
+                    trailing: FilledButton(onPressed: () => _buy(context, package), child: const Text('شراء')),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SimplePage extends StatelessWidget {
+  final String title;
+
+  const _SimplePage({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _meBg,
+        appBar: AppBar(title: Text(title)),
+        body: Center(child: Text(title, style: const TextStyle(fontSize: 22, color: _meGold))),
+      ),
+    );
+  }
+}
