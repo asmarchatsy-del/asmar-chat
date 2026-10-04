@@ -5,9 +5,9 @@ import 'super_admin_panel.dart';
 class SuperAdminGate extends StatelessWidget {
   const SuperAdminGate({super.key});
   Future<bool> _allowed() async {
-    final uid=Supabase.instance.client.auth.currentUser?.id;
-    if(uid==null)return false;
-    final row=await Supabase.instance.client.from('admin_roles').select('enabled').eq('user_id',uid).eq('role','super_admin').maybeSingle();
+    final user=Supabase.instance.client.auth.currentUser;
+    if(user==null || user.email?.toLowerCase()!='admin@asmar.com') return false;
+    final row=await Supabase.instance.client.from('admin_roles').select('enabled').eq('user_id',user.id).eq('role','super_admin').maybeSingle();
     return row?['enabled']==true;
   }
   @override Widget build(BuildContext context)=>FutureBuilder<bool>(future:_allowed(),builder:(context,s){
@@ -24,7 +24,8 @@ class SecretAdminAvatarTrigger extends StatefulWidget {
 }
 class _SecretAdminAvatarTriggerState extends State<SecretAdminAvatarTrigger>{int taps=0;DateTime? first;
   Future<void> _tap() async {
-    if(widget.publicId!='116470')return;
+    final email=Supabase.instance.client.auth.currentUser?.email?.toLowerCase();
+    if(email!='admin@asmar.com'||widget.publicId!='116470')return;
     final now=DateTime.now();
     if(first==null||now.difference(first!)>const Duration(seconds:5)){first=now;taps=1;}else{taps++;}
     if(taps>=5){taps=0;first=null;if(!mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>const SuperAdminGate()));}
