@@ -1038,7 +1038,7 @@ class _ProfileState extends State<Profile> {
     try {
       final row = await Supabase.instance.client
           .from('profiles')
-          .select('username,role,country_code,vip_level,public_id,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified')
+          .select('username,role,country_code,vip_level,svip_level,public_id,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified')
           .eq('id', user.id)
           .maybeSingle();
       final data = Map<String, dynamic>.from(
@@ -1152,6 +1152,7 @@ class _ProfileState extends State<Profile> {
                       publicId: publicId,
                       country: country,
                       vip: vip,
+                      svipLevel: int.tryParse('${p['svip_level'] ?? 0}') ?? 0,
                       role: role,
                       avatarUrl: avatarUrl,
                       animated: animated,
@@ -1445,6 +1446,7 @@ class _ProfileIdentity extends StatelessWidget {
   final String publicId;
   final String? country;
   final String? vip;
+  final int svipLevel;
   final String role;
   final String? avatarUrl;
   final bool animated;
@@ -1458,6 +1460,7 @@ class _ProfileIdentity extends StatelessWidget {
     required this.publicId,
     required this.country,
     required this.vip,
+    required this.svipLevel,
     required this.role,
     required this.avatarUrl,
     required this.animated,
@@ -1484,6 +1487,7 @@ class _ProfileIdentity extends StatelessWidget {
               RankFrame(
                 role: role,
                 vipLevel: vip,
+                svipLevel: svipLevel,
                 size: 126,
                 child: CircleAvatar(
                   radius: 45,
