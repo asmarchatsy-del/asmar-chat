@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const giftGold = Color(0xFFFFD36A);
@@ -10,90 +9,12 @@ class GlobalGiftBanner extends StatefulWidget {
   const GlobalGiftBanner({super.key, required this.child});
   @override State<GlobalGiftBanner> createState()=>_GlobalGiftBannerState();
 }
-
-class _GlobalGiftBannerState extends State<GlobalGiftBanner> {
-  StreamSubscription<List<Map<String,dynamic>>>? sub;
-  Map<String,dynamic>? banner;
-  Map<String,dynamic>? gift;
-  Timer? hideTimer;
-
-  @override void initState(){
-    super.initState();
-    sub=Supabase.instance.client.from('gift_public_banners').stream(primaryKey:['id']).order('created_at',ascending:false).limit(1).listen((rows) async {
-      if(rows.isEmpty||!mounted)return;
-      final next=rows.first;
-      Map<String,dynamic>? nextGift;
-      final giftId=next['gift_id']?.toString();
-      if(giftId!=null&&giftId.isNotEmpty){
-        try {
-          final row=await Supabase.instance.client.from('gifts').select('id,name,emoji,asset_type,asset_url,preview_url,animation_loop').eq('id',giftId).maybeSingle();
-          if(row!=null) nextGift=Map<String,dynamic>.from(row);
-        } catch (_) {}
-      }
-      if(!mounted)return;
-      setState((){banner=next;gift=nextGift;});
-      hideTimer?.cancel();
-      hideTimer=Timer(const Duration(seconds:6),(){if(mounted)setState(()=>banner=null);});
-    });
-  }
-
+class _GlobalGiftBannerState extends State<GlobalGiftBanner>{
+  StreamSubscription<List<Map<String,dynamic>>>? sub; Map<String,dynamic>? banner; Timer? hideTimer;
+  @override void initState(){super.initState();sub=Supabase.instance.client.from('global_gift_events').stream(primaryKey:['id']).order('created_at',ascending:false).limit(1).listen((rows){if(rows.isEmpty||!mounted)return;final next=rows.first;setState(()=>banner=next);hideTimer?.cancel();hideTimer=Timer(const Duration(seconds:5),(){if(mounted)setState(()=>banner=null);});});}
   @override void dispose(){sub?.cancel();hideTimer?.cancel();super.dispose();}
-
-  @override Widget build(BuildContext context)=>Stack(children:[
-    widget.child,
-    if(banner!=null)
-      Positioned(
-        top: MediaQuery.of(context).padding.top+8,
-        left: 10,right: 10,
-        child: IgnorePointer(child: _GiftTicker(banner:banner!,gift:gift)),
-      ),
-  ]);
+  @override Widget build(BuildContext context)=>Stack(children:[widget.child,if(banner!=null)Positioned(top:MediaQuery.of(context).padding.top+8,left:10,right:10,child:Material(color:Colors.transparent,child:InkWell(onTap:(){final roomId=banner!['room_id']?.toString();if(roomId==null||roomId.isEmpty)return;Navigator.of(context).pushNamed('/room/$roomId');},borderRadius:BorderRadius.circular(30),child:_GiftTicker(banner:banner!))))]);
 }
-
-class _GiftTicker extends StatefulWidget{
- final Map<String,dynamic> banner;
- final Map<String,dynamic>? gift;
- const _GiftTicker({required this.banner,this.gift});
- @override State<_GiftTicker> createState()=>_GiftTickerState();
-}
-
-class _GiftTickerState extends State<_GiftTicker> with SingleTickerProviderStateMixin{
- late final AnimationController controller;
-
- @override void initState(){
-   super.initState();
-   controller=AnimationController(vsync:this,duration:const Duration(milliseconds:1200))..repeat(reverse:true);
- }
-
- @override void dispose(){controller.dispose();super.dispose();}
-
- Widget _giftVisual(){
-   final g=widget.gift;
-   final url=g?['asset_url']?.toString()??'';
-   final preview=g?['preview_url']?.toString()??'';
-   final type=g?['asset_type']?.toString()??'';
-   if(type=='lottie'&&url.isNotEmpty){
-     return SizedBox(width:48,height:48,child:Lottie.network(url,repeat:g?['animation_loop']!=false,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Text('🎁',style:TextStyle(fontSize:28))));
-   }
-   if((type=='image'||type=='3d')&&(preview.isNotEmpty||url.isNotEmpty)){
-     return SizedBox(width:48,height:48,child:Image.network(preview.isNotEmpty?preview:url,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Text('🎁',style:TextStyle(fontSize:28))));
-   }
-   return Text(g?['emoji']?.toString()??'🎁',style:const TextStyle(fontSize:28));
- }
-
- @override Widget build(BuildContext context)=>AnimatedBuilder(animation:controller,builder:(_,__)=>Container(
-   padding:const EdgeInsets.symmetric(horizontal:14,vertical:7),
-   decoration:BoxDecoration(
-     borderRadius:BorderRadius.circular(30),
-     gradient:const LinearGradient(colors:[Color(0xFF7A3F08),Color(0xFF1A0903),Color(0xFF7A3F08)]),
-     border:Border.all(color:giftGold,width:1.5),
-     boxShadow:[BoxShadow(color:giftGold.withOpacity(.22+.12*controller.value),blurRadius:16)],
-   ),
-   child:Row(children:[
-     _giftVisual(),
-     const SizedBox(width:8),
-     Expanded(child:Text('${widget.gift?['name']??'إهداء فخم'} • ${widget.banner['amount']} 🪙',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900))),
-     const Text('✨',style:TextStyle(fontSize:20)),
-   ]),
- ));
+class _GiftTicker extends StatefulWidget{final Map<String,dynamic> banner;const _GiftTicker({required this.banner});@override State<_GiftTicker> createState()=>_GiftTickerState();}
+class _GiftTickerState extends State<_GiftTicker> with SingleTickerProviderStateMixin{late final AnimationController controller;@override void initState(){super.initState();controller=AnimationController(vsync:this,duration:const Duration(milliseconds:900))..repeat(reverse:true);}@override void dispose(){controller.dispose();super.dispose();}@override Widget build(BuildContext context)=>AnimatedBuilder(animation:controller,builder:(_,__)=>SlideTransition(position:Tween<Offset>(begin:const Offset(0,-1),end:Offset.zero).animate(CurvedAnimation(parent:controller,curve:Curves.easeOut)),child:Container(padding:const EdgeInsets.symmetric(horizontal:14,vertical:9),decoration:BoxDecoration(borderRadius:BorderRadius.circular(30),gradient:const LinearGradient(colors:[Color(0xFF8B4B0A),Color(0xFF130703),Color(0xFF8B4B0A)]),border:Border.all(color:giftGold,width:1.5),boxShadow:[BoxShadow(color:Color(0x66FFD36A),blurRadius:18)]),child:Row(children:[const Text('🎁',style:TextStyle(fontSize:26)),const SizedBox(width:8),Expanded(child:Text('🎁 ${widget.banner['sender_name']} أهدى ${widget.banner['gift_name']} لـ ${widget.banner['receiver_name']}',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900))),const SizedBox(width:6),Text('${widget.banner['gift_value']} 🪙',style:const TextStyle(color:giftGold,fontWeight:FontWeight.w900)),const SizedBox(width:5),const Text('✨',style:TextStyle(fontSize:18))]))));}
 }
