@@ -1517,6 +1517,7 @@ class _ProfileIdentity extends StatelessWidget {
                           avatarUrl: avatarUrl,
                           isAnimated: animated,
                           vipLevel: vip,
+                          svipLevel: svipLevel,
                           role: role,
                           publicId: publicId,
                           onSaved: onAvatarSaved,
