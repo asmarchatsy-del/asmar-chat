@@ -641,6 +641,16 @@ class _HomeState extends State<Home> {
   void _refreshRooms() {
     setState(() => _roomsFuture = _loadRooms());
   }
+  void _showHomeAction(String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(label),
+        backgroundColor: gold2,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -663,6 +673,35 @@ class _HomeState extends State<Home> {
                       ])),
                       IconButton(onPressed: _refreshRooms, icon: const Icon(Icons.refresh)),
                     ],
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+                  child: SizedBox(
+                    height: 58,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      reverse: true,
+                      children: [
+                        _HomeQuickAction(
+                          label: 'CPC',
+                          icon: Icons.favorite_rounded,
+                          onTap: () => _showHomeAction('CPC'),
+                        ),
+                        _HomeQuickAction(
+                          label: 'الحب',
+                          icon: Icons.favorite_border_rounded,
+                          onTap: () => _showHomeAction('الحب'),
+                        ),
+                        _HomeQuickAction(
+                          label: 'المزيد',
+                          icon: Icons.apps_rounded,
+                          onTap: () => _showHomeAction('المزيد'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -731,6 +770,60 @@ class _HomeState extends State<Home> {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeQuickAction extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HomeQuickAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            width: 92,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B0E08),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: gold2),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: gold, size: 20),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
