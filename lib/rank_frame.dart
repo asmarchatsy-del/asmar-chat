@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RankFrame extends StatefulWidget {
   final String role;
@@ -7,6 +8,7 @@ class RankFrame extends StatefulWidget {
   final Widget child;
   final bool showLabel;
   final String? vipLevel;
+  final int svipLevel;
 
   const RankFrame({
     super.key,
@@ -15,6 +17,7 @@ class RankFrame extends StatefulWidget {
     this.size = 86,
     this.showLabel = true,
     this.vipLevel,
+    this.svipLevel = 0,
   });
 
   @override
@@ -24,6 +27,9 @@ class RankFrame extends StatefulWidget {
 class _RankFrameState extends State<RankFrame>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  String? _remoteMediaUrl;
+  bool _remoteGlow = true;
+  bool _remoteMotion = true;
 
   static const _gold = Color(0xFFFFD36A);
   static const _deepGold = Color(0xFF9A5A12);
@@ -35,6 +41,26 @@ class _RankFrameState extends State<RankFrame>
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat();
+    _loadRemoteStyle();
+  }
+
+  @override
+  Future<void> _loadRemoteStyle() async {
+    try {
+      final db = Supabase.instance.client;
+      if (widget.svipLevel >= 6 && widget.svipLevel <= 8) {
+        final row = await db.from('svip_levels').select('media_url,glow_enabled,motion_enabled').eq('level', widget.svipLevel).maybeSingle();
+        if (!mounted || row == null) return;
+        setState(() { _remoteMediaUrl = row['media_url']?.toString(); _remoteGlow = row['glow_enabled'] != false; _remoteMotion = row['motion_enabled'] != false; });
+      } else {
+        final vip = int.tryParse((widget.vipLevel ?? '').replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+        if (vip >= 7 && vip <= 10) {
+          final row = await db.from('vip_levels').select('image').eq('id', 'VIP$vip').maybeSingle();
+          if (!mounted || row == null) return;
+          setState(() { _remoteMediaUrl = row['image']?.toString(); _remoteGlow = true; _remoteMotion = true; });
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -49,6 +75,9 @@ class _RankFrameState extends State<RankFrame>
   Widget build(BuildContext context) {
     final s = _style;
     final outer = widget.size + 22;
+    final moving = _remoteMotion;
+    final glow = _remoteGlow;
+
 
     return SizedBox(
       width: widget.showLabel ? math.max(outer, 118) : outer,
@@ -66,7 +95,7 @@ class _RankFrameState extends State<RankFrame>
                   alignment: Alignment.center,
                   children: [
                     Transform.rotate(
-                      angle: _controller.value * math.pi * 2,
+                      angle: moving ? _controller.value * math.pi * 2 : 0,
                       child: Container(
                         width: outer,
                         height: outer,
@@ -81,7 +110,7 @@ class _RankFrameState extends State<RankFrame>
                               s.dark,
                             ],
                           ),
-                          boxShadow: [
+                          boxShadow: glow ? [
                             BoxShadow(
                               color: s.primary.withOpacity(.65),
                               blurRadius: 18,
@@ -92,10 +121,16 @@ class _RankFrameState extends State<RankFrame>
                               blurRadius: 30,
                               spreadRadius: 5,
                             ),
-                          ],
+                          ] : const [],
                         ),
                       ),
                     ),
+                    if (_remoteMediaUrl != null && _remoteMediaUrl!.isNotEmpty)
+                      SizedBox(
+                        width: outer,
+                        height: outer,
+                        child: IgnorePointer(child: Image.network(_remoteMediaUrl!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+                      ),
                     Container(
                       width: outer - 8,
                       height: outer - 8,
