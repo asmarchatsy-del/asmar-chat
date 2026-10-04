@@ -14,15 +14,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
       - name: Generate Android project
         run: |
           flutter create --platforms=android.
           ls -la android/app/
+
       - name: Force exact Android package
         run: |
           python3 - <<'PY'
@@ -31,24 +34,48 @@ jobs:
           groovy=Path('android/app/build.gradle')
           kotlin=Path('android/app/build.gradle.kts')
           if groovy.exists():
-              s=groovy.read_text(); s,n=re.subn(r'applicationId\s+["\'][^"\']+["\']','applicationId "com.asmarchat.app"',s,count=1)
+              s=groovy.read_text()
+              s,n=re.subn(r'applicationId\s+["\'][^"\']+["\']','applicationId "com.asmarchat.app"',s,count=1)
               if n!=1: raise SystemExit('applicationId not found in build.gradle')
               groovy.write_text(s)
           elif kotlin.exists():
-              s=kotlin.read_text(); s,n=re.subn(r'applicationId\s*=\s*"[^"]+"','applicationId = "com.asmarchat.app"',s,count=1)
+              s=kotlin.read_text()
+              s,n=re.subn(r'applicationId\s*=\s*"[^"]+"','applicationId = "com.asmarchat.app"',s,count=1)
               if n!=1: raise SystemExit('applicationId not found in build.gradle.kts')
               kotlin.write_text(s)
           else:
               raise SystemExit('Android Gradle file not found')
           PY
+
       - name: Apply Asmar Chat logo and branding
         run: python3 tool/apply_branding.py
+
       - name: Set Android app display name
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           p=Path('android/app/src/main/AndroidManifest.xml')
-          s=p.read_text(); s,n=re.subn(r'(<application\b[^>]*\bandroid:label=")[^"]*(")',r'\1Asmar Chat\2',s,count=1)
+          s=p.read_text()
+          s,n=re.subn(r'(<application\b[^>]*\bandroid:label=")[^"]*(")',r'\1Asmar Chat\2',s,count=1)
           if n!=1: raise SystemExit('Could not set Android application label')
-          p.write_text(s
+          p.write_text(s)
+          PY
+
+      - name: Configure Supabase Android callback
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          s=p.read_text()
+          deep_link='''
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="io.supabase.flutter" android:host="login-callback" />
+            </intent-filter>'''
+          if 'io.supabase.flutter' not in s:
+              marker='</activity>'
+              if marker not in s: raise SystemExit('Android activity block not found')
+              s=s
