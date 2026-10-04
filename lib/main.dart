@@ -1257,7 +1257,7 @@ class _ProfileState extends State<Profile> {
                           const SizedBox(width: 6),
                           Expanded(
                             child: _SimpleMembershipCard(
-                              title: coins.toLocaleString(),
+                              title: coins.toString(),
                               subtitle: 'محفظة الكوينز',
                               icon: Icons.account_balance_wallet_outlined,
                               onTap: () => Navigator.push(
