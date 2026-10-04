@@ -112,7 +112,7 @@ jobs:
           python3 tool/integrate_global_gift_bar.py
 
       - name: Dart format check
-        run: dart format --output=none --set-exit-if-changed lib
+        run: dart format .
 
       - name: Flutter analyze
         run: flutter analyze
