@@ -6,9 +6,10 @@ import 'rank_frame.dart';
 
 class AvatarPickerButton extends StatefulWidget{
  final String? avatarUrl,vipLevel,role,publicId;
+ final int svipLevel;
  final bool isAnimated;
  final VoidCallback onSaved;
- const AvatarPickerButton({super.key,this.avatarUrl,this.isAnimated=false,this.vipLevel,this.role,this.publicId,required this.onSaved});
+ const AvatarPickerButton({super.key,this.avatarUrl,this.isAnimated=false,this.vipLevel,this.svipLevel=0,this.role,this.publicId,required this.onSaved});
  @override State<AvatarPickerButton> createState()=>_AvatarPickerButtonState();
 }
 class _AvatarPickerButtonState extends State<AvatarPickerButton>{
@@ -34,7 +35,7 @@ class _AvatarPickerButtonState extends State<AvatarPickerButton>{
   if(mounted)setState(()=>busy=false);
  }
  @override Widget build(BuildContext context)=>GestureDetector(onTap:busy?null:pick,child:Stack(alignment:Alignment.bottomRight,children:[
-  RankFrame(role:widget.role??'USER',vipLevel:widget.vipLevel,size:92,showLabel:false,child:CircleAvatar(backgroundColor:const Color(0xFF120A06),backgroundImage:(widget.avatarUrl??'').isNotEmpty?NetworkImage(widget.avatarUrl!):null,child:(widget.avatarUrl??'').isEmpty?const Icon(Icons.person,color:Color(0xFFFFD36A),size:42):null)),
+  RankFrame(role:widget.role??'USER',vipLevel:widget.vipLevel,svipLevel:widget.svipLevel,size:92,showLabel:false,child:CircleAvatar(backgroundColor:const Color(0xFF120A06),backgroundImage:(widget.avatarUrl??'').isNotEmpty?NetworkImage(widget.avatarUrl!):null,child:(widget.avatarUrl??'').isEmpty?const Icon(Icons.person,color:Color(0xFFFFD36A),size:42):null)),
   Container(padding:const EdgeInsets.all(7),decoration:const BoxDecoration(shape:BoxShape.circle,color:Color(0xFFFFD36A)),child:Icon(busy?Icons.hourglass_top:Icons.camera_alt,color:Colors.black,size:18))
  ]));
 }
