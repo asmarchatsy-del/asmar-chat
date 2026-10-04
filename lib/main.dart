@@ -622,11 +622,13 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   late Future<List<Map<String, dynamic>>> _roomsFuture;
+  late Future<List<Map<String, dynamic>>> _quickActionsFuture;
 
   @override
   void initState() {
     super.initState();
     _roomsFuture = _loadRooms();
+    _quickActionsFuture = _loadQuickActions();
   }
 
   Future<List<Map<String, dynamic>>> _loadRooms() async {
@@ -641,6 +643,43 @@ class _HomeState extends State<Home> {
   void _refreshRooms() {
     setState(() => _roomsFuture = _loadRooms());
   }
+  Future<List<Map<String, dynamic>>> _loadQuickActions() async {
+    final data = await Supabase.instance.client
+        .from('home_quick_actions')
+        .select('id,label,icon_name,action_key,sort_order')
+        .eq('is_active', true)
+        .order('sort_order', ascending: true);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  IconData _quickActionIcon(String name) {
+    const icons = <String, IconData>{
+      'favorite': Icons.favorite_rounded,
+      'favorite_border': Icons.favorite_border_rounded,
+      'apps': Icons.apps_rounded,
+      'stars': Icons.stars_rounded,
+      'groups': Icons.groups_rounded,
+      'person': Icons.person_rounded,
+      'diamond': Icons.diamond_rounded,
+    };
+    return icons[name] ?? Icons.apps_rounded;
+  }
+
+  void _openQuickAction(Map<String, dynamic> action) {
+    final key = action['action_key']?.toString() ?? '';
+    if (key == 'more') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const Discover()));
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(action['label']?.toString() ?? ''),
+        backgroundColor: gold2,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _showHomeAction(String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -681,26 +720,23 @@ class _HomeState extends State<Home> {
                   padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
                   child: SizedBox(
                     height: 58,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      reverse: true,
-                      children: [
-                        _HomeQuickAction(
-                          label: 'CPC',
-                          icon: Icons.favorite_rounded,
-                          onTap: () => _showHomeAction('CPC'),
-                        ),
-                        _HomeQuickAction(
-                          label: 'الحب',
-                          icon: Icons.favorite_border_rounded,
-                          onTap: () => _showHomeAction('الحب'),
-                        ),
-                        _HomeQuickAction(
-                          label: 'المزيد',
-                          icon: Icons.apps_rounded,
-                          onTap: () => _showHomeAction('المزيد'),
-                        ),
-                      ],
+                    child: FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _quickActionsFuture,
+                      builder: (context, snapshot) {
+                        final actions = snapshot.data ?? const <Map<String, dynamic>>[];
+                        if (snapshot.connectionState != ConnectionState.done && actions.isEmpty) {
+                          return const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)));
+                        }
+                        return ListView(
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          children: actions.map((action) => _HomeQuickAction(
+                            label: action['label']?.toString() ?? '',
+                            icon: _quickActionIcon(action['icon_name']?.toString() ?? ''),
+                            onTap: () => _openQuickAction(action),
+                          )).toList(),
+                        );
+                      },
                     ),
                   ),
                 ),
