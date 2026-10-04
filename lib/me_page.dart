@@ -3,6 +3,7 @@ import 'wallet_page.dart';
 import 'store_page.dart';
 
 class MePage extends StatelessWidget {
+  // Me avatar RankFrame
   const MePage({super.key});
   @override
   Widget build(BuildContext context) {
