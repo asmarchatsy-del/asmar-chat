@@ -20,24 +20,76 @@ jobs:
           channel: stable
           cache: true
       - name: Generate Android project
-        run: flutter create --platforms=android --project-name asmar_chat --org com.asmarchat.app --no-pub.
+        run: flutter create --platforms=android --project-name asmar_chat --org com.asmarchat.app --no-pub
       - name: Force exact Android package
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          groovy=Path('android/app/build.gradle')
-          kotlin=Path('android/app/build.gradle.kts')
-          if groovy.exists():
-              s=groovy.read_text(); s,n=re.subn(r'applicationId\s+["\'][^"\']+["\']','applicationId "com.asmarchat.app"',s,count=1)
-              if n!=1: raise SystemExit('applicationId not found in build.gradle')
-              groovy.write_text(s)
-          elif kotlin.exists():
-              s=kotlin.read_text(); s,n=re.subn(r'applicationId\s*=\s*"[^"]+"','applicationId = "com.asmarchat.app"',s,count=1)
-              if n!=1: raise SystemExit('applicationId not found in build.gradle.kts')
-              kotlin.write_text(s)
+
+          candidates = [
+              Path('android/app/build.gradle'),
+              Path('android/app/build.gradle.kts'),
+              Path('android/app/build.gradle.d'),
+          ]
+
+          gradle = next((p for p in candidates if p.is_file()), None)
+          if gradle is None:
+              print('Android Gradle file not found. Generating Android platform...')
+              raise SystemExit(42)
+
+          print(f'Using Android Gradle file: {gradle}')
+          s = gradle.read_text(encoding='utf-8')
+
+          if gradle.suffix == '.kts':
+              s, n = re.subn(
+                  r'applicationId\s*=\s*"[^"]+"',
+                  'applicationId = "com.asmarchat.app"',
+                  s,
+                  count=1,
+              )
           else:
+              s, n = re.subn(
+                  r'applicationId\s+["\'][^"\']+["\']',
+                  'applicationId "com.asmarchat.app"',
+                  s,
+                  count=1,
+              )
+
+          if n != 1:
+              raise SystemExit(f'applicationId not found in {gradle}')
+          gradle.write_text(s, encoding='utf-8')
+          PY
+        continue-on-error: true
+      - name: Ensure Android Gradle file exists
+        run: |
+          set -e
+          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ] && [ ! -f android/app/build.gradle.d ]; then
+            echo 'No Android Gradle file found after initial generation; running flutter create . --platforms=android'
+            flutter create . --platforms=android --project-name asmar_chat --org com.asmarchat.app --no-pub
+          fi
+          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ] && [ ! -f android/app/build.gradle.d ]; then
+            echo 'Android Gradle file still not found. Full android tree:'
+            ls -R android/ || true
+            exit 1
+          fi
+      - name: Force exact Android package (final)
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          candidates = [Path('android/app/build.gradle'), Path('android/app/build.gradle.kts'), Path('android/app/build.gradle.d')]
+          gradle = next((p for p in candidates if p.is_file()), None)
+          if gradle is None:
               raise SystemExit('Android Gradle file not found')
+          s = gradle.read_text(encoding='utf-8')
+          if gradle.suffix == '.kts':
+              s, n = re.subn(r'applicationId\s*=\s*"[^"]+"', 'applicationId = "com.asmarchat.app"', s, count=1)
+          else:
+              s, n = re.subn(r'applicationId\s+["\'][^"\']+["\']', 'applicationId "com.asmarchat.app"', s, count=1)
+          if n != 1:
+              raise SystemExit(f'applicationId not found in {gradle}')
+          gradle.write_text(s, encoding='utf-8')
           PY
       - name: Apply Asmar Chat logo and branding
         run: python3 tool/apply_branding.py
