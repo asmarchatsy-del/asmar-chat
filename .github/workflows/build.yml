@@ -78,6 +78,7 @@ jobs:
         run: flutter pub get
       - name: Apply release runtime fixes
         run: python3 tool/fix_release_runtime.py
+      # Room voice integration is temporarily disabled; LiveKit code remains unchanged.
       - name: Analyze
         id: analyze
         continue-on-error: true
