@@ -1038,7 +1038,7 @@ class _ProfileState extends State<Profile> {
     try {
       final row = await Supabase.instance.client
           .from('profiles')
-          .select('username,role,country_code,vip_level,svip_level,public_id,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified')
+          .select('username,role,country_code,vip_level,svip_level,public_id,avatar_url,avatar_is_animated,activity_admin_badge,customer_service_badge,is_verified,coins')
           .eq('id', user.id)
           .maybeSingle();
       final data = Map<String, dynamic>.from(
@@ -1090,6 +1090,8 @@ class _ProfileState extends State<Profile> {
           final username = p['username']?.toString() ?? 'مستخدم';
           final country = p['country_code']?.toString();
           final vip = p['vip_level']?.toString();
+          final svipLevel = int.tryParse('${p['svip_level'] ?? 0}') ?? 0;
+          final coins = int.tryParse('${p['coins'] ?? 0}') ?? 0;
           final publicId = p['public_id']?.toString() ?? '---';
           final avatarUrl = p['avatar_url']?.toString();
           final animated = p['avatar_is_animated'] == true;
@@ -1152,7 +1154,7 @@ class _ProfileState extends State<Profile> {
                       publicId: publicId,
                       country: country,
                       vip: vip,
-                      svipLevel: int.tryParse('${p['svip_level'] ?? 0}') ?? 0,
+                      svipLevel: svipLevel,
                       role: role,
                       avatarUrl: avatarUrl,
                       animated: animated,
@@ -1226,7 +1228,7 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
 
-                  // SVIP / VIP
+                  // VIP / SVIP / محفظة الكوينز — تحت صورة البروفايل
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1234,23 +1236,33 @@ class _ProfileState extends State<Profile> {
                         children: [
                           Expanded(
                             child: _SimpleMembershipCard(
-                              title: 'SVIP',
-                              subtitle: 'Supreme Membership',
+                              title: svipLevel > 0 ? 'SVIP $svipLevel' : 'SVIP',
+                              subtitle: svipLevel > 0 ? 'العضوية الحالية' : 'غير مفعّل',
                               icon: Icons.diamond_outlined,
                               onTap: () => _info('SVIP — معلومات العضوية'),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: _SimpleMembershipCard(
                               title: vip == null || vip.isEmpty ? 'VIP' : vip,
-                              subtitle: 'Growth Privilege',
+                              subtitle: 'العضوية الحالية',
                               icon: Icons.workspace_premium_outlined,
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) => const VipPage(),
-                                ),
+                                MaterialPageRoute(builder: (_) => const VipPage()),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _SimpleMembershipCard(
+                              title: coins.toLocaleString(),
+                              subtitle: 'محفظة الكوينز',
+                              icon: Icons.account_balance_wallet_outlined,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const WalletPage()),
                               ),
                             ),
                           ),
@@ -1637,15 +1649,14 @@ class _SimpleMembershipCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, color: gold2, size: 20),
-              const SizedBox(width: 7),
+              const SizedBox(width: 6),
               Flexible(
-                child: Text(
-                  subtitle,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 8,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(title, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900)),
+                    Text(subtitle, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 7)),
+                  ],
                 ),
               ),
             ],
