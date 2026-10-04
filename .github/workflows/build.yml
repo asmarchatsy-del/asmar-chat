@@ -1,70 +1,136 @@
 name: Build Asmar Chat
+
 permissions:
   contents: write
+
 on:
   workflow_dispatch:
   push:
     branches: [main]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
       - name: Generate Android project
-        run: flutter create --platforms=android.
+        run: |
+          flutter create --platforms=android .
+          ls -la android/app/
+
+      - name: Verify Android Gradle file
+        run: |
+          set -e
+          if [ -f android/app/build.gradle ]; then
+            echo "Using android/app/build.gradle"
+          elif [ -f android/app/build.gradle.kts ]; then
+            echo "Using android/app/build.gradle.kts"
+          elif [ -f android/app/build.gradle.d ]; then
+            echo "Using android/app/build.gradle.d"
+          else
+            echo "Android Gradle file not found. Full android tree:"
+            ls -R android/ || true
+            exit 1
+          fi
+
       - name: Force exact Android package
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          p1=Path('android/app/build.gradle')
-          p2=Path('android/app/build.gradle.kts')
-          if p1.exists():
-              s=p1.read_text()
-              s=re.sub(r'applicationId\s+["\'][^"\']+["\']','applicationId "com.asmarchat.app"',s,count=1)
-              p1.write_text(s)
-          elif p2.exists():
-              s=p2.read_text()
-              s=re.sub(r'applicationId\s*=\s*"[^"]+"','applicationId = "com.asmarchat.app"',s,count=1)
-              p2.write_text(s)
+
+          candidates = [
+              Path("android/app/build.gradle"),
+              Path("android/app/build.gradle.kts"),
+              Path("android/app/build.gradle.d"),
+          ]
+          gradle = next((path for path in candidates if path.is_file()), None)
+          if gradle is None:
+              raise SystemExit("Android Gradle file not found")
+
+          text = gradle.read_text(encoding="utf-8")
+          if gradle.suffix == ".kts":
+              text, count = re.subn(
+                  r'applicationId\s*=\s*"[^"]+"',
+                  'applicationId = "com.asmarchat.app"',
+                  text,
+                  count=1,
+              )
+          else:
+              text, count = re.subn(
+                  r'applicationId\s+["\'][^"\']+["\']',
+                  'applicationId "com.asmarchat.app"',
+                  text,
+                  count=1,
+              )
+
+          if count != 1:
+              raise SystemExit(f"applicationId not found in {gradle}")
+          gradle.write_text(text, encoding="utf-8")
           PY
+
       - name: Apply branding
         run: python3 tool/apply_branding.py
+
       - name: Set app name
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          p=Path('android/app/src/main/AndroidManifest.xml')
-          s=p.read_text()
-          s=re.sub(r'(<application\b[^>]*\bandroid:label=")[^"]*(")',r'\1Asmar Chat\2',s,count=1)
-          p.write_text(s)
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          text = manifest.read_text(encoding="utf-8")
+          text, count = re.subn(
+              r'(<application\b[^>]*\bandroid:label=")[^"]*(")',
+              r'\1Asmar Chat\2',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("Could not set Android application label")
+          manifest.write_text(text, encoding="utf-8")
           PY
-      - name: Clean and get deps
+
+      - name: Clean and get dependencies
         run: |
           rm -f test/widget_test.dart
           flutter clean
           rm -rf build android/.gradle
           flutter pub get
-      - name: Apply fixes
+
+      - name: Apply release fixes
         run: |
           python3 tool/fix_release_runtime.py
           python3 tool/integrate_global_gift_bar.py
+
+      - name: Dart format check
+        run: dart format --output=none --set-exit-if-changed lib
+
+      - name: Flutter analyze
+        run: flutter analyze
+
       - name: Build APK
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: |
+          test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "Missing repository variable GOOGLE_WEB_CLIENT_ID"; exit 1; }
           flutter build apk --release -t lib/asmar_entry.dart --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
           cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/asmar-chat-universal.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: asmar-chat-universal-apk
           path: build/app/outputs/flutter-apk/asmar-chat-universal.apk
+
       - name: Publish APK
         env:
           GH_TOKEN: ${{ github.token }}
