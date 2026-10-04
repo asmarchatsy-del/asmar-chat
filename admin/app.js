@@ -57,7 +57,7 @@ async function loadAll(){
     db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified,recharge_points,svip_level,user_level').order('created_at',{ascending:false}),
     db.from('wallets').select('user_id,balance').order('balance',{ascending:false}),
     db.from('rooms').select('id,name,owner_id,is_active,created_at').order('created_at',{ascending:false}),
-    db.from('frame_items').select('id,name,style_key,price,is_active').order('price'),
+    db.from('frame_items').select('id,name,style_key,price,is_active,media_url,media_type,category,vip_level,svip_level,glow_enabled,motion_enabled').order('price'),
     db.from('coin_packages').select('id,name,coins,price_usd,is_active').order('price_usd'),
     db.from('vip_levels').select('id,animal,image,price_coins,duration_days,is_active').order('price_coins'),
     db.from('asmar_policy').select('level,target,host_base,agent_base,host_total,agent_total').order('level'),
@@ -76,13 +76,23 @@ async function loadAll(){
 function renderStore(frames,packages,vips){
   const section=(title,items,render)=>'<h3 class="section-title">'+title+'</h3><div class="cards">'+items.map(render).join('')+'</div>';
   $('storeItems').innerHTML=
-    section('🖼️ الإطارات',frames,x=>'<div class="card"><h3>'+esc(x.name)+'</h3><small>'+esc(x.style_key)+'</small><input id="fc_'+x.id+'" type="number" min="0" value="'+Number(x.price||0)+'" placeholder="السعر بالكوين"><label><input id="fa_'+x.id+'" type="checkbox" '+(x.is_active?'checked':'')+'> فعال</label><button onclick="saveFrame(\''+x.id+'\')">حفظ</button></div>')+
+    section('🖼️ الإطارات الديناميكية',frames,x=>'<div class="card"><h3>'+esc(x.name)+'</h3><small>'+esc(x.style_key||'standard')+' · '+esc(x.category||'standard')+'</small><input id="fc_'+x.id+'" type="number" min="0" value="'+Number(x.price||0)+'" placeholder="السعر بالكوين"><input id="fv_'+x.id+'" placeholder="رابط GIF/الصورة المتحركة" value="'+esc(x.media_url||'')+'"><input id="ff_'+x.id+'" type="file" accept="image/gif,image/png,image/webp,image/jpeg"><label><input id="fg_'+x.id+'" type="checkbox" '+(x.glow_enabled!==false?'checked':'')+'> لمعان</label><label><input id="fm_'+x.id+'" type="checkbox" '+(x.motion_enabled!==false?'checked':'')+'> حركة</label><label><input id="fa_'+x.id+'" type="checkbox" '+(x.is_active?'checked':'')+'> فعال</label><button onclick="saveFrame(\''+x.id+'\')">حفظ</button></div>')+
     section('🪙 حزم الكوينز',packages,x=>'<div class="card"><h3>'+esc(x.name)+'</h3><input id="cc_'+x.id+'" type="number" min="1" value="'+Number(x.coins||0)+'" placeholder="عدد الكوينز"><input id="cp_'+x.id+'" type="number" min="0" step="0.01" value="'+Number(x.price_usd||0)+'" placeholder="السعر بالدولار"><label><input id="ca_'+x.id+'" type="checkbox" '+(x.is_active?'checked':'')+'> فعال</label><button onclick="savePackage(\''+x.id+'\')">حفظ</button></div>')+
-    section('👑 VIP / SVIP',vips,x=>'<div class="card"><h3>'+esc(x.id)+' — '+esc(x.animal)+'</h3><small>'+Number(x.duration_days||0)+' يوم</small><input id="vc_'+x.id+'" type="number" min="0" value="'+Number(x.price_coins||0)+'" placeholder="السعر بالكوين"><label><input id="va_'+x.id+'" type="checkbox" '+(x.is_active?'checked':'')+'> فعال</label><button onclick="saveVip(\''+x.id+'\')">حفظ</button></div>');
+    section('👑 VIP 1—10',vips,x=>'<div class="card"><h3>'+esc(x.id)+' — '+esc(x.animal||'VIP')+'</h3><small>'+Number(x.duration_days||0)+' يوم</small><input id="vc_'+x.id+'" type="number" min="0" value="'+Number(x.price_coins||0)+'" placeholder="السعر بالكوين"><input id="vi_'+x.id+'" placeholder="رابط GIF/تصميم VIP" value="'+esc(x.image||'')+'"><input id="vf_'+x.id+'" type="file" accept="image/gif,image/png,image/webp,image/jpeg"><label><input id="va_'+x.id+'" type="checkbox" '+(x.is_active?'checked':'')+'> فعال</label><button onclick="saveVip(\''+x.id+'\')">حفظ</button></div>');
 }
-async function saveFrame(id){const {error}=await db.from('frame_items').update({price:Number($('fc_'+id).value),is_active:$('fa_'+id).checked,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message);else{alert('تم حفظ الإطار');loadAll()}}
+async function saveFrame(id){
+  let mediaUrl=$('fv_'+id).value.trim()||null; const file=$('ff_'+id).files[0];
+  if(file){try{const ext=(file.name.split('.').pop()||'gif').toLowerCase();const path=`frames/${id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;const {error}=await db.storage.from('asmar-media').upload(path,file,{upsert:false,contentType:file.type||'image/gif'});if(error)throw error;mediaUrl=db.storage.from('asmar-media').getPublicUrl(path).data.publicUrl;}catch(e){alert('تعذر رفع الإطار: '+e.message);return;}}
+  const {error}=await db.from('frame_items').update({price:Number($('fc_'+id).value),media_url:mediaUrl,media_type:file?.type||'gif',glow_enabled:$('fg_'+id).checked,motion_enabled:$('fm_'+id).checked,is_active:$('fa_'+id).checked,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error)alert(error.message);else{alert('تم حفظ الإطار');loadAll()}
+}
 async function savePackage(id){const {error}=await db.from('coin_packages').update({coins:Number($('cc_'+id).value),price_usd:Number($('cp_'+id).value),is_active:$('ca_'+id).checked,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message);else{alert('تم حفظ الحزمة');loadAll()}}
-async function saveVip(id){const {error}=await db.from('vip_levels').update({price_coins:Number($('vc_'+id).value),is_active:$('va_'+id).checked,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message);else{alert('تم حفظ VIP');loadAll()}}
+async function saveVip(id){
+  let image=$('vi_'+id).value.trim()||null; const file=$('vf_'+id).files[0];
+  if(file){try{const ext=(file.name.split('.').pop()||'gif').toLowerCase();const path=`vip/${id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;const {error}=await db.storage.from('asmar-media').upload(path,file,{upsert:false,contentType:file.type||'image/gif'});if(error)throw error;image=db.storage.from('asmar-media').getPublicUrl(path).data.publicUrl;}catch(e){alert('تعذر رفع تصميم VIP: '+e.message);return;}}
+  const {error}=await db.from('vip_levels').update({price_coins:Number($('vc_'+id).value),image,is_active:$('va_'+id).checked,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error)alert(error.message);else{alert('تم حفظ VIP');loadAll()}
+}
 
 function renderPolicy(items){$('policyTable').innerHTML='<table><tr><th>المستوى</th><th>الهدف</th><th>أساس المضيف</th><th>أساس الوكيل</th><th>إجمالي المضيف</th><th>إجمالي الوكيل</th></tr>'+items.map(x=>'<tr><td>'+x.level+'</td><td>'+Number(x.target).toLocaleString()+'</td><td>'+x.host_base+'</td><td>'+x.agent_base+'</td><td>'+x.host_total+'</td><td>'+x.agent_total+'</td></tr>').join('')+'</table>'}
 let allUsers=[];
