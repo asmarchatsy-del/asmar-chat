@@ -76,15 +76,13 @@ jobs:
         run: python3 tool/fix_release_runtime.py
       - name: Integrate global gift banner and admin threshold
         run: python3 tool/integrate_global_gift_bar.py
-      - name: Analyze
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee analyze.log
+      - name: Format Dart
+        run: dart format .
+      - name: Analyze strict
+        run: flutter analyze
       - name: Upload analyze log
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: asmar-chat-analyze-log
-          path: analyze.log
-          if-no-files-found: warn
+        run: flutter analyze 2>&1 | tee analyze.log
       - name: Check native Google configuration
         env:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
