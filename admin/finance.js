@@ -1,4 +1,4 @@
-let financeCache={recharges:[],withdrawals:[],rechargeMethods:[],withdrawalMethods:[],svip:[],audit:[]};
+let financeCache={recharges:[],withdrawals:[],rechargeMethods:[],withdrawalMethods:[],svip:[],vip:[],audit:[]};
 
 async function loadFinance(){
   const root=$('financeRoot');
@@ -11,15 +11,16 @@ async function loadFinance(){
       db.from('recharge_requests').select('id,user_id,method_id,agent_id,amount,coins,points,details,status,admin_note,created_at').order('created_at',{ascending:false}).limit(100),
       db.from('withdrawal_requests').select('id,user_id,method_id,amount,fee,details,status,admin_note,created_at').order('created_at',{ascending:false}).limit(100),
       db.from('svip_levels').select('*').order('level'),
+      db.from('vip_levels').select('id,animal,image,price_coins,duration_days,is_active').order('id'),
       db.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(100)
     ]);
-    const [rm,wm,rr,wr,sv,audit]=results;
+    const [rm,wm,rr,wr,sv,vip,audit]=results;
     const fatal=[rm,wm].find(x=>x.error);
     if(fatal)throw fatal.error;
     financeCache={
       rechargeMethods:rm.data||[],withdrawalMethods:wm.data||[],
       recharges:rr.error?[]:(rr.data||[]),withdrawals:wr.error?[]:(wr.data||[]),
-      svip:sv.error?[]:(sv.data||[]),audit:audit.error?[]:(audit.data||[])
+      svip:sv.error?[]:(sv.data||[]),vip:vip.error?[]:(vip.data||[]),audit:audit.error?[]:(audit.data||[])
     };
     renderFinance();
   }catch(e){
@@ -35,13 +36,14 @@ function renderFinance(){
     <div class="module-grid">
       <div class="card"><h3>💳 طرق الشحن</h3><p>إضافة وإدارة طرق الشحن الفعلية.</p><button class="primary" onclick="openRechargeMethodForm()">＋ إضافة طريقة شحن</button><div id="rechargeMethodsList"></div></div>
       <div class="card"><h3>💸 طرق السحب</h3><p>إضافة وإدارة طرق السحب الفعلية.</p><button class="primary" onclick="openWithdrawalMethodForm()">＋ إضافة طريقة سحب</button><div id="withdrawalMethodsList"></div></div>
-      <div class="card"><h3>👑 SVIP 1—10</h3><p>حسب نقاط الشحن المعتمدة.</p><div id="svipLevelsList"></div></div>
+      <div class="card"><h3>👑 SVIP 1—8</h3><p>السعر والتصميم يدويًا — بدون نقاط شحن.</p><div id="svipLevelsList"></div></div>
+      <div class="card"><h3>🏆 VIP 7—10</h3><p>تصميم GIF والسعر وإظهار العضوية.</p><div id="vipLevelsList"></div></div>
     </div>
     <div id="financeMethodForm" class="panel hidden"></div>
     <div class="panel"><h3>🪙 طلبات الشحن</h3><div id="rechargeRequestsList"></div></div>
     <div class="panel"><h3>💸 طلبات السحب</h3><div id="withdrawalRequestsList"></div></div>
     <div class="panel"><h3>🧾 سجل العمليات</h3><div id="auditList"></div></div>`;
-  renderMethodLists();renderRequests();renderAudit();
+  renderMethodLists();renderVipLevels();renderRequests();renderAudit();
 }
 
 function renderMethodLists(){
@@ -94,6 +96,17 @@ async function saveWithdrawalMethod(id){
   const {error}=await db.rpc('admin_set_withdrawal_method',payload);
   if(error){alert('تعذر حفظ طريقة السحب: '+error.message);return;}
   alert('تم حفظ طريقة السحب بنجاح');await loadFinance();
+}
+async function renderVipLevels(){
+  const root=$('vipLevelsList');if(!root)return;
+  const rows=financeCache.vip.filter(x=>/^VIP(7|8|9|10)$/i.test(x.id));
+  root.innerHTML=rows.length?rows.map(x=>'<div class="card"><b>'+esc(x.id)+'</b><input id="fv_price_'+x.id+'" type="number" min="0" value="'+Number(x.price_coins||0)+'" placeholder="السعر بالكوين"><input id="fv_url_'+x.id+'" placeholder="رابط GIF/التصميم" value="'+esc(x.image||'')+'"><input id="fv_file_'+x.id+'" type="file" accept="image/gif,image/png,image/webp,image/jpeg"><label><input id="fv_active_'+x.id+'" type="checkbox" '+(x.is_active?'checked':'')+'> فعال</label><button class="primary" onclick="saveVipProfileConfig(\''+x.id+'\')">حفظ VIP</button></div>').join(''):'<p>لا توجد مستويات VIP 7—10.</p>';
+}
+async function saveVipProfileConfig(id){
+  let image=$('fv_url_'+id).value.trim()||null;const file=$('fv_file_'+id).files[0];
+  if(file){try{const ext=(file.name.split('.').pop()||'gif').toLowerCase();const path=`vip/${id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;const {error}=await db.storage.from('asmar-media').upload(path,file,{upsert:false,contentType:file.type||'image/gif'});if(error)throw error;image=db.storage.from('asmar-media').getPublicUrl(path).data.publicUrl;}catch(e){alert('تعذر رفع تصميم VIP: '+e.message);return;}}
+  const {error}=await db.from('vip_levels').update({price_coins:Math.trunc(Number($('fv_price_'+id).value||0)),image,is_active:$('fv_active_'+id).checked,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){alert('تعذر حفظ VIP: '+error.message);return;}alert('تم حفظ '+id);await loadFinance();
 }
 async function saveSvipConfig(level){
   const price=Math.trunc(Number($('sv_price_'+level).value));
