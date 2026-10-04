@@ -73,6 +73,20 @@ async function loadAll(){
   if(typeof loadFinance==='function') await loadFinance();
 }
 
+function openFrameCreate(){
+  const root=$('frameCreate');root.classList.remove('hidden');
+  root.innerHTML='<h3>🖼️ إضافة إطار جديد</h3><div class="promo-grid"><input id="newFrameName" placeholder="اسم الإطار"><input id="newFrameStyle" placeholder="style_key"><input id="newFramePrice" type="number" min="0" placeholder="السعر بالكوين"><select id="newFrameCategory"><option value="standard">عادي</option><option value="vip">VIP</option><option value="svip">SVIP</option></select><input id="newFrameVip" type="number" min="1" max="10" placeholder="مستوى VIP اختياري"><input id="newFrameSvip" type="number" min="1" max="8" placeholder="مستوى SVIP اختياري"><input id="newFrameUrl" placeholder="رابط GIF اختياري"><input id="newFrameFile" type="file" accept="image/gif,image/png,image/webp,image/jpeg"><label><input id="newFrameGlow" type="checkbox" checked> لمعان</label><label><input id="newFrameMotion" type="checkbox" checked> حركة</label></div><button class="primary" onclick="createFrame()">حفظ الإطار</button> <button class="ghost" onclick="$('frameCreate').classList.add('hidden')">إلغاء</button>';
+  root.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function createFrame(){
+  const name=$('newFrameName').value.trim();if(!name){alert('أدخل اسم الإطار');return;}
+  let mediaUrl=$('newFrameUrl').value.trim()||null;const file=$('newFrameFile').files[0];
+  if(file){try{const ext=(file.name.split('.').pop()||'gif').toLowerCase();const path=`frames/new/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;const {error}=await db.storage.from('asmar-media').upload(path,file,{upsert:false,contentType:file.type||'image/gif'});if(error)throw error;mediaUrl=db.storage.from('asmar-media').getPublicUrl(path).data.publicUrl;}catch(e){alert('تعذر رفع الإطار: '+e.message);return;}}
+  const {error}=await db.from('frame_items').insert({name,style_key:$('newFrameStyle').value.trim()||'custom',price:Math.trunc(Number($('newFramePrice').value||0)),is_active:true,media_url:mediaUrl,media_type:file?.type||'gif',category:$('newFrameCategory').value,vip_level:Number($('newFrameVip').value||0)||null,svip_level:Number($('newFrameSvip').value||0)||null,glow_enabled:$('newFrameGlow').checked,motion_enabled:$('newFrameMotion').checked});
+  if(error){alert('تعذر إنشاء الإطار: '+error.message);return;}
+  alert('تمت إضافة الإطار بنجاح');$('frameCreate').classList.add('hidden');await loadAll();
+}
+
 function renderStore(frames,packages,vips){
   const section=(title,items,render)=>'<h3 class="section-title">'+title+'</h3><div class="cards">'+items.map(render).join('')+'</div>';
   $('storeItems').innerHTML=
