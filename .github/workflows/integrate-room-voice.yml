@@ -1,0 +1,23 @@
+name: Integrate Room Voice
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: ${{ !contains(github.event.head_commit.message, '[room-voice-integrated]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Integrate room voice UI
+        run: python3 tool/integrate_room_voice.py
+      - name: Commit integration
+        run: |
+          git config user.name 'Asmar Chat Bot'
+          git config user.email 'actions@github.com'
+          if git diff --quiet; then echo 'Already integrated.'; exit 0; fi
+          git add lib/room.dart
+          git commit -m 'feat: integrate Asmar room voice keyboard [room-voice-integrated]'
+          git push
