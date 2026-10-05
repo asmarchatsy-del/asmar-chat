@@ -12,7 +12,7 @@ class LiveKitRoomService {
   Room? get room => _room;
   bool get isConnected => _room != null;
   bool get isMicrophoneEnabled =>
-      _room?.localParticipant.isMicrophoneEnabled() ?? false;
+      _room?.localParticipant?.isMicrophoneEnabled() ?? false;
 
   SupabaseClient? get client => _client ?? SupabaseRuntime.client;
 
@@ -50,7 +50,9 @@ class LiveKitRoomService {
   Future<void> setMicrophoneEnabled(bool enabled) async {
     final current = _room;
     if (current == null) return;
-    await current.localParticipant.setMicrophoneEnabled(enabled);
+    final participant = current.localParticipant;
+    if (participant == null) return;
+    await participant.setMicrophoneEnabled(enabled);
   }
 
   Future<void> disconnect() async {
