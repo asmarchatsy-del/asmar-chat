@@ -45,9 +45,10 @@ Deno.serve(async (req) => {
     if (!Array.isArray(rooms) || rooms.length !== 1) {
       return Response.json({ error: "Room not found" }, { status: 404 });
     }
+    const roomId = String(rooms[0].id);
 
     const memberQuery = await fetch(
-      `${supabaseUrl}/rest/v1/room_members?select=room_id&user_id=eq.${identity}&left_at=is.null`,
+      `${supabaseUrl}/rest/v1/room_members?select=room_id&room_id=eq.${encodeURIComponent(roomId)}&user_id=eq.${identity}&left_at=is.null`,
       {
         headers: {
           Authorization: auth,
