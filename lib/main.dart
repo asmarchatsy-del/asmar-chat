@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'backend_config.dart';
+import 'core/backend/supabase_runtime.dart';
 import 'core/rooms/real_rooms_home_page.dart';
 
-void main() => runApp(const AsmarChatApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  BackendConfig.validate();
+  await SupabaseRuntime.initialize();
+  runApp(const AsmarChatApp());
+}
 
 class AsmarChatApp extends StatelessWidget {
   const AsmarChatApp({super.key});
@@ -14,9 +21,9 @@ class AsmarChatApp extends StatelessWidget {
       title: 'Asmar Chat',
       theme: ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8B5CF6),
+          seedColor: const Color(0xFFFFB300),
           brightness: Brightness.dark,
         ),
       ),
