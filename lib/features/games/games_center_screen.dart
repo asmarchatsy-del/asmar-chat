@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../asmar/asmar_theme.dart';
 
-class GamesCenterScreen extends StatelessWidget {
+class GamesCenterScreen extends StatefulWidget {
   const GamesCenterScreen({super.key});
+  @override State<GamesCenterScreen> createState() => _GamesCenterScreenState();
+}
+
+class _GamesCenterScreenState extends State<GamesCenterScreen> {
   static const games = [
     ('Ludo', Icons.casino, 'لعبة الطاولة'),
     ('Shark', Icons.water, 'تحدي القرش'),
@@ -11,6 +16,20 @@ class GamesCenterScreen extends StatelessWidget {
     ('Lucky', Icons.stars, 'الحظ الذهبي'),
     ('Cards', Icons.credit_card, 'بطاقات الأصدقاء'),
   ];
+
+  Future<void> _startGame(BuildContext context, String type) async {
+    final db = Supabase.instance.client;
+    if (db.auth.currentUser == null) return;
+    try {
+      final room = await db.from('rooms').select('id,name').eq('is_active', true).order('created_at').limit(1).maybeSingle();
+      if (room == null) throw StateError('لا توجد غرفة نشطة لبدء اللعبة');
+      final result = await db.rpc('asmar_start_game', params: {'p_room_id': room['id'], 'p_game_type': type});
+      if (!mounted) return;
+      showDialog(context: context, builder: (_) => AlertDialog(title: Text('تم بدء ' + type.toUpperCase()), content: Text(result.toString()), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('حسناً'))]));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر بدء اللعبة: ' + e.toString())));
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Directionality(
@@ -24,7 +43,7 @@ class GamesCenterScreen extends StatelessWidget {
             itemBuilder: (_, i) {
               final game = games[i];
               return InkWell(
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('اختيار ${game.$1}'))),
+                onTap: () => _startGame(context, game.$1.toLowerCase()),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   decoration: AsmarTheme.goldCard(radius: 20),
