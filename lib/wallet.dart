@@ -41,6 +41,65 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
+  bool submitting = false;
+
+  Future<void> _requestWithdrawal(Map<String, dynamic> method) async {
+    final amountController = TextEditingController();
+    try {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('طلب سحب عبر ${method['name']}'),
+          content: TextField(
+            controller: amountController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'المبلغ (${method['currency']})',
+              hintText: '${method['min_amount']} - ${method['max_amount']}',
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('إرسال')),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+      final amount = int.tryParse(amountController.text.trim());
+      final min = (method['min_amount'] as num?)?.toInt() ?? 0;
+      final max = (method['max_amount'] as num?)?.toInt() ?? 0;
+      if (amount == null || amount <= 0 || amount < min || (max > 0 && amount > max)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('المبلغ يجب أن يكون بين $min و $max.')),
+        );
+        return;
+      }
+      setState(() => submitting = true);
+      await Supabase.instance.client.rpc(
+        'asmar_create_withdrawal_request',
+        params: {
+          'p_method_id': method['id'],
+          'p_amount': amount,
+          'p_details': <String, dynamic>{},
+        },
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إرسال طلب السحب بنجاح.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر إرسال طلب السحب: $e')),
+        );
+      }
+    } finally {
+      amountController.dispose();
+      if (mounted) setState(() => submitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext c) => Directionality(
         textDirection: TextDirection.rtl,
@@ -217,7 +276,7 @@ class _WithdrawalMethodsPageState extends State<WithdrawalMethodsPage> {
     try {
       final r = await Supabase.instance.client
           .from('withdrawal_methods')
-          .select('id,name,currency,min_amount,max_amount,fee')
+          .select('id,name,currency,min_amount,max_amount,fee,fields')
           .eq('is_active', true)
           .order('sort_order');
       methods = List<Map<String, dynamic>>.from(r);
@@ -256,13 +315,7 @@ class _WithdrawalMethodsPageState extends State<WithdrawalMethodsPage> {
                         'الحد: ${m['min_amount']} - ${m['max_amount']} ${m['currency']}',
                         style: const TextStyle(color: Colors.white60),
                       ),
-                      onTap: () => showDialog(
-                        context: c,
-                        builder: (_) => AlertDialog(
-                          title: Text('سحب عبر ${m['name']}'),
-                          content: const Text('سيتم إرسال طلب السحب من هنا.'),
-                        ),
-                      ),
+                      onTap: submitting ? null : () => _requestWithdrawal(m),
                     );
                   },
                 ),
