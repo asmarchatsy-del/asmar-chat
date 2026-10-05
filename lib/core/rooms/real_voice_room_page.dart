@@ -48,7 +48,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   Future<void> _claimSeat(int seatIndex) async {
     if (_mySeat != null) return;
     try {
-      await _socialRepository.claimSeat(widget.room.id, seatIndex);
+      await _socialRepository.claimSeat(widget.room.id, seatIndex + 1);
       if (mounted) setState(() => _mySeat = seatIndex);
     } catch (e) {
       if (mounted) {
@@ -74,7 +74,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   Future<void> _leave() async {
     try {
       if (_mySeat != null) {
-        await _socialRepository.leaveSeat(widget.room.id, _mySeat!);
+        await _socialRepository.leaveSeat(widget.room.id, _mySeat! + 1);
       }
       await _roomRepository.leaveRoom(widget.room.id);
       await _voice.disconnect();
