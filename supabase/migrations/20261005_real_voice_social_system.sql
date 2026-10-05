@@ -94,13 +94,6 @@ begin
     raise exception 'room not found';
   end if;
 
-  if exists (
-    select 1 from public.room_seats
-    where room_id = p_room_id and seat_index = p_seat_index and user_id is not null
-  ) then
-    raise exception 'seat occupied';
-  end if;
-
   delete from public.room_seats where room_id = p_room_id and user_id = auth.uid();
 
   insert into public.room_seats(room_id, seat_index, user_id)
@@ -112,7 +105,7 @@ begin
   where public.room_seats.user_id is null
   returning * into result;
 
-  if result.id is null then raise exception 'seat is no longer available'; end if;
+  if result.room_id is null then raise exception 'seat is no longer available'; end if;
   return result;
 end;
 $$;
@@ -136,6 +129,34 @@ as $$
   update public.room_seats
   set is_muted = p_muted, updated_at = now()
   where room_id = p_room_id and user_id = auth.uid();
+$$;
+
+create or replace function public.send_room_message(
+  p_room_id uuid,
+  p_body text
+)
+returns public.room_messages
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  result public.room_messages;
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  if char_length(trim(p_body)) < 1 or char_length(trim(p_body)) > 1000 then
+    raise exception 'invalid message';
+  end if;
+  if not exists (select 1 from public.rooms where id = p_room_id and is_active = true) then
+    raise exception 'room not found';
+  end if;
+
+  insert into public.room_messages(room_id, user_id, body)
+  values (p_room_id, auth.uid(), trim(p_body))
+  returning * into result;
+
+  return result;
+end;
 $$;
 
 create or replace function public.send_gift(
@@ -199,6 +220,7 @@ $$;
 grant execute on function public.claim_room_seat(uuid, smallint) to authenticated;
 grant execute on function public.leave_room_seat(uuid) to authenticated;
 grant execute on function public.set_room_seat_mute(uuid, boolean) to authenticated;
+grant execute on function public.send_room_message(uuid, text) to authenticated;
 grant execute on function public.send_gift(uuid, uuid, uuid, integer) to authenticated;
 
 insert into public.gift_catalog(code, name, price)
@@ -214,8 +236,6 @@ values
   ('microphone', 'Microphone', 5000)
 on conflict (code) do nothing;
 
--- Realtime publication. Safe to run more than once on installations where
--- the tables have already been added to the publication.
 do $$
 begin
   begin alter publication supabase_realtime add table public.room_seats; exception when duplicate_object then null; end;
