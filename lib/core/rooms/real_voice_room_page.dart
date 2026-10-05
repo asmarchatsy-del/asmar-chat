@@ -20,6 +20,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   final _messageController = TextEditingController();
   bool _joining = true;
   bool _muted = true;
+  int? _mySeat;
   String? _error;
 
   @override
@@ -31,10 +32,11 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   Future<void> _connect() async {
     try {
       await _roomRepository.joinRoom(widget.room.id);
-      if (widget.room.liveKitRoomName == null || widget.room.liveKitRoomName!.isEmpty) {
+      final liveKitRoom = widget.room.liveKitRoomName;
+      if (liveKitRoom == null || liveKitRoom.isEmpty) {
         throw StateError('LiveKit room name is missing.');
       }
-      await _voice.join(roomName: widget.room.liveKitRoomName!);
+      await _voice.join(roomName: liveKitRoom);
       await _voice.setMicrophoneEnabled(false);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -43,12 +45,25 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
     }
   }
 
-  Future<void> _toggleMute() async {
-    final next = !_muted;
+  Future<void> _claimSeat(int seatIndex) async {
+    if (_mySeat != null) return;
     try {
-      await _voice.setMicrophoneEnabled(!next);
-      await _socialRepository.setMuted(widget.room.id, next);
-      if (mounted) setState(() => _muted = next);
+      await _socialRepository.claimSeat(widget.room.id, seatIndex);
+      if (mounted) setState(() => _mySeat = seatIndex);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  Future<void> _toggleMute() async {
+    if (_mySeat == null) return;
+    final nextMuted = !_muted;
+    try {
+      await _voice.setMicrophoneEnabled(!nextMuted);
+      await _socialRepository.setMuted(widget.room.id, nextMuted);
+      if (mounted) setState(() => _muted = nextMuted);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -57,10 +72,13 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   }
 
   Future<void> _leave() async {
-    await _socialRepository.leaveSeat(widget.room.id);
-    await _roomRepository.leaveRoom(widget.room.id);
-    await _voice.disconnect();
-    if (mounted) Navigator.of(context).pop();
+    try {
+      await _socialRepository.leaveSeat(widget.room.id);
+      await _roomRepository.leaveRoom(widget.room.id);
+      await _voice.disconnect();
+    } finally {
+      if (mounted) Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -101,9 +119,14 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                   itemBuilder: (_, index) {
                     final seat = byIndex[index];
                     final occupied = seat?['user_id'] != null;
-                    return Card(
-                      child: Center(
-                        child: Text(occupied ? '🎤' : '➕', style: const TextStyle(fontSize: 28)),
+                    final mine = _mySeat == index;
+                    return InkWell(
+                      onTap: occupied ? null : () => _claimSeat(index),
+                      child: Card(
+                        color: mine ? Theme.of(context).colorScheme.primary : null,
+                        child: Center(
+                          child: Text(occupied ? (mine ? '🎤\nأنت' : '🎤') : '➕', textAlign: TextAlign.center, style: const TextStyle(fontSize: 24)),
+                        ),
                       ),
                     );
                   },
@@ -131,15 +154,22 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
             top: false,
             child: Row(
               children: [
-                IconButton(onPressed: _toggleMute, icon: Icon(_muted ? Icons.mic_off : Icons.mic)),
+                IconButton(
+                  onPressed: _mySeat == null ? null : _toggleMute,
+                  icon: Icon(_muted ? Icons.mic_off : Icons.mic),
+                ),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
                     decoration: const InputDecoration(hintText: 'اكتب رسالة...'),
                     onSubmitted: (value) async {
                       if (value.trim().isEmpty) return;
-                      await _socialRepository.sendMessage(widget.room.id, value);
-                      _messageController.clear();
+                      try {
+                        await _socialRepository.sendMessage(widget.room.id, value);
+                        _messageController.clear();
+                      } catch (e) {
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
                     },
                   ),
                 ),
