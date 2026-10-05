@@ -77,7 +77,7 @@ class _RealRoomsHomePageState extends State<RealRoomsHomePage> {
                               child: ListTile(
                                 leading: const CircleAvatar(child: Icon(Icons.mic)),
                                 title: Text(room.name),
-                                subtitle: const Text('غرفة صوتية LiveKit • 30 مقعدًا'),
+                                subtitle: Text('غرفة صوتية LiveKit • ${room.isActive ? 'نشطة' : 'متوقفة'}'),
                                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: room))),
                               ),
