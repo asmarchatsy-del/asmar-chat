@@ -108,7 +108,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
               builder: (context, snapshot) {
                 final seats = snapshot.data ?? const <Map<String, dynamic>>[];
                 final byIndex = <int, Map<String, dynamic>>{
-                  for (final seat in seats) (seat['seat_index'] as num).toInt(): seat,
+                  for (final seat in seats) (seat['seat_index'] as num).toInt() - 1: seat,
                 };
                 return GridView.builder(
                   padding: const EdgeInsets.all(12),
@@ -117,7 +117,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
                   ),
-                  itemCount: 15,
+                  itemCount: widget.room.seatCount,
                   itemBuilder: (_, index) {
                     final seat = byIndex[index];
                     final occupied = seat?['user_id'] != null;
