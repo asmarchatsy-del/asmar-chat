@@ -32,7 +32,6 @@ class _RankFrameState extends State<RankFrame>
   bool _remoteMotion = true;
 
   static const _gold = Color(0xFFFFD36A);
-  static const _deepGold = Color(0xFF9A5A12);
 
   @override
   void initState() {
@@ -44,20 +43,38 @@ class _RankFrameState extends State<RankFrame>
     _loadRemoteStyle();
   }
 
-  @override
   Future<void> _loadRemoteStyle() async {
     try {
       final db = Supabase.instance.client;
       if (widget.svipLevel >= 6 && widget.svipLevel <= 8) {
-        final row = await db.from('svip_levels').select('media_url,glow_enabled,motion_enabled').eq('level', widget.svipLevel).maybeSingle();
+        final row = await db
+            .from('svip_levels')
+            .select('media_url,glow_enabled,motion_enabled')
+            .eq('level', widget.svipLevel)
+            .maybeSingle();
         if (!mounted || row == null) return;
-        setState(() { _remoteMediaUrl = row['media_url']?.toString(); _remoteGlow = row['glow_enabled'] != false; _remoteMotion = row['motion_enabled'] != false; });
+        setState(() {
+          _remoteMediaUrl = row['media_url']?.toString();
+          _remoteGlow = row['glow_enabled'] != false;
+          _remoteMotion = row['motion_enabled'] != false;
+        });
       } else {
-        final vip = int.tryParse((widget.vipLevel ?? '').replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+        final vip = int.tryParse(
+              (widget.vipLevel ?? '').replaceAll(RegExp(r'[^0-9]'), ''),
+            ) ??
+            0;
         if (vip >= 7 && vip <= 10) {
-          final row = await db.from('vip_levels').select('image').eq('id', 'VIP$vip').maybeSingle();
+          final row = await db
+              .from('vip_levels')
+              .select('image')
+              .eq('id', 'VIP$vip')
+              .maybeSingle();
           if (!mounted || row == null) return;
-          setState(() { _remoteMediaUrl = row['image']?.toString(); _remoteGlow = true; _remoteMotion = true; });
+          setState(() {
+            _remoteMediaUrl = row['image']?.toString();
+            _remoteGlow = true;
+            _remoteMotion = true;
+          });
         }
       }
     } catch (_) {}
@@ -77,7 +94,6 @@ class _RankFrameState extends State<RankFrame>
     final outer = widget.size + 22;
     final moving = _remoteMotion;
     final glow = _remoteGlow;
-
 
     return SizedBox(
       width: widget.showLabel ? math.max(outer, 118) : outer,
@@ -110,18 +126,20 @@ class _RankFrameState extends State<RankFrame>
                               s.dark,
                             ],
                           ),
-                          boxShadow: glow ? [
-                            BoxShadow(
-                              color: s.primary.withOpacity(.65),
-                              blurRadius: 18,
-                              spreadRadius: 2,
-                            ),
-                            BoxShadow(
-                              color: s.highlight.withOpacity(.24),
-                              blurRadius: 30,
-                              spreadRadius: 5,
-                            ),
-                          ] : const [],
+                          boxShadow: glow
+                              ? [
+                                  BoxShadow(
+                                    color: s.primary.withOpacity(.65),
+                                    blurRadius: 18,
+                                    spreadRadius: 2,
+                                  ),
+                                  BoxShadow(
+                                    color: s.highlight.withOpacity(.24),
+                                    blurRadius: 30,
+                                    spreadRadius: 5,
+                                  ),
+                                ]
+                              : const [],
                         ),
                       ),
                     ),
@@ -152,14 +170,24 @@ class _RankFrameState extends State<RankFrame>
                       SizedBox(
                         width: outer,
                         height: outer,
-                        child: IgnorePointer(child: Image.network(_remoteMediaUrl!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+                        child: IgnorePointer(
+                          child: Image.network(
+                            _remoteMediaUrl!,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          ),
+                        ),
                       ),
                     Positioned(
                       top: 1,
                       right: 7,
                       child: Transform.rotate(
                         angle: -_controller.value * math.pi * 2,
-                        child: Icon(s.icon, color: s.highlight, size: 20),
+                        child: Icon(
+                          s.icon,
+                          color: s.highlight,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -219,20 +247,80 @@ class _RankStyle {
     final vip = vipLevel?.toUpperCase();
     if (vip != null && vip.startsWith('VIP')) {
       final n = int.tryParse(vip.substring(3)) ?? 0;
-      final animals = ['','🦌','🐺','🐊','🐘','🦅','🐻','🐆','🐯','🐉','🦁'];
-      final colors = [
-        [const Color(0xFF6B3E0B),const Color(0xFFFFC107),const Color(0xFFFFF0A0)],
-        [const Color(0xFF073B4C),const Color(0xFF00B4D8),const Color(0xFFB8F2FF)],
-        [const Color(0xFF3A0A0A),const Color(0xFFE53935),const Color(0xFFFFB4B4)],
-        [const Color(0xFF2E165C),const Color(0xFF8E44FF),const Color(0xFFE0C7FF)],
-        [const Color(0xFF064A38),const Color(0xFF16C784),const Color(0xFFA8FFE0)],
-        [const Color(0xFF5A2606),const Color(0xFFFF8A00),const Color(0xFFFFD2A1)],
-        [const Color(0xFF4A3005),const Color(0xFFE5A900),const Color(0xFFFFF1A3)],
-        [const Color(0xFF24105A),const Color(0xFF7B2CFF),const Color(0xFFE0C7FF)],
-        [const Color(0xFF071B4D),const Color(0xFF1976D2),const Color(0xFFB8DDFF)],
-        [const Color(0xFF5A0808),const Color(0xFFD4AF37),const Color(0xFFFFF0A0)],
+      final animals = [
+        '',
+        '🦌',
+        '🐺',
+        '🐊',
+        '🐘',
+        '🦅',
+        '🐻',
+        '🐆',
+        '🐯',
+        '🐉',
+        '🦁'
       ];
-      if(n>=1 && n<=10) return _RankStyle(label:'VIP$n ${animals[n]}',dark:colors[n-1][0],primary:colors[n-1][1],highlight:colors[n-1][2],icon:Icons.workspace_premium);
+      final colors = [
+        [
+          const Color(0xFF6B3E0B),
+          const Color(0xFFFFC107),
+          const Color(0xFFFFF0A0)
+        ],
+        [
+          const Color(0xFF073B4C),
+          const Color(0xFF00B4D8),
+          const Color(0xFFB8F2FF)
+        ],
+        [
+          const Color(0xFF3A0A0A),
+          const Color(0xFFE53935),
+          const Color(0xFFFFB4B4)
+        ],
+        [
+          const Color(0xFF2E165C),
+          const Color(0xFF8E44FF),
+          const Color(0xFFE0C7FF)
+        ],
+        [
+          const Color(0xFF064A38),
+          const Color(0xFF16C784),
+          const Color(0xFFA8FFE0)
+        ],
+        [
+          const Color(0xFF5A2606),
+          const Color(0xFFFF8A00),
+          const Color(0xFFFFD2A1)
+        ],
+        [
+          const Color(0xFF4A3005),
+          const Color(0xFFE5A900),
+          const Color(0xFFFFF1A3)
+        ],
+        [
+          const Color(0xFF24105A),
+          const Color(0xFF7B2CFF),
+          const Color(0xFFE0C7FF)
+        ],
+        [
+          const Color(0xFF071B4D),
+          const Color(0xFF1976D2),
+          const Color(0xFFB8DDFF)
+        ],
+        [
+          const Color(0xFF5A0808),
+          const Color(0xFFD4AF37),
+          const Color(0xFFFFF0A0)
+        ],
+      ];
+      if (n >= 1 && n <= 10) {
+        return _RankStyle(
+          label: 'VIP$n ${animals[n]}',
+          dark: colors[n - 1][0],
+          primary: colors[n - 1][1],
+          highlight: colors[n - 1][2],
+          icon: Icons.workspace_premium,
+        );
+      }
     }
     final role = rawRole.toUpperCase();
     switch (role) {
