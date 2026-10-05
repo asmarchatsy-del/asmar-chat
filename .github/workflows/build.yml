@@ -12,6 +12,7 @@ jobs:
         with:
           flutter-version: '3.32.0'
           channel: 'stable'
+          cache: true
       - name: Get dependencies
         run: flutter pub get
       - name: Build APK
