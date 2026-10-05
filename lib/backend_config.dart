@@ -1,18 +1,17 @@
 import 'package:flutter/foundation.dart';
 
 class BackendConfig {
-  static const supabaseUrl = 'https://jojxsq...'; // خليه نفس يلي عندك
-  static const supabasePublishableKey = 'sb_publishable_mC6...'; // خليه نفس يلي عندك
+  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const supabasePublishableKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const agoraAppId = String.fromEnvironment('AGORA_APP_ID');
 
-  // هاد السطر الجديد تبع الصوت - ضيفو
-  static const agoraAppId = 'YOUR_AGORA_APP_ID';
-
-  static bool get isConfigured => 
-    supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
+  static bool get isConfigured =>
+      supabaseUrl.trim().startsWith('https://') &&
+      supabasePublishableKey.trim().isNotEmpty;
 
   static void validate() {
     if (!isConfigured) {
-      debugPrint('Asmar Chat: Supabase backend not configured');
+      debugPrint('Asmar Chat: missing SUPABASE_URL / SUPABASE_ANON_KEY');
     }
   }
 }
