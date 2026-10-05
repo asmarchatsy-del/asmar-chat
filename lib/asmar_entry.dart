@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend_config.dart';
-import 'main.dart' as legacy;
+import 'app_shell.dart';
 import 'me_page.dart';
 import 'admin_gate.dart';
 import 'messages.dart';
@@ -63,7 +63,7 @@ class _AuthGate extends StatelessWidget {
         if (client.auth.currentSession != null) {
           return const AsmarBuild452Shell();
         }
-        return const legacy.LoginPage();
+        return const AsmarLoginPage();
       },
     );
   }
