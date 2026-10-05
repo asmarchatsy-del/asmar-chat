@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'backend_config.dart';
 import 'core/backend/supabase_runtime.dart';
-import 'core/rooms/real_rooms_home_page.dart';
+import 'app_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,7 @@ class AsmarChatApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: const RealRoomsHomePage(),
+      home: const AsmarAuthGate(),
     );
   }
 }
