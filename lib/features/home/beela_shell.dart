@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../presentation/create_room_sheet.dart';
-import '../../presentation/room_page.dart';
+import '../room/widgets/create_room_sheet.dart';
+import '../room/presentation/room_page.dart';
 
 class BeelaShell extends StatefulWidget {
   const BeelaShell({super.key});
