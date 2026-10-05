@@ -73,7 +73,9 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
 
   Future<void> _leave() async {
     try {
-      await _socialRepository.leaveSeat(widget.room.id);
+      if (_mySeat != null) {
+        await _socialRepository.leaveSeat(widget.room.id, _mySeat!);
+      }
       await _roomRepository.leaveRoom(widget.room.id);
       await _voice.disconnect();
     } finally {
