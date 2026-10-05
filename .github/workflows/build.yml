@@ -7,19 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
-      - name: Fix pubspec for build
-        run: |
-          sed -i 's/lottie: \^3.3.2/lottie: ^3.1.2/g' pubspec.yaml
-          sed -i 's/lottie: 3.3.2/lottie: 3.1.2/g' pubspec.yaml
-          sed -i 's/lottie: \^3.3.1/lottie: ^3.1.2/g' pubspec.yaml
-          cat pubspec.yaml
-      - name: Get dependencies
-        run: flutter pub get
+      - run: flutter pub get
+      - name: Analyze code
+        run: flutter analyze --no-pub || true
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --verbose
