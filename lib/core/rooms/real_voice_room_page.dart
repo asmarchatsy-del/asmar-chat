@@ -113,11 +113,11 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                 return GridView.builder(
                   padding: const EdgeInsets.all(12),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
+                    crossAxisCount: 5,
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
                   ),
-                  itemCount: 30,
+                  itemCount: 15,
                   itemBuilder: (_, index) {
                     final seat = byIndex[index];
                     final occupied = seat?['user_id'] != null;
