@@ -1,35 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../presentation/create_room_sheet.dart';
+import '../../presentation/room_page.dart';
 
-class BeelaShell extends StatelessWidget {
+class BeelaShell extends StatefulWidget {
   const BeelaShell({super.key});
+  @override
+  State<BeelaShell> createState() => _BeelaShellState();
+}
+
+class _BeelaShellState extends State<BeelaShell> {
+  String selectedCategory = 'الكل';
+  final searchCtrl = TextEditingController();
+  List<Map<String, dynamic>> rooms = [];
+  bool loading = true;
+
+  final categories = ['الكل', 'عام', 'موسيقى', 'ألعاب', 'دردشة'];
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
-      body: Column(
-        children: [
-          Container(
-            height: 200,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF9800)]),
-              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
-            ),
-            child: const Center(
-              child: Text('أسمر شات 🔥', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Center(child: Text('التصميم الجديد شغال ✅', style: TextStyle(color: Colors.white))),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('زر إنشاء الغرفة شغال')));
-        },
-        backgroundColor: Colors.amber,
-        child: const Icon(Icons.add, color: Colors.black),
-      ),
-    );
+  void initState() {
+    super.initState();
+    _loadRooms();
   }
-}
+
+  Future<void> _loadRooms() async {
+    setState(() => loading = true);
+    try {
+      final data = await Supabase.instance.client
+          .from('rooms')
+          .select()
+          .order('created_at', ascending: false)
+          .limit(50);
+      setState(() {
+        rooms = List<Map<String, dynamic>>.from(data);
+        loading = false;
+      });
+    } catch (e) {
+      setState(() => loading = false);
+    }
+  }
+
+  List<Map<String, dynamic>> get filteredRooms {
+    var list = rooms;
+    if (selectedCategory != 'الكل') {
+      list = list.where((r) => (r['category'] ?? 'عام') == selectedCategory).toList();
