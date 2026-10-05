@@ -51,7 +51,6 @@ jobs:
           if gradle is None: raise SystemExit("Android Gradle file not found")
           text = gradle.read_text(encoding="utf-8")
           print(f"Found file: {gradle}")
-          # يصلح للطريقتين: مع = وبدون =
           if gradle.suffix == ".kts":
               text, count = re.subn(r'applicationId\s*=\s*["\'][^"\']+["\']', 'applicationId = "com.asmarchat.app"', text, count=1)
           else:
