@@ -1,0 +1,36 @@
+name: بناء اسمر
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: تثبيت Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: تثبيت Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.2'
+          channel: 'stable'
+          cache: true
+      - name: تحميل المكتبات
+        run: |
+          flutter clean
+          flutter pub get
+      - name: تصليح Agora
+        run: |
+          sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' android/app/build.gradle || true
+          sed -i 's/compileSdk 33/compileSdk 34/g' android/app/build.gradle || true
+          find $HOME/.pub-cache -name "build.gradle" -path "*agora_rtc_engine*" -exec sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' {} \; || true
+      - name: بناء APK
+        run: flutter build apk --release --no-tree-shake-icons
+      - name: رفع APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: asmar-chat-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
