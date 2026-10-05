@@ -9,6 +9,7 @@ class VoiceRoomRecord {
     required this.ownerId,
     required this.liveKitRoomName,
     required this.isActive,
+    required this.seatCount,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class VoiceRoomRecord {
   final String? ownerId;
   final String? liveKitRoomName;
   final bool isActive;
+  final int seatCount;
 
   factory VoiceRoomRecord.fromMap(Map<String, dynamic> map) {
     return VoiceRoomRecord(
@@ -24,6 +26,7 @@ class VoiceRoomRecord {
       ownerId: map['owner_id'] as String?,
       liveKitRoomName: map['livekit_room_name'] as String?,
       isActive: (map['is_active'] as bool?) ?? false,
+      seatCount: (map['seat_count'] as num?)?.toInt() ?? 15,
     );
   }
 }
@@ -39,7 +42,7 @@ class RoomRepository {
     if (db == null) return const [];
     final rows = await db
         .from('rooms')
-        .select('id,name,owner_id,livekit_room_name,is_active')
+        .select('id,name,owner_id,livekit_room_name,is_active,seat_count')
         .eq('is_active', true)
         .order('created_at', ascending: false);
     return (rows as List)
@@ -76,7 +79,7 @@ class RoomRepository {
           'livekit_room_name': liveKitRoomName.trim(),
           'is_active': true,
         })
-        .select('id,name,owner_id,livekit_room_name,is_active')
+        .select('id,name,owner_id,livekit_room_name,is_active,seat_count')
         .single();
     return VoiceRoomRecord.fromMap(row);
   }
