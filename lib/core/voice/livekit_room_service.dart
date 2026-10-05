@@ -35,14 +35,13 @@ class LiveKitRoomService {
     final token = data['token'] as String;
     final url = data['url'] as String;
 
-    final nextRoom = await LiveKitClient.connect(
-      url,
-      token,
+    final nextRoom = Room(
       roomOptions: const RoomOptions(
         adaptiveStream: true,
         dynacast: true,
       ),
     );
+    await nextRoom.connect(url, token);
 
     _room = nextRoom;
     return nextRoom;
