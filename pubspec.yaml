@@ -1,38 +1,23 @@
 name: asmar_chat
-description: Asmar Chat voice application
-publish_to: "none"
-
-version: 1.0.4+5
-
+description: Asmar Chat - Yalla Style Voice Rooms
+publish_to: 'none'
+version: 1.0.0+1
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-
+  sdk: ">=3.2.0 <4.0.0"
+  flutter: ">=3.22.0"
 dependencies:
   flutter:
     sdk: flutter
-
   cupertino_icons: ^1.0.8
-  shared_preferences: ^2.5.3
-  supabase_flutter: ^2.9.1
-  livekit_client: ^2.5.1
-  image_picker: ^1.2.0
-  url_launcher: ^6.3.2
-  google_sign_in: ^7.2.0
-  lottie: ^3.3.3
-
+  google_sign_in: ^6.3.0
+  lottie: ^3.1.2
+  shared_preferences: ^2.2.2
+  http: ^1.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  flutter_launcher_icons: ^0.13.1
-
 flutter:
   uses-material-design: true
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/icon/icon.png"
-  min_sdk_android: 21
-  web:
-    generate: true
+  assets:
+    - assets/
