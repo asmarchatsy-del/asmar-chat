@@ -1,19 +1,22 @@
 workflows:
-  android-fix:
-    name: Fix V1 and Build APK
-    instance_type: mac_mini_m2
-    max_build_duration: 60
+  android-workflow:
+    name: Android APK
     environment:
       flutter: stable
       xcode: latest
     scripts:
-      - name: Recreate Android with V2 embedding
+      - name: Set up Flutter
         script: |
-          rm -rf android
-          flutter create . --platforms=android --project-name asmar_chat
+          flutter --version
+      - name: Get packages
+        script: |
           flutter pub get
       - name: Build APK Release
         script: |
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release
     artifacts:
-      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/flutter-apk/app-release.apk
+    publishing:
+      email:
+        recipients:
+          - your_email@example.com
