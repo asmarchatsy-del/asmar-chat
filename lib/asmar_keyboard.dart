@@ -70,23 +70,85 @@ class _AsmarKeyboardState extends State<AsmarKeyboard> {
     final rows = shown;
     return Column(children: [
       if (category == 'Popular' || category == 'Lucky' || category == 'Couple' || category == 'RelationShip' || category == 'VIP')
-        Expanded(child: GridView.builder(itemCount: rows.length, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, childAspectRatio: .82), itemBuilder: (_, i) {
-          final gift = rows[i];
-          return InkWell(onTap: sending ? null : () => _sendGift(gift), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            _giftVisual(gift),
-            Text(gift['name']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
-            Text('${gift['price'] ?? 0} 🪙', style: const TextStyle(color: _gold, fontSize: 9)),
-          ]));
-        }))
+        Expanded(
+          child: GridView.builder(
+            itemCount: rows.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, childAspectRatio: .82),
+            itemBuilder: (_, i) {
+              final gift = rows[i];
+              return InkWell(
+                onTap: sending ? null : () => _sendGift(gift),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _giftVisual(gift),
+                    Text(gift['name']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                    Text('${gift['price'] ?? 0} 🪙', style: const TextStyle(color: _gold, fontSize: 9)),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
     ]);
   }
 
   @override
-  Widget build(BuildContext context) => Material(color: _bg, child: SafeArea(top: false, child: Container(height: 300, padding: const EdgeInsets.fromLTRB(10, 6, 10, 8), decoration: const BoxDecoration(color: _bg, borderRadius: BorderRadius.vertical(top: Radius.circular(24))), child: Column(children: [
-    Row(children: [Expanded(child: TextField(controller: recipient, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(hintText: 'ID المستلم للهدية', prefixIcon: Icon(Icons.person_search, color: _gold)))), const SizedBox(width: 6), IconButton(onPressed: widget.onSend, icon: const Icon(Icons.send, color: _gold))]),
-    const Divider(color: Colors.white12),
-    SizedBox(height: 42, child: ListView(scrollDirection: Axis.horizontal, children: ['Popular','Lucky','Couple','RelationShip','VIP'].map((c) => Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: ChoiceChip(label: Text(c), selected: category == c, onSelected: (_) => setState(() => category = c), selectedColor: _gold, labelStyle: TextStyle(color: category == c ? Colors.black : Colors.white70)))).toList())),
-    const SizedBox(height: 4),
-    Expanded(child: _content()),
-  ])));
+  Widget build(BuildContext context) {
+    return Material(
+      color: _bg,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          height: 300,
+          padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+          decoration: const BoxDecoration(
+            color: _bg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: recipient,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: 'ID المستلم للهدية',
+                        prefixIcon: Icon(Icons.person_search, color: _gold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(onPressed: widget.onSend, icon: const Icon(Icons.send, color: _gold)),
+                ],
+              ),
+              const Divider(color: Colors.white12),
+              SizedBox(
+                height: 42,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: ['Popular', 'Lucky', 'Couple', 'RelationShip', 'VIP']
+                      .map((c) => Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+                            child: ChoiceChip(
+                              label: Text(c),
+                              selected: category == c,
+                              onSelected: (_) => setState(() => category = c),
+                              selectedColor: _gold,
+                              labelStyle: TextStyle(color: category == c ? Colors.black : Colors.white70),
+                            ),
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Expanded(child: _content()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
