@@ -13,7 +13,7 @@ class RoomSocialRepository {
     if (db == null) return const Stream.empty();
     return db
         .from('room_seats')
-        .stream(primaryKey: ['room_id', 'seat_index'])
+        .stream(primaryKey: ['id'])
         .eq('room_id', roomId);
   }
 
@@ -78,7 +78,7 @@ class RoomSocialRepository {
     if (db == null) throw StateError('Supabase is not configured.');
     await db.rpc('send_room_message', params: {
       'p_room_id': roomId,
-      'p_body': body.trim(),
+      'p_message': body.trim(),
     });
   }
 }
