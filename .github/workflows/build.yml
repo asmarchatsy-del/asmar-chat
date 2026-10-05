@@ -102,6 +102,8 @@ jobs:
       - name: Set Asmar Chat launcher icon
         run: |
           set -e
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq imagemagick
           mkdir -p android/app/src/main/res/drawable
           convert -background none assets/asmar_launcher.svg android/app/src/main/res/drawable/asmar_launcher.png
           python3 - <<'PY'
