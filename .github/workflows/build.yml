@@ -23,7 +23,7 @@ jobs:
 
       - name: Generate Android project
         run: |
-          flutter create --platforms=android .
+          flutter create --platforms=android.
           ls -la android/app/
 
       - name: Verify Android Gradle file
@@ -50,12 +50,17 @@ jobs:
           gradle = next((path for path in candidates if path.is_file()), None)
           if gradle is None: raise SystemExit("Android Gradle file not found")
           text = gradle.read_text(encoding="utf-8")
+          print(f"Found file: {gradle}")
+          # يصلح للطريقتين: مع = وبدون =
           if gradle.suffix == ".kts":
-              text, count = re.subn(r'applicationId\s*=\s*"[^"]+"', 'applicationId = "com.asmarchat.app"', text, count=1)
+              text, count = re.subn(r'applicationId\s*=\s*["\'][^"\']+["\']', 'applicationId = "com.asmarchat.app"', text, count=1)
           else:
-              text, count = re.subn(r'applicationId\s+["\'][^"\']+["\']', 'applicationId "com.asmarchat.app"', text, count=1)
-          if count != 1: raise SystemExit(f"applicationId not found in {gradle}")
+              text, count = re.subn(r'applicationId\s*=?\s*["\'][^"\']+["\']', 'applicationId "com.asmarchat.app"', text, count=1)
+          if count!= 1:
+              print(text[:2000])
+              raise SystemExit(f"applicationId not found in {gradle}")
           gradle.write_text(text, encoding="utf-8")
+          print("Fixed applicationId successfully")
           PY
 
       - name: Apply branding
@@ -69,7 +74,7 @@ jobs:
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           text = manifest.read_text(encoding="utf-8")
           text, count = re.subn(r'(<application\b[^>]*\bandroid:label=")[^"]*(")', r'\1Asmar Chat\2', text, count=1)
-          if count != 1: raise SystemExit("Could not set Android application label")
+          if count!= 1: raise SystemExit("Could not set Android application label")
           manifest.write_text(text, encoding="utf-8")
           PY
 
@@ -88,7 +93,7 @@ jobs:
           text, count = re.subn(r'(<application\b[^>]*?)\sandroid:icon="[^"]*"', r'\1 android:icon="@drawable/asmar_launcher"', text, count=1)
           if count == 0:
               text, count = re.subn(r'<application\b', '<application android:icon="@drawable/asmar_launcher"', text, count=1)
-          if count != 1: raise SystemExit("Could not set Android launcher icon")
+          if count!= 1: raise SystemExit("Could not set Android launcher icon")
           manifest.write_text(text, encoding="utf-8")
           PY
 
@@ -105,7 +110,7 @@ jobs:
           python3 tool/integrate_global_gift_bar.py
 
       - name: Dart format check
-        run: dart format .
+        run: dart format.
 
       - name: Flutter analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
