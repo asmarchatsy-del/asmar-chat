@@ -1,19 +1,18 @@
 import 'package:flutter/foundation.dart';
 
-/// Production configuration for the Asmar Chat Supabase backend.
-/// The publishable key is intended for client apps; never put a Supabase
-/// secret/service-role key in this file.
 class BackendConfig {
-  static const supabaseUrl = 'https://jojxsqsgmpaggfnnyuyy.supabase.co';
-  static const supabasePublishableKey =
-      'sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL';
+  static const supabaseUrl = 'https://jojxsq...'; // خليه نفس يلي عندك
+  static const supabasePublishableKey = 'sb_publishable_mC6...'; // خليه نفس يلي عندك
 
-  static bool get isConfigured =>
-      supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
+  // هاد السطر الجديد تبع الصوت - ضيفو
+  static const agoraAppId = 'YOUR_AGORA_APP_ID';
+
+  static bool get isConfigured => 
+    supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
 
   static void validate() {
     if (!isConfigured) {
-      debugPrint('Asmar Chat: Supabase backend is not configured.');
+      debugPrint('Asmar Chat: Supabase backend not configured');
     }
   }
 }
