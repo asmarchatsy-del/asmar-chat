@@ -2,21 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../asmar/asmar_theme.dart';
 import '../../room.dart';
+import '../room/widgets/create_room_sheet.dart';
+import '../room/presentation/room_page.dart';
 
 class BeelaShell extends StatefulWidget { const BeelaShell({super.key}); @override State<BeelaShell> createState()=>_BeelaShellState(); }
 class _BeelaShellState extends State<BeelaShell> {
-  String filter='الكل', query=''; bool loading=true; List<Map<String,dynamic>> rooms=[];
-  static const countries=<Map<String,String>>[
-    {'code':'SY','name':'سوريا','flag':'🇸🇾'},{'code':'JO','name':'الأردن','flag':'🇯🇴'},{'code':'LB','name':'لبنان','flag':'🇱🇧'},{'code':'PS','name':'فلسطين','flag':'🇵🇸'},{'code':'IQ','name':'العراق','flag':'🇮🇶'},{'code':'SA','name':'السعودية','flag':'🇸🇦'},{'code':'AE','name':'الإمارات','flag':'🇦🇪'},{'code':'QA','name':'قطر','flag':'🇶🇦'},{'code':'KW','name':'الكويت','flag':'🇰🇼'},{'code':'BH','name':'البحرين','flag':'🇧🇭'},{'code':'OM','name':'عُمان','flag':'🇴🇲'},{'code':'YE','name':'اليمن','flag':'🇾🇪'},{'code':'EG','name':'مصر','flag':'🇪🇬'},{'code':'SD','name':'السودان','flag':'🇸🇩'},{'code':'LY','name':'ليبيا','flag':'🇱🇾'},{'code':'TN','name':'تونس','flag':'🇹🇳'},{'code':'DZ','name':'الجزائر','flag':'🇩🇿'},{'code':'MA','name':'المغرب','flag':'🇲🇦'},{'code':'MR','name':'موريتانيا','flag':'🇲🇷'},{'code':'SO','name':'الصومال','flag':'🇸🇴'},{'code':'DJ','name':'جيبوتي','flag':'🇩🇯'},{'code':'KM','name':'جزر القمر','flag':'🇰🇲'},{'code':'TR','name':'تركيا','flag':'🇹🇷'},
-  ];
-  @override void initState(){super.initState();_loadRooms();}
-  Future<void> _loadRooms() async { if(mounted)setState(()=>loading=true); try{final db=Supabase.instance.client;final rows=await db.from('rooms').select('id,name,owner_id,is_active,hot_score,cover_url,country_code,sort_order,seat_count').eq('is_active',true).order('sort_order',ascending:true,nullsFirst:false).order('hot_score',ascending:false).order('created_at',ascending:false);final loaded=List<Map<String,dynamic>>.from(rows);if(loaded.isNotEmpty){final ids=loaded.map((r)=>r['id'].toString()).toList();final seats=await db.from('room_seats').select('room_id,occupant_id').inFilter('room_id',ids);final counts=<String,int>{};for(final s in List<Map<String,dynamic>>.from(seats)){if(s['occupant_id']!=null)counts[s['room_id'].toString()]=(counts[s['room_id'].toString()]??0)+1;}for(final r in loaded)r['people_count']=counts[r['id'].toString()]??0;}if(mounted)setState((){rooms=loaded;loading=false;});}catch(e){if(mounted){setState(()=>loading=false);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحميل الغرف: $e')));}}}
-  List<Map<String,dynamic>> get visibleRooms=>rooms.where((r){final n=r['name']?.toString().toLowerCase()??'',c=r['country_code']?.toString().toUpperCase()??'',q=query.trim().toLowerCase();if(q.isNotEmpty&&!n.contains(q)&&!r['id'].toString().toLowerCase().contains(q))return false;if(filter=='Hot 🔥')return (r['hot_score'] as num? ?? 0)>0;if(filter=='الكل')return true;return c==filter;}).toList();
-  Future<void> _createRoom() async {final name=TextEditingController();String country='SY';int seats=15;final created=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,sd)=>AlertDialog(backgroundColor:AsmarTheme.surface,title:const Text('إنشاء غرفة',style:TextStyle(color:AsmarTheme.gold,fontWeight:FontWeight.w900)),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:name,style:const TextStyle(color:Colors.white),decoration:const InputDecoration(labelText:'اسم الغرفة',prefixIcon:Icon(Icons.meeting_room))),const SizedBox(height:12),DropdownButtonFormField<String>(value:country,dropdownColor:AsmarTheme.surface,isExpanded:true,items:countries.map((c)=>DropdownMenuItem(value:c['code'],child:Text('${c['flag']}  ${c['name']}'))).toList(),onChanged:(v){if(v!=null)sd(()=>country=v);},decoration:const InputDecoration(labelText:'الدولة')),const SizedBox(height:12),DropdownButtonFormField<int>(value:seats,dropdownColor:AsmarTheme.surface,items:const[6,8,10,12,15,20].map((n)=>DropdownMenuItem(value:n,child:Text('$n مقاعد'))).toList(),onChanged:(v){if(v!=null)sd(()=>seats=v);},decoration:const InputDecoration(labelText:'عدد المقاعد'))]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('إنشاء'))])));if(created!=true||name.text.trim().isEmpty){name.dispose();return;}try{await Supabase.instance.client.rpc('create_room',params:{'p_name':name.text.trim(),'p_country_code':country,'p_seat_count':seats});name.dispose();await _loadRooms();if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إنشاء الغرفة فعليًا')));}catch(e){name.dispose();if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('فشل إنشاء الغرفة: $e')));}}
-  @override Widget build(BuildContext context)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(backgroundColor:AsmarTheme.background,floatingActionButton:FloatingActionButton.extended(onPressed:_createRoom,backgroundColor:AsmarTheme.gold,foregroundColor:Colors.black,icon:const Icon(Icons.add),label:const Text('إنشاء غرفة')),body:RefreshIndicator(onRefresh:_loadRooms,child:CustomScrollView(slivers:[SliverToBoxAdapter(child:_header()),SliverToBoxAdapter(child:_filters()),if(loading)const SliverFillRemaining(hasScrollBody:false,child:Center(child:CircularProgressIndicator(color:AsmarTheme.gold)))else if(visibleRooms.isEmpty)const SliverFillRemaining(hasScrollBody:false,child:Center(child:Text('لا يوجد غرف حالياً - كن أول من ينشئ غرفة',textAlign:TextAlign.center,style:TextStyle(color:Colors.white54,fontSize:16,fontWeight:FontWeight.w700))))else SliverPadding(padding:const EdgeInsets.fromLTRB(12,8,12,100),sliver:SliverList.builder(itemCount:visibleRooms.length,itemBuilder:(_,i)=>_room(visibleRooms[i])))]))));
-  Widget _header()=>Container(height:255,decoration:const BoxDecoration(image:DecorationImage(image:NetworkImage('https://images.unsplash.com/photo-1539768942893-daf53e448371?auto=format&fit=crop&w=1200&q=85'),fit:BoxFit.cover)),child:Container(padding:const EdgeInsets.fromLTRB(12,12,12,14),decoration:const BoxDecoration(gradient:LinearGradient(colors:[Color(0x33000000),Color(0xF0000000)],begin:Alignment.topCenter,end:Alignment.bottomCenter)),child:SafeArea(bottom:false,child:Column(children:[Row(children:[const Icon(Icons.mic,color:AsmarTheme.gold,size:28),const SizedBox(width:7),const Text('ASMAR CHAT',style:TextStyle(color:AsmarTheme.gold,fontSize:22,fontWeight:FontWeight.w900)),const Spacer(),IconButton(onPressed:_loadRooms,icon:const Icon(Icons.refresh,color:Colors.white))]),const Spacer(),const Align(alignment:Alignment.centerRight,child:Text('غرف الصوت',style:TextStyle(color:Colors.white,fontSize:28,fontWeight:FontWeight.w900))),const SizedBox(height:12),Container(height:44,decoration:BoxDecoration(color:Colors.black54,borderRadius:BorderRadius.circular(24),border:Border.all(color:Colors.white24)),child:TextField(onChanged:(v)=>setState(()=>query=v),textDirection:TextDirection.rtl,style:const TextStyle(color:Colors.white),decoration:const InputDecoration(hintText:'ابحث عن الغرفة أو Room ID...',hintStyle:TextStyle(color:Colors.white60),prefixIcon:Icon(Icons.search,color:AsmarTheme.gold),border:InputBorder.none,contentPadding:EdgeInsets.symmetric(vertical:11))))]))));
-  Widget _filters()=>SizedBox(height:58,child:ListView.separated(padding:const EdgeInsets.symmetric(horizontal:12,vertical:8),scrollDirection:Axis.horizontal,itemCount:filters.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i)=>ChoiceChip(label:Text(filters[i]),selected:filter==filters[i],onSelected:(_)=>setState(()=>filter=filters[i]),selectedColor:AsmarTheme.gold,labelStyle:TextStyle(color:filter==filters[i]?Colors.black:Colors.white70,fontWeight:FontWeight.bold),backgroundColor:AsmarTheme.surface,side:const BorderSide(color:Color(0xFF4B321A))));
-  List<String> get filters=>['الكل','Hot 🔥',...countries.map((c)=>c['code']!)];
-  Widget _room(Map<String,dynamic> room){final cover=room['cover_url']?.toString()??'',people=((room['people_count'] as num?) ?? 0).toInt(),pinned=room['sort_order']as num?,country=room['country_code']?.toString().toUpperCase()??'',flag=countries.firstWhere((c)=>c['code']==country,orElse:()=>{'flag':'🌐'})['flag']!;return InkWell(onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>Room(name:room['name'].toString(),roomId:room['id'].toString()))),borderRadius:BorderRadius.circular(16),child:Container(margin:const EdgeInsets.only(bottom:9),padding:const EdgeInsets.all(9),decoration:AsmarTheme.card(),child:Row(children:[CircleAvatar(radius:31,backgroundColor:const Color(0xFF422511),backgroundImage:cover.isNotEmpty?NetworkImage(cover):null,child:cover.isEmpty?const Icon(Icons.mic,color:AsmarTheme.gold):null),const SizedBox(width:11),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Row(children:[if(pinned!=null)const Icon(Icons.push_pin,color:AsmarTheme.gold,size:15),if(pinned!=null)const SizedBox(width:4),Flexible(child:Text(room['name'].toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:15)))]),const SizedBox(height:5),Row(children:[Text('ID ${room['id'].toString().substring(0,8)}',style:const TextStyle(color:AsmarTheme.muted,fontSize:10)),const SizedBox(width:8),Text(flag,style:const TextStyle(fontSize:15)),const SizedBox(width:7),const Icon(Icons.people_alt_outlined,color:Colors.greenAccent,size:14),const SizedBox(width:3),Text('$people / ${room['seat_count']??15}',style:const TextStyle(color:AsmarTheme.muted,fontSize:11))])])),const Icon(Icons.chevron_left,color:AsmarTheme.gold)])));
+String filter='الكل', query=''; bool loading=false;
+static const countries=<Map<String,String>>[{'code':'SY','name':'سوريا','flag':'🇸🇾'}];
+
+@override void initState(){super.initState(); _loadRooms();}
+Future<void> _loadRooms() async { if(mounted) setState(()=>loading=true); await Future.delayed(Duration(milliseconds: 300)); if(mounted) setState(()=>loading=false); }
+List<Map<String,dynamic>> get visibleRooms=>[];
+
+Future<void> _createRoom() async {
+  final count = await showModalBottomSheet<int>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_)=>CreateRoomSheet()
+  );
+  if(count==null) return;
+  try{
+    final user = Supabase.instance.client.auth.currentUser;
+    final res = await Supabase.instance.client.from('rooms').insert({
+      'name':'غرفة أسمر $count',
+      'seat_count':count,
+      'owner_id':user?.id,
+      'created_at':DateTime.now().toIso8601String()
+    }).select().single();
+    
+    final seats = List.generate(count, (i)=>{'room_id':res['id'],'seat_no':i,'user_id':null});
+    await Supabase.instance.client.from('seats').insert(seats);
+    
+    if(!mounted) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_)=>RoomPage(roomId: res['id'], seatCount: count)));
+  }catch(e){
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ: $e')));
   }
+}
+
+@override Widget build(BuildContext context){
+ return Scaffold(
+   backgroundColor: Color(0xFF0F0F1A),
+   body: Column(children: [_header(), _filters(), Expanded(child: Center(child: loading?CircularProgressIndicator():Text('لا يوجد غرف - اضغط +', style: TextStyle(color: Colors.white54))))]),
+   floatingActionButton: FloatingActionButton(onPressed: _createRoom, backgroundColor: Colors.amber, child: Icon(Icons.add)),
+ );
+}
+Widget _header()=>Container(height:255,decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF9800)])), child: Center(child: Text('أسمر شات', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold))));
+Widget _filters()=>SizedBox(height:58,child: ListView(scrollDirection: Axis.horizontal, children: filters.map((f)=>Padding(padding: EdgeInsets.all(6), child: ChoiceChip(label: Text(f), selected: filter==f, onSelected: (_)=>setState(()=>filter=f)))).toList()));
+List<String> get filters=>['الكل','Hot 🔥','سوريا','مصر','السعودية'];
+Widget _room(Map<String,dynamic> room){return Container();}
 }
