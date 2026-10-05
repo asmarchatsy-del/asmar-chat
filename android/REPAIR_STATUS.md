@@ -1,0 +1,1 @@
+Android repair checkpoint: backup created before changes; Gradle app configuration and launch resources restored. No lib/, assets/, or supabase/ files were modified by the repair steps recorded here.
