@@ -8,13 +8,11 @@ class GamesCenterScreen extends StatefulWidget {
 }
 
 class _GamesCenterScreenState extends State<GamesCenterScreen> {
+  // The backend currently exposes only these two real game types.
+  // Keep the UI aligned with the authoritative RPC instead of showing fake buttons.
   static const games = [
-    ('Ludo', Icons.casino, 'لعبة الطاولة'),
-    ('Shark', Icons.water, 'تحدي القرش'),
-    ('Poker', Icons.style, 'بطاقات Poker'),
     ('Dice', Icons.filter_1, 'نرد سريع'),
-    ('Lucky', Icons.stars, 'الحظ الذهبي'),
-    ('Cards', Icons.credit_card, 'بطاقات الأصدقاء'),
+    ('RPS', Icons.style, 'حجر ورق مقص'),
   ];
 
   Future<void> _startGame(BuildContext context, String type) async {
