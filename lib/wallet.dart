@@ -41,116 +41,7 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  bool submitting = false;
 
-  Future<void> _requestWithdrawal(Map<String, dynamic> method) async {
-    final amountController = TextEditingController();
-    final details = <String, TextEditingController>{};
-    final rawFields = method['fields'];
-    final fields = rawFields is List
-        ? rawFields.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
-        : <Map<String, dynamic>>[];
-    for (final field in fields) {
-      final key = (field['key'] ?? field['name'] ?? '').toString().trim();
-      if (key.isNotEmpty) details[key] = TextEditingController();
-    }
-    try {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text('طلب سحب عبر ${method['name']}'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'المبلغ (${method['currency']})',
-                    hintText: '${method['min_amount']} - ${method['max_amount']}',
-                  ),
-                ),
-                ...fields.map((field) {
-                  final key = (field['key'] ?? field['name'] ?? '').toString().trim();
-                  if (key.isEmpty) return const SizedBox.shrink();
-                  final label = (field['label'] ?? field['name'] ?? key).toString();
-                  final controller = details[key]!;
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: TextField(
-                      controller: controller,
-                      keyboardType: field['keyboard_type'] == 'number'
-                          ? TextInputType.number
-                          : TextInputType.text,
-                      decoration: InputDecoration(labelText: label),
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('إرسال'),
-            ),
-          ],
-        ),
-      );
-      if (ok != true || !mounted) return;
-
-      final amount = int.tryParse(amountController.text.trim());
-      final min = (method['min_amount'] as num?)?.toInt() ?? 0;
-      final max = (method['max_amount'] as num?)?.toInt() ?? 0;
-      if (amount == null ||
-          amount <= 0 ||
-          amount < min ||
-          (max > 0 && amount > max)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('المبلغ يجب أن يكون بين $min و $max.')),
-        );
-        return;
-      }
-
-      final payload = <String, dynamic>{};
-      for (final entry in details.entries) {
-        final value = entry.value.text.trim();
-        if (value.isNotEmpty) payload[entry.key] = value;
-      }
-
-      setState(() => submitting = true);
-      await Supabase.instance.client.rpc(
-        'asmar_create_withdrawal_request',
-        params: {
-          'p_method_id': method['id'],
-          'p_amount': amount,
-          'p_details': payload,
-        },
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إرسال طلب السحب بنجاح.')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر إرسال طلب السحب: $e')),
-        );
-      }
-    } finally {
-      amountController.dispose();
-      for (final controller in details.values) {
-        controller.dispose();
-      }
-      if (mounted) setState(() => submitting = false);
-    }
-  }
 
   @override
   Widget build(BuildContext c) => Directionality(
@@ -317,6 +208,116 @@ class WithdrawalMethodsPage extends StatefulWidget {
 class _WithdrawalMethodsPageState extends State<WithdrawalMethodsPage> {
   List<Map<String, dynamic>> methods = [];
   bool loading = true;
+  bool submitting = false;
+
+  Future<void> _requestWithdrawal(Map<String, dynamic> method) async {
+    final amountController = TextEditingController();
+    final details = <String, TextEditingController>{};
+    final rawFields = method['fields'];
+    final fields = rawFields is List
+        ? rawFields.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        : <Map<String, dynamic>>[];
+    for (final field in fields) {
+      final key = (field['key'] ?? field['name'] ?? '').toString().trim();
+      if (key.isNotEmpty) details[key] = TextEditingController();
+    }
+    try {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('طلب سحب عبر ${method['name']}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'المبلغ (${method['currency']})',
+                    hintText: '${method['min_amount']} - ${method['max_amount']}',
+                  ),
+                ),
+                ...fields.map((field) {
+                  final key = (field['key'] ?? field['name'] ?? '').toString().trim();
+                  if (key.isEmpty) return const SizedBox.shrink();
+                  final label = (field['label'] ?? field['name'] ?? key).toString();
+                  final controller = details[key]!;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: TextField(
+                      controller: controller,
+                      keyboardType: field['keyboard_type'] == 'number'
+                          ? TextInputType.number
+                          : TextInputType.text,
+                      decoration: InputDecoration(labelText: label),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('إرسال'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+
+      final amount = int.tryParse(amountController.text.trim());
+      final min = (method['min_amount'] as num?)?.toInt() ?? 0;
+      final max = (method['max_amount'] as num?)?.toInt() ?? 0;
+      if (amount == null ||
+          amount <= 0 ||
+          amount < min ||
+          (max > 0 && amount > max)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('المبلغ يجب أن يكون بين $min و $max.')),
+        );
+        return;
+      }
+
+      final payload = <String, dynamic>{};
+      for (final entry in details.entries) {
+        final value = entry.value.text.trim();
+        if (value.isNotEmpty) payload[entry.key] = value;
+      }
+
+      setState(() => submitting = true);
+      await Supabase.instance.client.rpc(
+        'asmar_create_withdrawal_request',
+        params: {
+          'p_method_id': method['id'],
+          'p_amount': amount,
+          'p_details': payload,
+        },
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إرسال طلب السحب بنجاح.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر إرسال طلب السحب: $e')),
+        );
+      }
+    } finally {
+      amountController.dispose();
+      for (final controller in details.values) {
+        controller.dispose();
+      }
+      if (mounted) setState(() => submitting = false);
+    }
+  }
 
   @override
   void initState() {
