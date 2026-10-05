@@ -1,4 +1,3 @@
-// ignore_for_file: unused_field
 import 'dart:math';
 import 'package:flutter/material.dart';
 
@@ -11,7 +10,6 @@ class SlotDemoPage extends StatefulWidget {
 class _SlotDemoPageState extends State<SlotDemoPage> {
   final _random = Random();
   final _symbols = const ['🍒', '🍋', '🍊', '⭐', '7️⃣', '💎'];
-  final _controller = ScrollController();
   List<String> _reels = const ['🍒', '⭐', '💎'];
   int _demoCoins = 10000;
   int _lastWin = 0;
