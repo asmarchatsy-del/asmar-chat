@@ -32,19 +32,16 @@ class RoomRepository {
   RoomRepository({SupabaseClient? client}) : _client = client;
 
   final SupabaseClient? _client;
-
   SupabaseClient? get client => _client ?? SupabaseRuntime.client;
 
   Future<List<VoiceRoomRecord>> fetchActiveRooms() async {
     final db = client;
     if (db == null) return const [];
-
     final rows = await db
         .from('rooms')
         .select('id,name,owner_id,livekit_room_name,is_active')
         .eq('is_active', true)
         .order('created_at', ascending: false);
-
     return (rows as List)
         .cast<Map<String, dynamic>>()
         .map(VoiceRoomRecord.fromMap)
@@ -54,7 +51,6 @@ class RoomRepository {
   Stream<List<Map<String, dynamic>>> watchActiveRooms() {
     final db = client;
     if (db == null) return const Stream.empty();
-
     return db
         .from('rooms')
         .stream(primaryKey: ['id'])
@@ -72,44 +68,40 @@ class RoomRepository {
       throw StateError('Supabase authentication is required to create a room.');
     }
 
-    final row = await db
-        .from('rooms')
-        .insert({
-          'name': name.trim(),
-          'owner_id': user.id,
-          'livekit_room_name': liveKitRoomName.trim(),
-          'is_active': true,
-        })
-        .select('id,name,owner_id,livekit_room_name,is_active')
-        .single();
+    final row = await db.rpc('create_room', params: {
+      'p_name': name.trim(),
+      'p_livekit_room_name': liveKitRoomName.trim(),
+    });
 
-    return VoiceRoomRecord.fromMap(row);
+    if (row is Map<String, dynamic>) return VoiceRoomRecord.fromMap(row);
+    if (row is List && row.isNotEmpty) {
+      return VoiceRoomRecord.fromMap(
+        Map<String, dynamic>.from(row.first as Map),
+      );
+    }
+
+    final created = await db
+        .from('rooms')
+        .select('id,name,owner_id,livekit_room_name,is_active')
+        .eq('owner_id', user.id)
+        .eq('name', name.trim())
+        .order('created_at', ascending: false)
+        .limit(1)
+        .single();
+    return VoiceRoomRecord.fromMap(created);
   }
 
   Future<void> joinRoom(String roomId) async {
     final db = client;
-    final user = SupabaseRuntime.currentUser;
-    if (db == null || user == null) {
+    if (db == null || SupabaseRuntime.currentUser == null) {
       throw StateError('Supabase authentication is required to join a room.');
     }
-
-    await db.from('room_members').upsert({
-      'room_id': roomId,
-      'user_id': user.id,
-      'joined_at': DateTime.now().toUtc().toIso8601String(),
-      'left_at': null,
-    });
+    await db.rpc('join_room', params: {'p_room_id': roomId});
   }
 
   Future<void> leaveRoom(String roomId) async {
     final db = client;
-    final user = SupabaseRuntime.currentUser;
-    if (db == null || user == null) return;
-
-    await db
-        .from('room_members')
-        .update({'left_at': DateTime.now().toUtc().toIso8601String()})
-        .eq('room_id', roomId)
-        .eq('user_id', user.id);
+    if (db == null || SupabaseRuntime.currentUser == null) return;
+    await db.rpc('leave_room', params: {'p_room_id': roomId});
   }
 }
