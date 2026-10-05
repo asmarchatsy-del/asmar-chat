@@ -28,6 +28,41 @@ Deno.serve(async (req) => {
 
     const user = await verify.json();
     const identity = String(user.id);
+
+    const roomQuery = await fetch(
+      `${supabaseUrl}/rest/v1/rooms?select=id&livekit_room_name=eq.${encodeURIComponent(room)}&is_active=eq.true`,
+      {
+        headers: {
+          Authorization: auth,
+          apikey: supabaseAnonKey,
+        },
+      },
+    );
+    if (!roomQuery.ok) {
+      return Response.json({ error: "Unable to verify room" }, { status: 502 });
+    }
+    const rooms = await roomQuery.json();
+    if (!Array.isArray(rooms) || rooms.length !== 1) {
+      return Response.json({ error: "Room not found" }, { status: 404 });
+    }
+
+    const memberQuery = await fetch(
+      `${supabaseUrl}/rest/v1/room_members?select=room_id&user_id=eq.${identity}&left_at=is.null`,
+      {
+        headers: {
+          Authorization: auth,
+          apikey: supabaseAnonKey,
+        },
+      },
+    );
+    if (!memberQuery.ok) {
+      return Response.json({ error: "Unable to verify membership" }, { status: 502 });
+    }
+    const members = await memberQuery.json();
+    if (!Array.isArray(members) || members.length === 0) {
+      return Response.json({ error: "Join the room before requesting audio access" }, { status: 403 });
+    }
+
     const token = new AccessToken(livekitApiKey, livekitApiSecret, {
       identity,
       name: user.user_metadata?.display_name ?? user.email ?? identity,
