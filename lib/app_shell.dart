@@ -50,25 +50,69 @@ class _AsmarAppShellState extends State<AsmarAppShell> {
   }
 }
 
-class AsmarAuthGate extends StatelessWidget {
+class AsmarAuthGate extends StatefulWidget {
   const AsmarAuthGate({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<AsmarAuthGate> createState() => _AsmarAuthGateState();
+}
+
+class _AsmarAuthGateState extends State<AsmarAuthGate> {
+  late final Stream<AuthState> _authStream;
+  bool _checkingSession = true;
+
+  @override
+  void initState() {
+    super.initState();
     final auth = AuthRepository();
+    _authStream = auth.authStateChanges;
+    _checkingSession = SupabaseRuntime.currentUser == null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     if (!SupabaseRuntime.isInitialized) {
       return const _BackendUnavailable();
     }
-    return StreamBuilder(
-      stream: auth.authStateChanges,
+
+    return StreamBuilder<AuthState>(
+      stream: _authStream,
+      initialData: SupabaseRuntime.currentUser == null
+          ? null
+          : AuthState(AuthChangeEvent.initialSession, Supabase.instance.client.auth.currentSession),
       builder: (context, snapshot) {
-        if (SupabaseRuntime.currentUser != null) {
+        final session = snapshot.data?.session ?? SupabaseRuntime.client?.auth.currentSession;
+        final signedIn = session?.user != null || SupabaseRuntime.currentUser != null;
+
+        if (signedIn) {
+          if (_checkingSession && mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _checkingSession = false);
+            });
+          }
           return const AsmarAyomeShell();
         }
+
+        if (_checkingSession && snapshot.connectionState == ConnectionState.waiting) {
+          return const _AuthLoading();
+        }
+
         return const AsmarLoginPage();
       },
     );
   }
+}
+
+class _AuthLoading extends StatelessWidget {
+  const _AuthLoading();
+
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+    backgroundColor: Color(0xFF070817),
+    body: Center(
+      child: CircularProgressIndicator(),
+    ),
+  );
 }
 
 class _BackendUnavailable extends StatelessWidget {
