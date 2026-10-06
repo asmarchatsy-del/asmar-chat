@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../backend/supabase_runtime.dart';
 
@@ -13,6 +15,24 @@ class AuthRepository {
     final db = client;
     if (db == null) return const Stream.empty();
     return db.auth.onAuthStateChange;
+  }
+
+  Future<AuthResponse> signInWithGoogle() async {
+    final db = client;
+    if (db == null) throw StateError('Supabase is not configured.');
+
+    final started = await db.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback/',
+      authScreenLaunchMode:
+          kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+    );
+
+    if (!started) {
+      throw const AuthException('تعذر بدء تسجيل الدخول باستخدام Google.');
+    }
+
+    return AuthResponse();
   }
 
   Future<AuthResponse> signInWithEmail({
