@@ -14,7 +14,6 @@ import 'ranking_page.dart';
 import 'global_chat.dart';
 import 'games_page.dart';
 import 'private_conversations.dart';
-import 'profile_badges.dart';
 import 'store.dart';
 import 'svip.dart';
 import 'wallet.dart';
