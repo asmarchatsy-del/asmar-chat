@@ -40,11 +40,11 @@ jobs:
         run: flutter analyze
 
       - name: Build release APK
-        run: flutter build apk --release --target-platform android-arm64 --dart-define=SUPABASE_URL=https://jojxsqsgmpaggfnnyuyy.supabase.co --dart-define=SUPABASE_ANON_KEY=sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL
+        run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=https://jojxsqsgmpaggfnnyuyy.supabase.co --dart-define=SUPABASE_ANON_KEY=sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: asmar-chat-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           if-no-files-found: error
