@@ -9,6 +9,7 @@ import 'family_page.dart';
 import 'blocked_users_page.dart';
 import 'ranking_page.dart';
 import 'global_chat.dart';
+import 'games_page.dart';
 import 'private_conversations.dart';
 import 'profile_badges.dart';
 import 'store.dart';
@@ -318,89 +319,8 @@ class _Room extends StatelessWidget {
 
 class _AyomeGamesPage extends StatelessWidget {
   const _AyomeGamesPage();
-
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(14, 18, 14, 28),
-      children: [
-        const SafeArea(
-          bottom: false,
-          child: Text('الألعاب', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-        ),
-        const SizedBox(height: 7),
-        const Text('صالة الألعاب', style: TextStyle(color: _muted)),
-        const SizedBox(height: 15),
-        const _Game('لودو', Icons.casino_rounded, 'لعبة اجتماعية متعددة اللاعبين'),
-        const _Game('دومينو', Icons.extension_rounded, 'لعبة الطاولة'),
-        const _Game('طاولة', Icons.grid_4x4_rounded, 'مباريات وتحديات'),
-        _Game(
-          'التحديات اليومية',
-          Icons.emoji_events_rounded,
-          'اربح مكافآت الكوينز',
-          tap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DailyTasksPage()),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Game extends StatelessWidget {
-  final String title;
-  final String sub;
-  final IconData icon;
-  final VoidCallback? tap;
-
-  const _Game(this.title, this.icon, this.sub, {this.tap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        onTap: tap ?? () => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$title غير موصول بمحرك لعبة في المشروع الحالي')),
-        ),
-        borderRadius: BorderRadius.circular(19),
-        child: Container(
-          padding: const EdgeInsets.all(17),
-          decoration: BoxDecoration(
-            color: _panel,
-            borderRadius: BorderRadius.circular(19),
-            border: Border.all(color: const Color(0xFF2B315A)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [_orange, _gold]),
-                ),
-                child: Icon(icon, color: const Color(0xFF4C2000), size: 29),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                    const SizedBox(height: 4),
-                    Text(sub, style: const TextStyle(color: _muted, fontSize: 11)),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_left_rounded, color: _gold),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const AsmarGamesPage();
 }
 
 class _AyomeMessagesPage extends StatelessWidget {
