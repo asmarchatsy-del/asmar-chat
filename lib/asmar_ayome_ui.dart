@@ -7,6 +7,7 @@ import 'create_room_page.dart';
 import 'daily_tasks_page.dart';
 import 'family_page.dart';
 import 'blocked_users_page.dart';
+import 'ranking_page.dart';
 import 'global_chat.dart';
 import 'private_conversations.dart';
 import 'profile_badges.dart';
@@ -200,8 +201,47 @@ class _IconButton extends StatelessWidget { final IconData icon; final VoidCallb
 class _Tabs extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Tabs({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:45,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['لك','شائع','جديد','فيديو'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _CreateRoom extends StatelessWidget { final VoidCallback onTap; const _CreateRoom({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(height:78,padding:const EdgeInsets.all(15),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[_gold,_orange])),child:const Row(children:[Icon(Icons.auto_awesome_rounded,color:Color(0xFF542300),size:31),SizedBox(width:10),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text('إنشاء غرفتي',style:TextStyle(color:Color(0xFF4C2000),fontSize:20,fontWeight:FontWeight.w900)),Text('غرفة صوتية بـ 8 كراسي',style:TextStyle(color:Color(0xFF633000),fontSize:11))])),Icon(Icons.add_circle_outline_rounded,color:Color(0xFF4C2000),size:31)])))); }
 class _Filters extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Filters({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:44,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['الكل','متابعة','موثق','العائلة','غرف','مستخدمون'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
-class _Banners extends StatelessWidget { const _Banners(); @override Widget build(BuildContext c)=>SizedBox(height:76,child:ListView(padding:const EdgeInsets.fromLTRB(14,8,14,6),scrollDirection:Axis.horizontal,children:const [_Banner(Icons.workspace_premium_rounded,'الثروة','ترتيب الأغنياء'),_Banner(Icons.bolt_rounded,'CP','ترتيب CP'),_Banner(Icons.groups_rounded,'العائلة','ترتيب العائلة')])); }
-class _Banner extends StatelessWidget { final IconData icon; final String title,sub; const _Banner(this.icon,this.title,this.sub); @override Widget build(BuildContext c)=>Container(width:150,margin:const EdgeInsets.only(left:8),padding:const EdgeInsets.all(9),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(15),border:Border.all(color:_gold.withOpacity(.35))),child:Row(children:[Icon(icon,color:_gold,size:25),const SizedBox(width:7),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900)),Text(sub,style:const TextStyle(color:_muted,fontSize:9))]))])); }
+class _Banners extends StatelessWidget {
+  const _Banners();
+  @override
+  Widget build(BuildContext c) => SizedBox(
+    height: 76,
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
+      scrollDirection: Axis.horizontal,
+      children: [
+        _Banner(Icons.workspace_premium_rounded, 'الثروة', 'ترتيب الأغنياء', () => Navigator.push(c, MaterialPageRoute(builder: (_) => const AsmarRankingPage(type: 'wealth')))),
+        _Banner(Icons.bolt_rounded, 'CP', 'ترتيب CP', () => Navigator.push(c, MaterialPageRoute(builder: (_) => const AsmarRankingPage(type: 'cp')))),
+        _Banner(Icons.groups_rounded, 'العائلة', 'ترتيب العائلة', () => Navigator.push(c, MaterialPageRoute(builder: (_) => const AsmarRankingPage(type: 'family')))),
+      ],
+    ),
+  );
+}
+class _Banner extends StatelessWidget {
+  final IconData icon;
+  final String title, sub;
+  final VoidCallback onTap;
+  const _Banner(this.icon, this.title, this.sub, this.onTap);
+  @override
+  Widget build(BuildContext c) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(15),
+    child: Container(
+      width: 150,
+      margin: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(15), border: Border.all(color: _gold.withOpacity(.35))),
+      child: Row(children: [
+        Icon(icon, color: _gold, size: 25),
+        const SizedBox(width: 7),
+        Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+          Text(sub, style: const TextStyle(color: _muted, fontSize: 9)),
+        ])),
+      ]),
+    ),
+  );
+}
 class _Countries extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Countries({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:43,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['Hot','Syria','Germany','Netherlands'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _DailyTreasure extends StatelessWidget { final VoidCallback onTap; const _DailyTreasure({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,10,14,4),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF5B2C09),Color(0xFF24110A)]),border:Border.all(color:_orange.withOpacity(.55))),child:const Row(children:[Icon(Icons.card_giftcard_rounded,color:_gold,size:31),SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('الهدية اليومية',style:TextStyle(fontWeight:FontWeight.w900,fontSize:15)),Text('افتح صندوق الكنز وخذ مكافأتك اليوم',style:TextStyle(color:_muted,fontSize:10))])),Icon(Icons.chevron_left_rounded,color:_gold)])))); }
 
