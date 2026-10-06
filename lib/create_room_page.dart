@@ -125,7 +125,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
                     value: _seats,
                     dropdownColor: _crPanel,
                     underline: const SizedBox(),
-                    items: [8,12,15,20,30].map((v) => DropdownMenuItem(value: v, child: Text('$v'))).toList(),
+                    items: [8,12,15,20].map((v) => DropdownMenuItem(value: v, child: Text('$v'))).toList(),
                     onChanged: (v) => setState(() => _seats = v ?? 15),
                   ),
                 ],
