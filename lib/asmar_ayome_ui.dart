@@ -31,7 +31,7 @@ class _AsmarAyomeShellState extends State<AsmarAyomeShell> {
   final pages = const [_AyomeHomePage(), _AyomeGamesPage(), _AyomeMessagesPage(), _AyomeProfilePage()];
   @override Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
-    child: Scaffold(backgroundColor: _bg, body: IndexedStack(index: index, children: pages),
+    child: Scaffold(backgroundColor: _bg, body: Stack(children: [IndexedStack(index: index, children: pages), Positioned(left: 14, bottom: 76, child: _TreasureFab(onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DailyTasksPage()))))]),
       bottomNavigationBar: _Bottom(index: index, onChanged: (v) => setState(() => index = v))),
   );
 }
@@ -92,7 +92,7 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
   void _showHomeMessage(String message) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message))); }
   }
   @override Widget build(BuildContext context) => CustomScrollView(slivers: [
-    SliverToBoxAdapter(child: _HomeHeader(onSearch: searchRooms, onCreate: createRoom)),
+    SliverToBoxAdapter(child: _HomeHeader(onSearch: searchRooms, onCreate: createRoom, onNotifications: () => _notifications(context))),
     SliverToBoxAdapter(child: _Tabs(selected: tab, onChanged: (v) => setState(() => tab = v))),
     SliverToBoxAdapter(child: _CreateRoom(onTap: createRoom)),
     SliverToBoxAdapter(child: _Filters(selected: filter, onChanged: (v) => setState(() => filter = v))),
@@ -110,13 +110,14 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
   ]);
 }
 class _HomeHeader extends StatelessWidget {
-  final VoidCallback onSearch, onCreate;
-  const _HomeHeader({required this.onSearch, required this.onCreate});
+  final VoidCallback onSearch, onCreate, onNotifications;
+  const _HomeHeader({required this.onSearch, required this.onCreate, required this.onNotifications});
   @override Widget build(BuildContext context) => SafeArea(bottom: false, child: Padding(padding: const EdgeInsets.fromLTRB(14,12,14,7), child: Row(children: [
     const Text('Asmar', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900)), const Spacer(),
-    _IconButton(Icons.search_rounded, onSearch), const SizedBox(width: 7), _IconButton(Icons.notifications_none_rounded, () {}), const SizedBox(width: 7), _IconButton(Icons.add_rounded, onCreate),
+    _IconButton(Icons.search_rounded, onSearch), const SizedBox(width: 7), _IconButton(Icons.notifications_none_rounded, onNotifications), const SizedBox(width: 7), _IconButton(Icons.add_rounded, onCreate),
   ])));
 }
+class _TreasureFab extends StatelessWidget { final VoidCallback onTap; const _TreasureFab({required this.onTap}); @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(30),child:Container(width:56,height:56,decoration:BoxDecoration(shape:BoxShape.circle,gradient:const LinearGradient(colors:[_gold,_orange]),boxShadow:[BoxShadow(color:_orange.withOpacity(.35),blurRadius:16,spreadRadius:2)]),child:const Icon(Icons.card_giftcard_rounded,color:Color(0xFF4A2100),size:29)))); }
 class _IconButton extends StatelessWidget { final IconData icon; final VoidCallback onTap; const _IconButton(this.icon,this.onTap); @override Widget build(BuildContext c)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(14),child:Container(width:40,height:40,decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(14)),child:Icon(icon,color:Colors.white,size:21))); }
 class _Tabs extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Tabs({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:45,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['لك','شائع','جديد','فيديو'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _CreateRoom extends StatelessWidget { final VoidCallback onTap; const _CreateRoom({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(height:78,padding:const EdgeInsets.all(15),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[_gold,_orange])),child:const Row(children:[Icon(Icons.auto_awesome_rounded,color:Color(0xFF542300),size:31),SizedBox(width:10),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text('إنشاء غرفتي',style:TextStyle(color:Color(0xFF4C2000),fontSize:20,fontWeight:FontWeight.w900)),Text('غرفة صوتية بـ 8 كراسي',style:TextStyle(color:Color(0xFF633000),fontSize:11))])),Icon(Icons.add_circle_outline_rounded,color:Color(0xFF4C2000),size:31)])))); }
