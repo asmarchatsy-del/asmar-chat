@@ -7,6 +7,7 @@ class AuthRepository {
   AuthRepository({SupabaseClient? client}) : _client = client;
 
   final SupabaseClient? _client;
+  bool _googleSignInInProgress = false;
 
   SupabaseClient? get client => _client ?? SupabaseRuntime.client;
 
@@ -17,23 +18,36 @@ class AuthRepository {
   }
 
   Future<void> signInWithGoogle() async {
+    if (_googleSignInInProgress) {
+      throw const AuthException(
+        'تسجيل الدخول باستخدام Google قيد التنفيذ بالفعل.',
+      );
+    }
+
     final db = client;
     if (db == null) {
       throw StateError('Supabase is not configured.');
     }
 
-    final started = await db.auth.signInWithOAuth(
-      OAuthProvider.google,
+    _googleSignInInProgress = true;
+
+    try {
+      final started = await db.auth.signInWithOAuth(
+        OAuthProvider.google,
       redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback/',
       authScreenLaunchMode:
           kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
-      scopes: 'openid email profile',
-    );
-
-    if (!started) {
-      throw const AuthException(
-        'تعذر بدء تسجيل الدخول باستخدام Google. تحقق من تفعيل Google في Supabase Auth.',
+        scopes: 'openid email profile',
       );
+
+      if (!started) {
+        throw const AuthException(
+          'تعذر بدء تسجيل الدخول باستخدام Google. تحقق من تفعيل Google في Supabase Auth.',
+        );
+      }
+    } catch (_) {
+      _googleSignInInProgress = false;
+      rethrow;
     }
   }
 
