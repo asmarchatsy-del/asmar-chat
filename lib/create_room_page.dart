@@ -19,7 +19,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
   final _repo = RoomRepository();
   String _category = 'دردشة';
   bool _private = false;
-  int _seats = 15;
+  int _seats = 8;
   bool _busy = false;
 
   @override
