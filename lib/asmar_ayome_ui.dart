@@ -5,6 +5,7 @@ import 'core/rooms/real_voice_room_page.dart';
 import 'core/rooms/room_social_repository.dart';
 import 'create_room_page.dart';
 import 'daily_tasks_page.dart';
+import 'family_page.dart';
 import 'global_chat.dart';
 import 'private_conversations.dart';
 import 'profile_badges.dart';
@@ -375,7 +376,7 @@ class _AyomeMessagesPage extends StatelessWidget {
         ),
         const SizedBox(height: 15),
         _Message(
-          'Ayome Team / Asmar Team',
+          'Asmar Team',
           'الدردشة الرسمية والدعم',
           Icons.verified_user_rounded,
           () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalChatPage())),
@@ -626,7 +627,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
             Icons.auto_awesome_rounded,
             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorePage())),
           ),
-          _Action('العائلة', 'العائلة والترتيب', Icons.groups_rounded, () => _message('وحدة العائلة تحتاج جداولها الخاصة قبل تشغيلها')),
+          _Action('العائلة', 'العائلة والترتيب', Icons.groups_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarFamilyPage()))),
           _Action('المستوى', 'Lv.$level', Icons.star_rounded, () => _message('المستوى الحالي: $level')),
           _Action(
             'الهدايا',
