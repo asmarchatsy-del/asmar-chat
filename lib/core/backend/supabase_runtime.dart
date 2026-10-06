@@ -3,9 +3,7 @@ import '../../backend_config.dart';
 
 class SupabaseRuntime {
   SupabaseRuntime._();
-
   static bool _initialized = false;
-
   static bool get isInitialized => _initialized;
 
   static bool get hasUsableConfig {
@@ -21,11 +19,13 @@ class SupabaseRuntime {
   static Future<bool> initialize() async {
     if (_initialized) return true;
     if (!hasUsableConfig) return false;
-
     try {
       await Supabase.initialize(
         url: BackendConfig.supabaseUrl,
         publishableKey: BackendConfig.supabasePublishableKey,
+        authOptions: const FlutterAuthClientOptions(
+          detectSessionInUri: false,
+        ),
       );
       _initialized = true;
       return true;
@@ -36,6 +36,5 @@ class SupabaseRuntime {
 
   static SupabaseClient? get client =>
       _initialized ? Supabase.instance.client : null;
-
   static User? get currentUser => client?.auth.currentUser;
 }
