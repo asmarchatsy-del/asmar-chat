@@ -20,7 +20,8 @@ const _cyan = Color(0xFF4EDCFF);
 const _text2 = Color(0xFF9EA6C7);
 
 
-Future<void> _showRoomSearch(BuildContext context) async {
+class _NewAsmarActions {
+  static Future<void> showRoomSearch(BuildContext context) async {
   final controller = TextEditingController();
   final repo = RoomRepository();
   await showModalBottomSheet<void>(
@@ -88,7 +89,7 @@ Future<void> _showRoomSearch(BuildContext context) async {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       leading: const _Avatar(initial: 'A', size: 48),
                       title: Text(room.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-                      subtitle: Text('\${room.seatCount} مقعد', style: const TextStyle(color: _text2)),
+                      subtitle: Text('${room.seatCount} مقعد', style: const TextStyle(color: _text2)),
                       trailing: const Icon(Icons.chevron_left_rounded),
                       onTap: () {
                         Navigator.pop(sheetContext);
@@ -108,7 +109,7 @@ Future<void> _showRoomSearch(BuildContext context) async {
   controller.dispose();
 }
 
-Future<void> _showNotifications(BuildContext context) async {
+  static Future<void> showNotifications(BuildContext context) async {
   final db = Supabase.instance.client;
   final uid = db.auth.currentUser?.id;
   if (uid == null) return;
@@ -158,6 +159,8 @@ Future<void> _showNotifications(BuildContext context) async {
       ),
     ),
   );
+}
+
 }
 
 class NewAsmarShell extends StatefulWidget {
@@ -291,9 +294,9 @@ class _HomeHeader extends StatelessWidget {
     child: Row(children: [
       const Text('Asmar', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic)),
       const Spacer(),
-      _CircleButton(icon: Icons.search_rounded, onTap: () => _showRoomSearch(context)),
+      _CircleButton(icon: Icons.search_rounded, onTap: () => _NewAsmarActions.showRoomSearch(context)),
       const SizedBox(width: 8),
-      _CircleButton(icon: Icons.notifications_none_rounded, onTap: () => _showNotifications(context)),
+      _CircleButton(icon: Icons.notifications_none_rounded, onTap: () => _NewAsmarActions.showNotifications(context)),
       const SizedBox(width: 8),
       _CircleButton(icon: Icons.add_rounded, onTap: onCreate),
     ]),
@@ -534,6 +537,49 @@ class _NewDiscoverPageState extends State<_NewDiscoverPage> {
     ),
   ]);
 }
+
+
+class _DiscoverRoomTile extends StatelessWidget {
+  final VoiceRoomRecord room;
+  final VoidCallback onTap;
+  const _DiscoverRoomTile({required this.room, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(20),
+    child: Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _panel,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF262B50)),
+      ),
+      child: Row(
+        children: [
+          const _Avatar(initial: 'A', size: 58),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(room.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                Text('${room.seatCount} مقعد', style: const TextStyle(color: _text2, fontSize: 12)),
+              ],
+            ),
+          ),
+          FilledButton(
+            onPressed: onTap,
+            style: FilledButton.styleFrom(backgroundColor: _purple),
+            child: const Text('دخول'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 
 class _NewMessagesPage extends StatelessWidget {
   const _NewMessagesPage();
