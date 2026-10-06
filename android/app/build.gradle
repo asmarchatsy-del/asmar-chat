@@ -25,6 +25,15 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    // The CI release build must be installable as a normal APK.
+    // A release APK without a signing configuration is unsigned and
+    // Android may report it as an invalid package during installation.
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+        }
+    }
 }
 
 flutter {
