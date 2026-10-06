@@ -72,7 +72,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       body: Column(children: [
         Expanded(
           child: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: client.from('private_messages').stream(primaryKey: ['id']).limit(200),
+            stream: client.from('messages').stream(primaryKey: ['id']).limit(200),
             builder: (context, snap) {
               final rows = (snap.data ?? []).where((x) =>
                 (x['sender_id'] == uid && x['receiver_id'] == widget.friendId) ||
@@ -98,7 +98,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         border: Border.all(color: mine ? const Color(0x66FFD36A) : const Color(0x334C3019)),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        Flexible(child: Text(x['message']?.toString() ?? '', style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.25))),
+                        Flexible(child: Text(x['body']?.toString() ?? '', style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.25))),
                         const SizedBox(width: 7),
                         Text(_time(x['created_at']), style: const TextStyle(color: Colors.white38, fontSize: 9)),
                         if (mine) const Padding(padding: EdgeInsets.only(left: 3), child: Icon(Icons.done_all, size: 14, color: Color(0xFFFFD36A))),
