@@ -28,7 +28,7 @@ jobs:
           sed -i 's/compileSdk 33/compileSdk 34/g' android/app/build.gradle || true
           find $HOME/.pub-cache -name "build.gradle" -path "*agora_rtc_engine*" -exec sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' {} \; || true
       - name: بناء APK
-        run: flutter build apk --release --no-tree-shake-icons --dart-define=SUPABASE_URL=https://jojxsqsgmpaggfnnyuyy.supabase.co --dart-define=SUPABASE_ANON_KEY=sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL --dart-define=SUPABASE_URL=https://jojxsqsgmpaggfnnyuyy.supabase.co --dart-define=SUPABASE_ANON_KEY=sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL
+        run: flutter build apk --release --no-tree-shake-icons --dart-define=SUPABASE_URL=https://jojxsqsgmpaggfnnyuyy.supabase.co --dart-define=SUPABASE_ANON_KEY=sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL
       - name: رفع APK
         uses: actions/upload-artifact@v4
         with:
