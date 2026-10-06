@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'super_admin_panel.dart';
+import 'admin_web_config.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminPanel extends StatefulWidget {
   const AdminPanel({super.key});
@@ -12,6 +14,13 @@ class _AdminPanelState extends State<AdminPanel> {
   bool loading = true;
   bool authorized = false;
   Map<String,int> stats = {};
+
+  Future<void> _openExternalAdmin() async {
+    final uri = Uri.tryParse(asmarAdminWebUrl);
+    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح لوحة الإدارة الخارجية')));
+    }
+  }
 
   @override
   void initState() { super.initState(); _load(); }
@@ -66,6 +75,8 @@ class _AdminPanelState extends State<AdminPanel> {
                         const Text('مركز إدارة Asmar', style: TextStyle(color: Color(0xFFFFD36A), fontSize: 25, fontWeight: FontWeight.w900)),
                         const SizedBox(height: 6),
                         const Text('بيانات حقيقية من قاعدة البيانات', style: TextStyle(color: Colors.white54)),
+                        const SizedBox(height: 14),
+                        Card(color: const Color(0xFF201307), child: ListTile(leading: const Icon(Icons.open_in_new, color: Color(0xFFFFD36A)), title: const Text('لوحة الإدارة عبر الويب', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)), subtitle: const Text('فتح لوحة CEO في المتصفح — نفس صلاحيات Supabase الآمنة', style: TextStyle(color: Colors.white54)), trailing: const Icon(Icons.chevron_left, color: Color(0xFFFFD36A)), onTap: _openExternalAdmin)),
                         const SizedBox(height: 18),
                         Row(children: [
                           Expanded(child: _stat('المستخدمون', stats['users'] ?? 0, Icons.people)),
