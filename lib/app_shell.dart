@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/auth/auth_repository.dart';
 import 'core/backend/supabase_runtime.dart';
 import 'core/rooms/real_rooms_home_page.dart';
+import 'new_asmar_ui.dart';
 import 'friends.dart';
 import 'messages.dart';
 import 'store.dart';
@@ -62,7 +63,7 @@ class AsmarAuthGate extends StatelessWidget {
       stream: auth.authStateChanges,
       builder: (context, snapshot) {
         if (SupabaseRuntime.currentUser != null) {
-          return const AsmarAppShell();
+          return const NewAsmarShell();
         }
         return const AsmarLoginPage();
       },
