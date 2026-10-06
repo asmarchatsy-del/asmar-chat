@@ -17,7 +17,7 @@ class AuthRepository {
     return db.auth.onAuthStateChange;
   }
 
-  Future<AuthResponse> signInWithGoogle() async {
+  Future<void> signInWithGoogle() async {
     final db = client;
     if (db == null) throw StateError('Supabase is not configured.');
 
@@ -32,7 +32,6 @@ class AuthRepository {
       throw const AuthException('تعذر بدء تسجيل الدخول باستخدام Google.');
     }
 
-    return AuthResponse();
   }
 
   Future<AuthResponse> signInWithEmail({
