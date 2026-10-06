@@ -104,7 +104,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
               child: SwitchListTile(
                 value: _private,
                 onChanged: (v) => setState(() => _private = v),
-                activeThumbColor: _crPink,
+                activeColor: _crPink,
                 title: const Text('غرفة خاصة', style: TextStyle(fontWeight: FontWeight.w800)),
                 subtitle: Text(_private ? 'الدخول يحتاج دعوة' : 'أي شخص يستطيع الانضمام', style: const TextStyle(color: _crMuted)),
               ),
