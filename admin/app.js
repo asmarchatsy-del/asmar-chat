@@ -67,7 +67,7 @@ async function boot(signedUser=null){
 function showTab(id,btn){document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));const target=$(id);if(target)target.classList.remove('hidden');document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(id==='withdrawals'&&typeof loadFinance==='function')loadFinance();if(id==='badges'&&typeof loadBadges==='function')loadBadges()}
 
 async function loadAll(){
-  const [profiles,wallets,rooms,frames,packages,vips,policy,promotions,agencies]=await Promise.all([
+  const [profiles,rooms,frames,packages,vips,policy,promotions,agencies]=await Promise.all([
     db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified,recharge_points,svip_level,user_level,coins').order('created_at',{ascending:false}),
     db.from('rooms').select('id,name,owner_id,is_active,created_at').order('created_at',{ascending:false}),
     db.from('frame_items').select('id,name,style_key,price,is_active,media_url,media_type,category,vip_level,svip_level,glow_enabled,motion_enabled').order('price'),
