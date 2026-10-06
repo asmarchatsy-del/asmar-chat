@@ -90,9 +90,8 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
     c.dispose();
   }
   void _showHomeMessage(String message) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message))); }
-  }
   @override Widget build(BuildContext context) => CustomScrollView(slivers: [
-    SliverToBoxAdapter(child: _HomeHeader(onSearch: searchRooms, onCreate: createRoom, onNotifications: () => _notifications(context))),
+    SliverToBoxAdapter(child: _HomeHeader(onSearch: searchRooms, onCreate: createRoom, onNotifications: () { _notifications(context); })),
     SliverToBoxAdapter(child: _Tabs(selected: tab, onChanged: (v) => setState(() => tab = v))),
     SliverToBoxAdapter(child: _CreateRoom(onTap: createRoom)),
     SliverToBoxAdapter(child: _Filters(selected: filter, onChanged: (v) => setState(() => filter = v))),
