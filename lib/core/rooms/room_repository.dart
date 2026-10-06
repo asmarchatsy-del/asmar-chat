@@ -10,6 +10,9 @@ class VoiceRoomRecord {
     required this.liveKitRoomName,
     required this.isActive,
     required this.seatCount,
+    this.countryCode,
+    this.tags = const [],
+    this.coverUrl,
   });
 
   final String id;
@@ -18,6 +21,9 @@ class VoiceRoomRecord {
   final String? liveKitRoomName;
   final bool isActive;
   final int seatCount;
+  final String? countryCode;
+  final List<String> tags;
+  final String? coverUrl;
 
   factory VoiceRoomRecord.fromMap(Map<String, dynamic> map) {
     return VoiceRoomRecord(
@@ -27,6 +33,9 @@ class VoiceRoomRecord {
       liveKitRoomName: map['livekit_room_name'] as String?,
       isActive: (map['is_active'] as bool?) ?? false,
       seatCount: (map['seat_count'] as num?)?.toInt() ?? 15,
+      countryCode: map['country_code'] as String?,
+      tags: (map['tags'] is List) ? List<String>.from(map['tags']) : const [],
+      coverUrl: map['cover_url'] as String?,
     );
   }
 }
@@ -42,7 +51,7 @@ class RoomRepository {
     if (db == null) return const [];
     final rows = await db
         .from('rooms')
-        .select('id,name,owner_id,livekit_room_name,is_active,seat_count')
+        .select('id,name,owner_id,livekit_room_name,is_active,seat_count,country_code,tags,cover_url')
         .eq('is_active', true)
         .order('created_at', ascending: false);
     return (rows as List)
