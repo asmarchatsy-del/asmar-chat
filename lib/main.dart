@@ -23,8 +23,22 @@ class AsmarChatApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFFB300),
+          seedColor: const Color(0xFF8B4DFF),
           brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF070817),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF070817),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          filled: true,
+          fillColor: Color(0xFF151936),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(17)),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
       home: const AsmarAuthGate(),
