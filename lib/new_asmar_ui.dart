@@ -714,12 +714,22 @@ class _NewProfilePage extends StatefulWidget {
 
 class _NewProfilePageState extends State<_NewProfilePage> {
   Map<String, dynamic> p = {};
+  int followers = 0, following = 0;
   Future<void> load() async {
     final u = Supabase.instance.client.auth.currentUser;
     if (u == null) return;
     try {
-      final r = await Supabase.instance.client.from('profiles').select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url').eq('id', u.id).maybeSingle();
-      if (mounted) setState(() => p = Map<String, dynamic>.from(r ?? {}));
+      final db = Supabase.instance.client;
+      final r = await db.from('profiles').select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url').eq('id', u.id).maybeSingle();
+      final followerRows = await db.from('follows').select('follower_id').eq('following_id', u.id);
+      final followingRows = await db.from('follows').select('following_id').eq('follower_id', u.id);
+      if (mounted) {
+        setState(() {
+          p = Map<String, dynamic>.from(r ?? {});
+          followers = (followerRows as List).length;
+          following = (followingRows as List).length;
+        });
+      }
     } catch (_) {}
   }
   @override void initState() { super.initState(); load(); }
@@ -742,10 +752,10 @@ class _NewProfilePageState extends State<_NewProfilePage> {
             Text("@$username • ID ${p['public_id'] ?? '—'}", style: const TextStyle(color: _text2, fontSize: 12)),
             const SizedBox(height: 16),
             Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+              _Stat(followers.toString(), 'المتابعون'),
+              _Stat(following.toString(), 'أتابعهم'),
               _Stat('${p['user_level'] ?? 1}', 'المستوى'),
               _Stat('${p['svip_level'] ?? 0}', 'SVIP'),
-              _Stat('${p['coins'] ?? 0}', 'Coins'),
-              _Stat('${p['diamonds'] ?? 0}', 'Diamonds'),
             ]),
           ]),
         ),
