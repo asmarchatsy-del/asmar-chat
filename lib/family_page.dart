@@ -74,9 +74,10 @@ class _AsmarFamilyPageState extends State<AsmarFamilyPage> {
       ));
       if (ok != true || name.text.trim().isEmpty) return;
       setState(() => busy = true);
-      final uid = db.auth.currentUser!.id;
-      final row = await db.from('families').insert({'name': name.text.trim(), 'description': desc.text.trim(), 'owner_id': uid}).select('id').single();
-      await db.from('family_members').insert({'family_id': row['id'], 'user_id': uid, 'role': 'owner'});
+      await db.rpc('asmar_create_family', params: {
+        'p_name': name.text.trim(),
+        'p_description': desc.text.trim(),
+      });
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إنشاء العائلة: ' + e.toString())));
@@ -107,7 +108,7 @@ class _AsmarFamilyPageState extends State<AsmarFamilyPage> {
     }
     setState(() => busy = true);
     try {
-      await db.from('family_members').delete().eq('family_id', mine!['id']).eq('user_id', db.auth.currentUser!.id);
+      await db.rpc('asmar_leave_family');
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر مغادرة العائلة: ' + e.toString())));
