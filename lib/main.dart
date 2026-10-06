@@ -23,7 +23,7 @@ class AsmarChatApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8B4DFF),
+          seedColor: const Color(0xFFFFC94A),
           brightness: Brightness.dark,
         ),
         scaffoldBackgroundColor: const Color(0xFF070817),
