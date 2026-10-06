@@ -36,17 +36,55 @@ class _AsmarAyomeShellState extends State<AsmarAyomeShell> {
   );
 }
 class _Bottom extends StatelessWidget {
-  final int index; final ValueChanged<int> onChanged;
+  final int index;
+  final ValueChanged<int> onChanged;
   const _Bottom({required this.index, required this.onChanged});
-  @override Widget build(BuildContext context) {
-    const items = [(Icons.home_rounded, 'القصر'), (Icons.sports_esports_rounded, 'الألعاب'), (Icons.mail_rounded, 'الرسائل'), (Icons.person_rounded, 'أنا')];
-    return Container(decoration: const BoxDecoration(color: Color(0xFF0B0D20), border: Border(top: BorderSide(color: Color(0xFF2A2F55)))),
-      child: SafeArea(top: false, child: Row(children: List.generate(items.length, (i) {
-        final selected = i == index;
-        return Expanded(child: InkWell(onTap: () => onChanged(i), child: Padding(padding: const EdgeInsets.symmetric(vertical: 9),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(items[i].$1, color: selected ? _gold : _muted, size: 24),
-            const SizedBox(height: 3), Text(items[i].$2, style: TextStyle(color: selected ? Colors.white : _muted, fontSize: 11, fontWeight: selected ? FontWeight.w900 : FontWeight.w500))])));
-      }))));
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      (Icons.home_rounded, 'القصر'),
+      (Icons.sports_esports_rounded, 'الألعاب'),
+      (Icons.mail_rounded, 'الرسائل'),
+      (Icons.person_rounded, 'أنا'),
+    ];
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF0B0D20),
+        border: Border(top: BorderSide(color: Color(0xFF2A2F55))),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: List.generate(items.length, (i) {
+            final selected = i == index;
+            return Expanded(
+              child: InkWell(
+                onTap: () => onChanged(i),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(items[i].$1, color: selected ? _gold : _muted, size: 24),
+                      const SizedBox(height: 3),
+                      Text(
+                        items[i].$2,
+                        style: TextStyle(
+                          color: selected ? Colors.white : _muted,
+                          fontSize: 11,
+                          fontWeight: selected ? FontWeight.w900 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
   }
 }
 
@@ -126,7 +164,76 @@ class _Banner extends StatelessWidget { final IconData icon; final String title,
 class _Countries extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Countries({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:43,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['Hot','Syria','Germany','Netherlands'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _DailyTreasure extends StatelessWidget { final VoidCallback onTap; const _DailyTreasure({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,10,14,4),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF5B2C09),Color(0xFF24110A)]),border:Border.all(color:_orange.withOpacity(.55))),child:const Row(children:[Icon(Icons.card_giftcard_rounded,color:_gold,size:31),SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('الهدية اليومية',style:TextStyle(fontWeight:FontWeight.w900,fontSize:15)),Text('افتح صندوق الكنز وخذ مكافأتك اليوم',style:TextStyle(color:_muted,fontSize:10))])),Icon(Icons.chevron_left_rounded,color:_gold)])))); }
 
-class _Room extends StatelessWidget { final VoiceRoomRecord room; final VoidCallback onTap; const _Room({required this.room,required this.onTap}); @override Widget build(BuildContext c)=>StreamBuilder<List<Map<String,dynamic>>>(stream:RoomSocialRepository().watchSeats(room.id),builder:(c,s){final n=(s.data??const <Map<String,dynamic>>[]).where((x)=>x['occupant_id']!=null).length;return Padding(padding:const EdgeInsets.fromLTRB(14,5,14,5),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(17),child:Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(17),border:Border.all(color:const Color(0xFF2B315A))),child:Row(children:[CircleAvatar(radius:27,backgroundColor:_purple,backgroundImage:(room.coverUrl ?? '').isNotEmpty ? NetworkImage(room.coverUrl!) : null,child:(room.coverUrl ?? '').isEmpty ? const Icon(Icons.mic,color:Colors.white) : null),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(room.name,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:15)),const SizedBox(height:5),Row(children:[const Icon(Icons.circle,color:Colors.redAccent,size:8),const SizedBox(width:5),const Text('LIVE',style:TextStyle(color:_muted,fontSize:10)),const SizedBox(width:12),const Icon(Icons.people_alt_rounded,color:_muted,size:14),const SizedBox(width:4),Text(n.toString()+'/'+room.seatCount.toString(),style:const TextStyle(color:_muted,fontSize:10))])])),const Icon(Icons.chevron_left_rounded,color:_gold)]))));}); }
+class _Room extends StatelessWidget {
+  final VoiceRoomRecord room;
+  final VoidCallback onTap;
+  const _Room({required this.room, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: RoomSocialRepository().watchSeats(room.id),
+      builder: (context, snapshot) {
+        final count = (snapshot.data ?? const <Map<String, dynamic>>[])
+            .where((x) => x['occupant_id'] != null)
+            .length;
+        final cover = room.coverUrl ?? '';
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(14, 5, 14, 5),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(17),
+            child: Container(
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: _panel,
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(color: const Color(0xFF2B315A)),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 27,
+                    backgroundColor: _purple,
+                    backgroundImage: cover.isNotEmpty ? NetworkImage(cover) : null,
+                    child: cover.isEmpty ? const Icon(Icons.mic, color: Colors.white) : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          room.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            const Icon(Icons.circle, color: Colors.redAccent, size: 8),
+                            const SizedBox(width: 5),
+                            const Text('LIVE', style: TextStyle(color: _muted, fontSize: 10)),
+                            const SizedBox(width: 12),
+                            const Icon(Icons.people_alt_rounded, color: _muted, size: 14),
+                            const SizedBox(width: 4),
+                            Text(count.toString() + '/' + room.seatCount.toString(), style: const TextStyle(color: _muted, fontSize: 10)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_left_rounded, color: _gold),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
 
 class _AyomeGamesPage extends StatelessWidget { const _AyomeGamesPage(); @override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(14,18,14,28),children:[const SafeArea(bottom:false,child:Text('الألعاب',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900))),const SizedBox(height:7),const Text('صالة الألعاب',style:TextStyle(color:_muted)),const SizedBox(height:15),_Game('لودو',Icons.casino_rounded,'لعبة اجتماعية متعددة اللاعبين'),_Game('دومينو',Icons.extension_rounded,'لعبة الطاولة'),_Game('طاولة',Icons.grid_4x4_rounded,'مباريات وتحديات'),_Game('التحديات اليومية',Icons.emoji_events_rounded,'اربح مكافآت الكوينز',tap:(c)=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const DailyTasksPage())))]); }
 class _Game extends StatelessWidget { final String title,sub; final IconData icon; final void Function(BuildContext)? tap; const _Game(this.title,this.icon,this.sub,{this.tap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(bottom:10),child:InkWell(onTap:tap==null?()=>ScaffoldMessenger.of(c).showSnackBar(SnackBar(content:Text(title+' غير موصول بمحرك لعبة في المشروع الحالي'))):()=>tap!(c),borderRadius:BorderRadius.circular(19),child:Container(padding:const EdgeInsets.all(17),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(19),border:Border.all(color:const Color(0xFF2B315A))),child:Row(children:[Container(width:56,height:56,decoration:const BoxDecoration(shape:BoxShape.circle,gradient:LinearGradient(colors:[_orange,_gold])),child:Icon(icon,color:const Color(0xFF4C2000),size:29)),const SizedBox(width:13),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),const SizedBox(height:4),Text(sub,style:const TextStyle(color:_muted,fontSize:11))])),const Icon(Icons.chevron_left_rounded,color:_gold)]))); }
