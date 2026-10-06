@@ -9,6 +9,7 @@ import 'family_page.dart';
 import 'blocked_users_page.dart';
 import 'badges_page.dart';
 import 'accessories_page.dart';
+import 'transfer_page.dart';
 import 'ranking_page.dart';
 import 'global_chat.dart';
 import 'games_page.dart';
@@ -673,9 +674,15 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
           const SizedBox(height: 10),
           _Action(
             'رصيدي',
-            'المحفظة والشحن والسحب',
+            'الشحن والسحب والتحويل',
             Icons.account_balance_wallet_rounded,
             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage())),
+          ),
+          _Action(
+            'تحويل Coins',
+            'تحويل آمن من رصيدك إلى مستخدم آخر',
+            Icons.swap_horiz_rounded,
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarTransferPage())),
           ),
           _Action(
             'SVIP',
