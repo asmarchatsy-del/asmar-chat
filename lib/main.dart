@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
 import 'backend_config.dart';
+import 'core/auth/auth_deep_link_handler.dart';
 import 'core/backend/supabase_runtime.dart';
 import 'app_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   BackendConfig.validate();
-  await SupabaseRuntime.initialize();
+  final initialized = await SupabaseRuntime.initialize();
+  if (initialized) {
+    await AuthDeepLinkHandler.instance.start();
+  }
   runApp(const AsmarChatApp());
 }
 
