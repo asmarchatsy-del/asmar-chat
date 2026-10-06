@@ -1,0 +1,11 @@
+revoke execute on function public.admin_delete_company_game_link(uuid) from public;
+revoke execute on function public.admin_upsert_company_game_link(uuid,text,text,text,text,text,boolean,integer) from public;
+revoke execute on function public.asmar_can_manage_role(public.app_role) from public;
+revoke execute on function public.asmar_equip_badge(uuid) from public;
+revoke execute on function public.asmar_profile_role_badge_trigger() from public;
+revoke execute on function public.asmar_set_user_role(uuid,public.app_role) from public;
+revoke execute on function public.asmar_sync_role_badge(uuid) from public;
+grant execute on function public.asmar_can_manage_role(public.app_role) to authenticated;
+grant execute on function public.asmar_equip_badge(uuid) to authenticated;
+grant execute on function public.asmar_set_user_role(uuid,public.app_role) to authenticated;
+grant execute on function public.asmar_sync_role_badge(uuid) to authenticated;
