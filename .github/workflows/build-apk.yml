@@ -48,3 +48,5 @@ jobs:
           name: asmar-chat-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+
+# Production verification trigger: rebuild after Google OAuth PKCE hardening.
