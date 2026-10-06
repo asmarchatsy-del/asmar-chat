@@ -175,14 +175,14 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
                     height: 94,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFE33DFF), Color(0xFF8B4DFF), Color(0xFF4EDCFF)],
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFE26A), Color(0xFFFFC94A), Color(0xFFFF9418)],
                       ),
                       boxShadow: [
                         BoxShadow(color: Color(0x553D18A5), blurRadius: 28, spreadRadius: 3),
                       ],
                     ),
-                    child: const Icon(Icons.mic_rounded, size: 48, color: Colors.white),
+                    child: const Icon(Icons.mic_rounded, size: 48, color: Color(0xFF111111)),
                   ),
                   const SizedBox(height: 18),
                   const Text('Asmar', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900)),
