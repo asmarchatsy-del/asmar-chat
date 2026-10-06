@@ -73,21 +73,16 @@ class RoomRepository {
     if (db == null || user == null) {
       throw StateError('Supabase authentication is required to create a room.');
     }
-
-    final row = await db
-        .from('rooms')
-        .insert({
-          'name': name.trim(),
-          'owner_id': user.id,
-          'livekit_room_name': liveKitRoomName.trim(),
-          'is_active': true,
-          'tags': tags,
-          'room_type': roomType,
-          if (seatCount != null) 'seat_count': seatCount,
-        })
-        .select('id,name,owner_id,livekit_room_name,is_active,seat_count')
-        .single();
-    return VoiceRoomRecord.fromMap(row);
+    final row = await db.rpc('create_room_full', params: {
+      'p_name': name.trim(),
+      'p_seat_count': seatCount ?? 15,
+      'p_room_type': roomType,
+      'p_tags': tags,
+      'p_country_code': 'JO',
+      'p_cover_url': null,
+    });
+    final map = Map<String, dynamic>.from(row as Map);
+    return VoiceRoomRecord.fromMap(map);
   }
 
   Future<void> joinRoom(String roomId) async {
