@@ -62,6 +62,9 @@ async function boot(signedUser=null){
     }
     $('login').classList.add('hidden');$('app').classList.remove('hidden');
     await loadAll();
+  }catch(e){
+    $('login').classList.remove('hidden');$('app').classList.add('hidden');
+    $('loginMsg').textContent='تعذر فتح لوحة الإدارة: '+(e?.message||e||'خطأ غير معروف');
   }finally{booting=false}
 }
 function showTab(id,btn){document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));const target=$(id);if(target)target.classList.remove('hidden');document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(id==='withdrawals'&&typeof loadFinance==='function')loadFinance();if(id==='badges'&&typeof loadBadges==='function')loadBadges()}
