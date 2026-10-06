@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/auth/auth_repository.dart';
 import 'core/backend/supabase_runtime.dart';
 import 'core/rooms/real_rooms_home_page.dart';
-import 'new_asmar_ui.dart';
 import 'asmar_ayome_ui.dart';
 import 'friends.dart';
 import 'messages.dart';
