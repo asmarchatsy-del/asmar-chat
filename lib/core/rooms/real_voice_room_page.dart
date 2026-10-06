@@ -157,7 +157,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                         if (seat['seat_index'] is num)
                           (seat['seat_index'] as num).toInt() - 1: seat,
                     };
-                    final occupiedCount = seats.where((x) => x['user_id'] != null).length;
+                    final occupiedCount = seats.where((x) => x['occupant_id'] != null).length;
                     return Column(
                       children: [
                         Padding(
@@ -187,7 +187,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                             itemCount: widget.room.seatCount,
                             itemBuilder: (_, index) {
                               final seat = byIndex[index];
-                              final occupied = seat?['user_id'] != null;
+                              final occupied = seat?['occupant_id'] != null;
                               final mine = _mySeat == index;
                               return InkWell(
                                 onTap: occupied ? null : () => _claimSeat(index),
@@ -246,7 +246,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                                       itemBuilder: (_, i) {
                                         final row = messages[messages.length - 1 - i];
                                         return Text(
-                                          '• ' + (row['body']?.toString() ?? ''),
+                                          '• ' + (row['message']?.toString() ?? ''),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(color: Colors.white70, fontSize: 12),
@@ -334,7 +334,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
       builder: (_) => StreamBuilder<List<Map<String, dynamic>>>(
         stream: _socialRepository.watchSeats(widget.room.id),
         builder: (context, snapshot) {
-          final seats = (snapshot.data ?? const <Map<String, dynamic>>[]).where((x) => x['user_id'] != null).toList();
+          final seats = (snapshot.data ?? const <Map<String, dynamic>>[]).where((x) => x['occupant_id'] != null).toList();
           return SafeArea(
             child: SizedBox(
               height: MediaQuery.of(context).size.height * .58,
