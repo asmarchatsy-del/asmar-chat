@@ -385,7 +385,7 @@ class _RoomCardState extends State<_RoomCard> {
       stream: social.watchSeats(widget.room.id),
       builder: (context, snap) {
         final occupied = (snap.data ?? const <Map<String, dynamic>>[])
-            .where((row) => row['user_id'] != null)
+            .where((row) => row['occupant_id'] != null)
             .length;
         return InkWell(
           onTap: widget.onTap,
