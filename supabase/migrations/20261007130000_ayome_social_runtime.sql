@@ -105,15 +105,23 @@ $$;
 
 create or replace function public.asmar_create_room_treasure_box(p_room_id uuid,p_total_coins bigint,p_claims integer,p_minutes integer default 30)
 returns uuid language plpgsql security definer set search_path=''
-as $$ declare v_uid uuid := auth.uid(); v_id uuid;
+as $$
+declare v_uid uuid := auth.uid(); v_id uuid; v_balance bigint;
 begin
   if v_uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
   if p_total_coins < 100 or p_claims < 1 or p_claims > 1000 or p_total_coins < p_claims then raise exception 'INVALID_TREASURE_BOX'; end if;
   if p_minutes < 1 or p_minutes > 1440 then raise exception 'INVALID_EXPIRY'; end if;
   if not exists(select 1 from public.rooms r where r.id=p_room_id and r.is_active and
       (r.owner_id=v_uid or exists(select 1 from public.room_admins ra where ra.room_id=r.id and ra.user_id=v_uid))) then raise exception 'ROOM_ADMIN_REQUIRED'; end if;
+  insert into public.wallets(user_id,balance) values(v_uid,0) on conflict(user_id) do nothing;
+  update public.wallets set balance=balance-p_total_coins,updated_at=now()
+  where user_id=v_uid and balance>=p_total_coins returning balance into v_balance;
+  if not found then raise exception 'INSUFFICIENT_COINS'; end if;
   insert into public.room_treasure_boxes(room_id,created_by,total_coins,remaining_coins,max_claims,remaining_claims,expires_at)
-  values(p_room_id,v_uid,p_total_coins,p_total_coins,p_claims,p_claims,now()+(p_minutes||' minutes')::interval) returning id into v_id;
+  values(p_room_id,v_uid,p_total_coins,p_total_coins,p_claims,p_claims,now()+(p_minutes||' minutes')::interval)
+  returning id into v_id;
+  insert into public.wallet_transactions(user_id,amount,transaction_type,reference_id,description)
+  values(v_uid,-p_total_coins,'treasure_box_create',v_id,'Room treasure box funding');
   return v_id;
 end $$;
 
@@ -147,3 +155,14 @@ revoke execute on function public.asmar_respond_cp(uuid,boolean) from public,ano
 revoke execute on function public.asmar_weekly_gift_leaderboard(integer) from public,anon; grant execute on function public.asmar_weekly_gift_leaderboard(integer) to authenticated;
 revoke execute on function public.asmar_create_room_treasure_box(uuid,bigint,integer,integer) from public,anon; grant execute on function public.asmar_create_room_treasure_box(uuid,bigint,integer,integer) to authenticated;
 revoke execute on function public.asmar_claim_room_treasure_box(uuid) from public,anon; grant execute on function public.asmar_claim_room_treasure_box(uuid) to authenticated;
+create or replace function public.asmar_list_room_treasure_boxes(p_room_id uuid)
+returns table(id uuid,total_coins bigint,remaining_coins bigint,remaining_claims integer,expires_at timestamptz,created_by uuid)
+language sql security definer set search_path=''
+as $$
+  select b.id,b.total_coins,b.remaining_coins,b.remaining_claims,b.expires_at,b.created_by
+  from public.room_treasure_boxes b
+  where b.room_id=p_room_id and b.expires_at > now() and b.remaining_claims > 0 and b.remaining_coins > 0
+  order by b.created_at desc;
+$$;
+revoke execute on function public.asmar_list_room_treasure_boxes(uuid) from public,anon;
+grant execute on function public.asmar_list_room_treasure_boxes(uuid) to authenticated;
