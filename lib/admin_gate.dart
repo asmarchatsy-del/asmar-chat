@@ -7,8 +7,11 @@ class SuperAdminGate extends StatelessWidget {
   Future<bool> _allowed() async {
     final uid=Supabase.instance.client.auth.currentUser?.id;
     if(uid==null)return false;
-    final row=await Supabase.instance.client.from('admin_roles').select('enabled').eq('user_id',uid).eq('role','super_admin').maybeSingle();
-    return row?['enabled']==true;
+    try {
+      return await Supabase.instance.client.rpc('admin_can_manage_dashboard') as bool? ?? false;
+    } catch (_) {
+      return false;
+    }
   }
   @override Widget build(BuildContext context)=>FutureBuilder<bool>(future:_allowed(),builder:(context,s){
     if(s.connectionState!=ConnectionState.done)return const Scaffold(body:Center(child:CircularProgressIndicator()));
