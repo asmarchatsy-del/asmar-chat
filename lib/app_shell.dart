@@ -96,143 +96,85 @@ class AsmarLoginPage extends StatefulWidget {
 }
 
 class _AsmarLoginPageState extends State<AsmarLoginPage> {
-  final email = TextEditingController();
-  final password = TextEditingController();
-  final displayName = TextEditingController();
-  bool signUp = false;
   bool busy = false;
-  bool emailNotConfirmed = false;
 
-  Future<void> _resendConfirmation() async {
-    final mail = email.text.trim();
-    if (mail.isEmpty) return;
+  Future<void> _googleLogin() async {
+    if (busy) return;
     setState(() => busy = true);
     try {
-      await AuthRepository().resendSignupConfirmation(mail);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إرسال رسالة تأكيد جديدة. افحص البريد الوارد والرسائل غير المرغوب فيها.')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر إرسال رسالة التأكيد: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  Future<void> _submit() async {
-    final mail = email.text.trim();
-    final pass = password.text;
-    if (mail.isEmpty || pass.length < 6 || (signUp && displayName.text.trim().isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أدخل البيانات المطلوبة وكلمة مرور من 6 أحرف على الأقل.')),
-      );
-      return;
-    }
-    setState(() {
-      busy = true;
-      emailNotConfirmed = false;
-    });
-    try {
-      final auth = AuthRepository();
-      if (signUp) {
-        final response = await auth.signUpWithEmail(
-          email: mail,
-          password: pass,
-          displayName: displayName.text.trim(),
-        );
-        if (response.session == null && mounted) {
-          setState(() => emailNotConfirmed = true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم إنشاء الحساب. يلزم تأكيد البريد قبل تسجيل الدخول.')),
-          );
-        }
-      } else {
-        await auth.signInWithEmail(email: mail, password: pass);
-      }
+      await AuthRepository().signInWithGoogle();
     } on AuthApiException catch (e) {
-      if (mounted) {
-        final isUnconfirmed = e.code == 'email_not_confirmed';
-        setState(() => emailNotConfirmed = isUnconfirmed);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isUnconfirmed
-                  ? 'البريد الإلكتروني غير مؤكد. اضغط «إعادة إرسال التأكيد» أدناه.'
-                  : 'تعذر تنفيذ العملية: ${e.message}',
-            ),
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر تسجيل الدخول بجوجل: ${e.message}')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تنفيذ العملية: $e')));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر تسجيل الدخول بجوجل: $e')),
+      );
     } finally {
       if (mounted) setState(() => busy = false);
     }
-  }
-
-  @override
-  void dispose() {
-    email.dispose();
-    password.dispose();
-    displayName.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF070817),
     body: SafeArea(
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
+            constraints: const BoxConstraints(maxWidth: 440),
             child: Column(
               children: [
-                const Icon(Icons.mic, size: 72),
-                const SizedBox(height: 12),
-                const Text('Asmar Chat', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 28),
-                if (signUp)
-                  TextField(controller: displayName, decoration: const InputDecoration(labelText: 'الاسم الظاهر')),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'البريد الإلكتروني'),
-                  onChanged: (_) {
-                    if (emailNotConfirmed) setState(() => emailNotConfirmed = false);
-                  },
+                Container(
+                  width: 92,
+                  height: 92,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFE33DFF), Color(0xFF8B4DFF), Color(0xFF4EDCFF)],
+                    ),
+                  ),
+                  child: const Icon(Icons.mic_rounded, size: 48, color: Colors.white),
                 ),
-                const SizedBox(height: 10),
-                TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور')),
                 const SizedBox(height: 18),
+                const Text('Asmar', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                const Text('ادخل إلى عالمك الصوتي', style: TextStyle(color: Color(0xFF9EA6C7), fontSize: 15)),
+                const SizedBox(height: 44),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
-                    onPressed: busy ? null : _submit,
-                    child: Text(busy ? 'جارٍ التنفيذ...' : (signUp ? 'إنشاء الحساب' : 'تسجيل الدخول')),
+                  height: 58,
+                  child: FilledButton.icon(
+                    onPressed: busy ? null : _googleLogin,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF17182A),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    ),
+                    icon: busy
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const _GoogleMark(),
+                    label: Text(
+                      busy ? 'جاري تسجيل الدخول...' : 'المتابعة باستخدام Google',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ),
-                if (emailNotConfirmed && !signUp)
-                  TextButton.icon(
-                    onPressed: busy ? null : _resendConfirmation,
-                    icon: const Icon(Icons.mark_email_read_outlined),
-                    label: const Text('إعادة إرسال تأكيد البريد'),
-                  ),
-                TextButton(
-                  onPressed: busy ? null : () => setState(() {
-                    signUp = !signUp;
-                    emailNotConfirmed = false;
-                  }),
-                  child: Text(signUp ? 'لدي حساب بالفعل' : 'إنشاء حساب جديد'),
+                const SizedBox(height: 18),
+                const Text(
+                  'إذا كان لديك حساب Google فسيتم تسجيل دخولك، وإذا كانت هذه أول مرة فسيتم إنشاء حساب Asmar تلقائياً.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF7F87A8), height: 1.5, fontSize: 12),
+                ),
+                const SizedBox(height: 28),
+                const Text(
+                  'بالمتابعة أنت توافق على شروط الاستخدام وسياسة الخصوصية.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF666D8D), fontSize: 11),
                 ),
               ],
             ),
@@ -240,5 +182,15 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
         ),
       ),
     ),
+  );
+}
+
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) => const Text(
+    'G',
+    style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Color(0xFF4285F4)),
   );
 }
