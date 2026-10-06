@@ -11,6 +11,8 @@ import 'private_conversations.dart';
 import 'wallet.dart';
 import 'svip.dart';
 import 'create_room_page.dart';
+import 'wallet_gifts_page.dart';
+import 'daily_tasks_page.dart';
 
 const _bg = Color(0xFF070817);
 const _panel = Color(0xFF10132B);
@@ -162,7 +164,7 @@ class _NewAsmarActions {
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (_, i) {
                   final row = rows[i];
-                  final read = row['is_read'] == true;
+                  final read = row['read_at'] != null;
                   return ListTile(
                     tileColor: read ? _panel : const Color(0xFF21183B),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -703,6 +705,10 @@ class _NewWalletPageState extends State<_NewWalletPage> {
       _ActionCard(icon: Icons.account_balance_rounded, title: 'السحب', subtitle: 'إدارة طلبات السحب', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WithdrawalMethodsPage()))),
       const SizedBox(height: 10),
       _ActionCard(icon: Icons.history_rounded, title: 'سجل العمليات', subtitle: 'راجع حركة محفظتك', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _WalletHistoryPage()))),
+      const SizedBox(height: 10),
+      _ActionCard(icon: Icons.card_giftcard_rounded, title: 'الهدايا', subtitle: 'الهدايا المرسلة والمستلمة', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletGiftsPage()))),
+      const SizedBox(height: 10),
+      _ActionCard(icon: Icons.task_alt_rounded, title: 'المهام اليومية', subtitle: 'أنجز المهام واستلم مكافآتك', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyTasksPage()))),
     ]),
   );
 }
