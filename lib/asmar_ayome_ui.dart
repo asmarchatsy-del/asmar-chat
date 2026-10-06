@@ -99,11 +99,45 @@ class _AyomeHomePage extends StatefulWidget {
 class _AyomeHomePageState extends State<_AyomeHomePage> {
   final repo = RoomRepository();
   String tab = 'شائع'; String filter = 'الكل'; String country = 'Hot';
+  Set<String> _followedIds = <String>{};
+  Set<String> _verifiedIds = <String>{};
+  Set<String> _familyIds = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHomeRelations();
+  }
+
+  Future<void> _loadHomeRelations() async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      final db = Supabase.instance.client;
+      final follows = await db.from('follows').select('following_id').eq('follower_id', uid);
+      final verified = await db.from('profiles').select('id').eq('is_verified', true).limit(2000);
+      final families = await db.from('family_members').select('user_id').eq('user_id', uid);
+      final familyIds = <String>{};
+      if (families.isNotEmpty) {
+        final familyId = families.first['family_id'];
+        final members = await db.from('family_members').select('user_id').eq('family_id', familyId);
+        familyIds.addAll(members.map((x) => x['user_id'].toString()));
+      }
+      if (!mounted) return;
+      setState(() {
+        _followedIds = Set<String>.from(follows.map((x) => x['following_id'].toString()));
+        _verifiedIds = Set<String>.from(verified.map((x) => x['id'].toString()));
+        _familyIds = familyIds;
+      });
+    } catch (_) {}
+  }
   List<VoiceRoomRecord> _applyFilters(List<VoiceRoomRecord> rooms) {
     Iterable<VoiceRoomRecord> out = rooms;
     if (country != 'Hot') out = out.where((r) => (r.countryCode ?? '').toLowerCase() == _countryCode(country));
-    if (filter == 'غرف') out = out.where((r) => r.tags.any((t) => t.toLowerCase().contains('room')));
-    if (filter == 'عائلة') out = out.where((r) => r.tags.any((t) => t.toLowerCase().contains('family')));
+    if (filter == 'متابعة') out = out.where((r) => r.ownerId != null && _followedIds.contains(r.ownerId));
+    if (filter == 'موثق') out = out.where((r) => r.ownerId != null && _verifiedIds.contains(r.ownerId));
+    if (filter == 'عائلة') out = out.where((r) => r.ownerId != null && _familyIds.contains(r.ownerId));
+    if (filter == 'غرف') out = out.where((r) => r.isActive);
     if (tab == 'فيديو') out = out.where((r) => r.tags.any((t) => t.toLowerCase().contains('video')));
     return out.toList(growable: false);
   }
@@ -178,13 +212,16 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
     SliverToBoxAdapter(child: _Filters(selected: filter, onChanged: (v) => setState(() => filter = v))),
     const SliverToBoxAdapter(child: _Banners()),
     SliverToBoxAdapter(child: _Countries(selected: country, onChanged: (v) => setState(() => country = v))),
-    const SliverToBoxAdapter(child: _TitleRow('قائمة الغرف', 'مباشر الآن')),
-    StreamBuilder<List<Map<String,dynamic>>>(stream: repo.watchActiveRooms(), builder: (context, snap) {
-      if (snap.hasError) return SliverToBoxAdapter(child: _Empty('تعذر تحميل الغرف'));
-      final rooms = _applyFilters((snap.data ?? const <Map<String,dynamic>>[]).map(VoiceRoomRecord.fromMap).toList());
-      if (rooms.isEmpty) return const SliverToBoxAdapter(child: _Empty('لا توجد غرف مباشرة الآن. أنشئ غرفتك الأولى.'));
-      return SliverList.builder(itemCount: rooms.length, itemBuilder: (_, i) => _Room(room: rooms[i], onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: rooms[i])))));
-    }),
+    SliverToBoxAdapter(child: _TitleRow(filter == 'مستخدمون' ? 'المستخدمون' : 'قائمة الغرف', 'مباشر الآن')),
+    if (filter == 'مستخدمون')
+      const _UserDirectorySliver()
+    else
+      StreamBuilder<List<Map<String,dynamic>>>(stream: repo.watchActiveRooms(), builder: (context, snap) {
+        if (snap.hasError) return SliverToBoxAdapter(child: _Empty('تعذر تحميل الغرف'));
+        final rooms = _applyFilters((snap.data ?? const <Map<String,dynamic>>[]).map(VoiceRoomRecord.fromMap).toList());
+        if (rooms.isEmpty) return const SliverToBoxAdapter(child: _Empty('لا توجد غرف مباشرة الآن. أنشئ غرفتك الأولى.'));
+        return SliverList.builder(itemCount: rooms.length, itemBuilder: (_, i) => _Room(room: rooms[i], onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: rooms[i])))));
+      }),
     SliverToBoxAdapter(child: _DailyTreasure(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyTasksPage())))),
     const SliverToBoxAdapter(child: SizedBox(height: 25)),
   ]);
@@ -245,6 +282,44 @@ class _Banner extends StatelessWidget {
 }
 class _Countries extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Countries({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:43,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['Hot','Syria','Germany','Netherlands'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _DailyTreasure extends StatelessWidget { final VoidCallback onTap; const _DailyTreasure({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,10,14,4),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF5B2C09),Color(0xFF24110A)]),border:Border.all(color:_orange.withOpacity(.55))),child:const Row(children:[Icon(Icons.card_giftcard_rounded,color:_gold,size:31),SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('الهدية اليومية',style:TextStyle(fontWeight:FontWeight.w900,fontSize:15)),Text('افتح صندوق الكنز وخذ مكافأتك اليوم',style:TextStyle(color:_muted,fontSize:10))])),Icon(Icons.chevron_left_rounded,color:_gold)])))); }
+
+class _UserDirectorySliver extends StatelessWidget {
+  const _UserDirectorySliver();
+  @override
+  Widget build(BuildContext context) {
+    final future = Supabase.instance.client.from('profiles').select('id,display_name,username,public_id,avatar_url,is_verified,user_level').order('user_level', ascending: false).limit(100);
+    return FutureBuilder(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return SliverToBoxAdapter(child: _Empty('تعذر تحميل المستخدمين'));
+        if (snapshot.connectionState != ConnectionState.done) return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator())));
+        final rows = List<Map<String, dynamic>>.from(snapshot.data ?? const []);
+        if (rows.isEmpty) return const SliverToBoxAdapter(child: _Empty('لا يوجد مستخدمون'));
+        return SliverList.builder(
+          itemCount: rows.length,
+          itemBuilder: (_, i) {
+            final u = rows[i];
+            final avatar = u['avatar_url']?.toString() ?? '';
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              child: Container(
+                decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(16)),
+                child: ListTile(
+                  leading: CircleAvatar(backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null, child: avatar.isEmpty ? const Icon(Icons.person) : null),
+                  title: Row(children: [
+                    Expanded(child: Text(u['display_name']?.toString() ?? u['username']?.toString() ?? 'Asmar', style: const TextStyle(fontWeight: FontWeight.w900))),
+                    if (u['is_verified'] == true) const Icon(Icons.verified, color: _gold, size: 17),
+                  ]),
+                  subtitle: Text('ID ' + (u['public_id']?.toString() ?? u['id'].toString()) + ' • Lv.' + (u['user_level']?.toString() ?? '1'), style: const TextStyle(color: _muted, fontSize: 10)),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
 
 class _Room extends StatelessWidget {
   final VoiceRoomRecord room;
