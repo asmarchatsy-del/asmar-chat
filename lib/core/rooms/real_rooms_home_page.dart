@@ -4,6 +4,7 @@ import '../backend/supabase_runtime.dart';
 import 'real_voice_room_page.dart';
 import '../../profile_page.dart';
 import '../../features/games/games_center_screen.dart';
+import '../../daily_tasks_page.dart';
 import 'room_repository.dart';
 
 class RealRoomsHomePage extends StatefulWidget {
@@ -63,6 +64,11 @@ class _RealRoomsHomePageState extends State<RealRoomsHomePage> {
           appBar: AppBar(
             title: const Text('Asmar Chat', style: TextStyle(fontWeight: FontWeight.w900)),
             actions: [
+              IconButton(
+                tooltip: 'المهام اليومية',
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyTasksPage())),
+                icon: const Icon(Icons.task_alt_outlined),
+              ),
               IconButton(
                 tooltip: 'الألعاب',
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GamesCenterScreen())),
