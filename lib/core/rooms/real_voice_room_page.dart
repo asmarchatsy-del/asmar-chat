@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../gifts.dart';
 
 import '../voice/livekit_room_service.dart';
 import 'room_repository.dart';
@@ -92,94 +93,306 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
 
   @override
   Widget build(BuildContext context) {
+    const bg = Color(0xFF060716);
+    const panel2 = Color(0xFF171A3A);
+    const purple = Color(0xFF8B4DFF);
+    const pink = Color(0xFFE33DFF);
+    const cyan = Color(0xFF4EDCFF);
+    const muted = Color(0xFF9CA2C5);
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.room.name)),
-      body: Column(
-        children: [
-          if (_joining) const LinearProgressIndicator(),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(_error!, style: const TextStyle(color: Colors.redAccent)),
-            ),
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _socialRepository.watchSeats(widget.room.id),
-              builder: (context, snapshot) {
-                final seats = snapshot.data ?? const <Map<String, dynamic>>[];
-                final byIndex = <int, Map<String, dynamic>>{
-                  for (final seat in seats) (seat['seat_index'] as num).toInt() - 1: seat,
-                };
-                return GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: widget.room.seatCount,
-                  itemBuilder: (_, index) {
-                    final seat = byIndex[index];
-                    final occupied = seat?['user_id'] != null;
-                    final mine = _mySeat == index;
-                    return InkWell(
-                      onTap: occupied ? null : () => _claimSeat(index),
-                      child: Card(
-                        color: mine ? Theme.of(context).colorScheme.primary : null,
-                        child: Center(
-                          child: Text(occupied ? (mine ? '🎤\nأنت' : '🎤') : '➕', textAlign: TextAlign.center, style: const TextStyle(fontSize: 24)),
-                        ),
+      backgroundColor: bg,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF17104A), bg, bg],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Row(
+                  children: [
+                    IconButton(onPressed: _leave, icon: const Icon(Icons.close_rounded)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.room.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                          Text(_joining ? 'جاري الاتصال...' : 'غرفة مباشرة',
+                              style: const TextStyle(color: muted, fontSize: 11)),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      onPressed: () => _openPeopleSheet(context),
+                      icon: const Icon(Icons.people_alt_rounded, color: cyan),
+                    ),
+                    IconButton(
+                      onPressed: () => _openRoomInfoSheet(context),
+                      icon: const Icon(Icons.info_outline_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              if (_joining) const LinearProgressIndicator(minHeight: 2),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                  child: Text(_error!, maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 11)),
+                ),
+              Expanded(
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _socialRepository.watchSeats(widget.room.id),
+                  builder: (context, snapshot) {
+                    final seats = snapshot.data ?? const <Map<String, dynamic>>[];
+                    final byIndex = <int, Map<String, dynamic>>{
+                      for (final seat in seats)
+                        if (seat['seat_index'] is num)
+                          (seat['seat_index'] as num).toInt() - 1: seat,
+                    };
+                    final occupiedCount = seats.where((x) => x['user_id'] != null).length;
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 2, 16, 7),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.mic_rounded, size: 17, color: cyan),
+                              const SizedBox(width: 5),
+                              Text(occupiedCount.toString() + '/' + widget.room.seatCount.toString(),
+                                  style: const TextStyle(color: Colors.white70)),
+                              const Spacer(),
+                              FilledButton.icon(
+                                onPressed: () => _openGiftSheet(context),
+                                icon: const Icon(Icons.card_giftcard_rounded, size: 18),
+                                label: const Text('هدايا'),
+                                style: FilledButton.styleFrom(backgroundColor: purple),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: GridView.builder(
+                            padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4, crossAxisSpacing: 10, mainAxisSpacing: 16, childAspectRatio: .82,
+                            ),
+                            itemCount: widget.room.seatCount,
+                            itemBuilder: (_, index) {
+                              final seat = byIndex[index];
+                              final occupied = seat?['user_id'] != null;
+                              final mine = _mySeat == index;
+                              return InkWell(
+                                onTap: occupied ? null : () => _claimSeat(index),
+                                borderRadius: BorderRadius.circular(18),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 62, height: 62,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: occupied || mine
+                                            ? const LinearGradient(colors: [pink, purple])
+                                            : const LinearGradient(colors: [panel2, Color(0xFF0D1027)]),
+                                        border: Border.all(
+                                          color: mine ? cyan : Colors.white.withOpacity(.08),
+                                          width: mine ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        occupied ? Icons.person_rounded : Icons.add_rounded,
+                                        color: occupied || mine ? Colors.white : muted,
+                                        size: 28,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      occupied ? (mine ? 'أنت' : 'مستخدم ' + (index + 1).toString()) : (index + 1).toString(),
+                                      style: TextStyle(color: mine ? cyan : Colors.white70, fontSize: 10, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        StreamBuilder<List<Map<String, dynamic>>>(
+                          stream: _socialRepository.watchMessages(widget.room.id),
+                          builder: (context, msgSnapshot) {
+                            final messages = msgSnapshot.data ?? const <Map<String, dynamic>>[];
+                            return Container(
+                              height: 92,
+                              margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(.18),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: messages.isEmpty
+                                  ? const Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text('ابدأ المحادثة داخل الغرفة 👋', style: TextStyle(color: muted)),
+                                    )
+                                  : ListView.builder(
+                                      reverse: true,
+                                      itemCount: messages.length > 8 ? 8 : messages.length,
+                                      itemBuilder: (_, i) {
+                                        final row = messages[messages.length - 1 - i];
+                                        return Text(
+                                          '• ' + (row['body']?.toString() ?? ''),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                        );
+                                      },
+                                    ),
+                            );
+                          },
+                        ),
+                      ],
                     );
                   },
-                );
-              },
-            ),
-          ),
-          StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _socialRepository.watchMessages(widget.room.id),
-            builder: (context, snapshot) {
-              final messages = snapshot.data ?? const <Map<String, dynamic>>[];
-              return SizedBox(
-                height: 140,
-                child: ListView.builder(
-                  itemCount: messages.length,
-                  itemBuilder: (_, index) => ListTile(
-                    dense: true,
-                    title: Text(messages[index]['body']?.toString() ?? ''),
+                ),
+              ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 2, 10, 8),
+                  child: Row(
+                    children: [
+                      IconButton.filledTonal(
+                        onPressed: _mySeat == null ? null : _toggleMute,
+                        icon: Icon(_muted ? Icons.mic_off_rounded : Icons.mic_rounded),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          decoration: InputDecoration(
+                            hintText: 'اكتب رسالة...',
+                            filled: true,
+                            fillColor: panel2,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(22),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                          ),
+                          onSubmitted: (_) => _sendRoomMessage(),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => _openGiftSheet(context),
+                        icon: const Icon(Icons.card_giftcard_rounded, color: pink),
+                      ),
+                      IconButton(onPressed: _leave, icon: const Icon(Icons.logout_rounded)),
+                    ],
                   ),
                 ),
-              );
-            },
+              ),
+            ],
           ),
-          SafeArea(
-            top: false,
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: _mySeat == null ? null : _toggleMute,
-                  icon: Icon(_muted ? Icons.mic_off : Icons.mic),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(hintText: 'اكتب رسالة...'),
-                    onSubmitted: (value) async {
-                      if (value.trim().isEmpty) return;
-                      try {
-                        await _socialRepository.sendMessage(widget.room.id, value);
-                        _messageController.clear();
-                      } catch (e) {
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-                      }
-                    },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _sendRoomMessage() async {
+    final value = _messageController.text.trim();
+    if (value.isEmpty) return;
+    try {
+      await _socialRepository.sendMessage(widget.room.id, value);
+      _messageController.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  void _openGiftSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => GiftSheet(roomId: widget.room.id),
+    );
+  }
+
+  void _openPeopleSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF10132B),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (_) => StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _socialRepository.watchSeats(widget.room.id),
+        builder: (context, snapshot) {
+          final seats = (snapshot.data ?? const <Map<String, dynamic>>[]).where((x) => x['user_id'] != null).toList();
+          return SafeArea(
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * .58,
+              child: Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(18),
+                    child: Text('الأشخاص في الغرفة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                   ),
-                ),
-                IconButton(onPressed: _leave, icon: const Icon(Icons.exit_to_app)),
-              ],
+                  Expanded(
+                    child: seats.isEmpty
+                        ? const Center(child: Text('لا يوجد أحد على المقاعد حالياً', style: TextStyle(color: Color(0xFF9CA2C5))))
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(14),
+                            itemCount: seats.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            itemBuilder: (_, i) => ListTile(
+                              tileColor: const Color(0xFF171A3A),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              leading: const CircleAvatar(backgroundColor: Color(0xFF8B4DFF), child: Icon(Icons.person_rounded)),
+                              title: Text('مستخدم ' + (i + 1).toString(), style: const TextStyle(fontWeight: FontWeight.w800)),
+                              subtitle: Text('المقعد ' + (seats[i]['seat_index'] ?? i + 1).toString(),
+                                  style: const TextStyle(color: Color(0xFF9CA2C5))),
+                              trailing: const Icon(Icons.mic_none_rounded, color: Color(0xFF4EDCFF)),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openRoomInfoSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF10132B),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.info_outline_rounded, color: Color(0xFF4EDCFF), size: 32),
+              const SizedBox(height: 8),
+              Text(widget.room.name, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              Text('ID: ' + widget.room.id, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFF9CA2C5))),
+              const SizedBox(height: 12),
+              Text('المقاعد: ' + widget.room.seatCount.toString(), style: const TextStyle(color: Colors.white70)),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
