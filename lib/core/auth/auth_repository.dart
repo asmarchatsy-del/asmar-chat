@@ -24,6 +24,12 @@ class AuthRepository {
     return db.auth.signInWithPassword(email: email.trim(), password: password);
   }
 
+  Future<void> resendSignupConfirmation(String email) async {
+    final db = client;
+    if (db == null) throw StateError('Supabase is not configured.');
+    await db.auth.resend(type: OtpType.signup, email: email.trim());
+  }
+
   Future<AuthResponse> signUpWithEmail({
     required String email,
     required String password,
