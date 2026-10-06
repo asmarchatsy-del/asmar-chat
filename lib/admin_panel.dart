@@ -33,9 +33,9 @@ class _AdminPanelState extends State<AdminPanel> {
         authorized = true;
         loading = false;
         stats = {
-          'users': results[0].count ?? 0,
-          'rooms': results[1].count ?? 0,
-          'wallets': results[2].count ?? 0,
+          'users': results[0].count,
+          'rooms': results[1].count,
+          'wallets': results[2].count,
         };
       });
     } catch (_) {
