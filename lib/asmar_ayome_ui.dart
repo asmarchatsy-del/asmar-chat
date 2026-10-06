@@ -235,11 +235,181 @@ class _Room extends StatelessWidget {
   }
 }
 
-class _AyomeGamesPage extends StatelessWidget { const _AyomeGamesPage(); @override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(14,18,14,28),children:[const SafeArea(bottom:false,child:Text('الألعاب',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900))),const SizedBox(height:7),const Text('صالة الألعاب',style:TextStyle(color:_muted)),const SizedBox(height:15),_Game('لودو',Icons.casino_rounded,'لعبة اجتماعية متعددة اللاعبين'),_Game('دومينو',Icons.extension_rounded,'لعبة الطاولة'),_Game('طاولة',Icons.grid_4x4_rounded,'مباريات وتحديات'),_Game('التحديات اليومية',Icons.emoji_events_rounded,'اربح مكافآت الكوينز',tap:(c)=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const DailyTasksPage())))]); }
-class _Game extends StatelessWidget { final String title,sub; final IconData icon; final void Function(BuildContext)? tap; const _Game(this.title,this.icon,this.sub,{this.tap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(bottom:10),child:InkWell(onTap:tap==null?()=>ScaffoldMessenger.of(c).showSnackBar(SnackBar(content:Text(title+' غير موصول بمحرك لعبة في المشروع الحالي'))):()=>tap!(c),borderRadius:BorderRadius.circular(19),child:Container(padding:const EdgeInsets.all(17),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(19),border:Border.all(color:const Color(0xFF2B315A))),child:Row(children:[Container(width:56,height:56,decoration:const BoxDecoration(shape:BoxShape.circle,gradient:LinearGradient(colors:[_orange,_gold])),child:Icon(icon,color:const Color(0xFF4C2000),size:29)),const SizedBox(width:13),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),const SizedBox(height:4),Text(sub,style:const TextStyle(color:_muted,fontSize:11))])),const Icon(Icons.chevron_left_rounded,color:_gold)]))); }
+class _AyomeGamesPage extends StatelessWidget {
+  const _AyomeGamesPage();
 
-class _AyomeMessagesPage extends StatelessWidget { const _AyomeMessagesPage(); @override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(14,18,14,28),children:[const SafeArea(bottom:false,child:Text('الرسائل',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900))),const SizedBox(height:15),_Message('Ayome Team / Asmar Team','الدردشة الرسمية والدعم',Icons.verified_user_rounded,()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const GlobalChatPage()))),_Message('المحادثات الخاصة','رسائلك مع المستخدمين والأصدقاء',Icons.chat_rounded,()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const PrivateConversationsPage()))),_Message('الإشعارات','التنبيهات والتحديثات',Icons.notifications_rounded,()=>_notifications(c))]); }
-class _Message extends StatelessWidget { final String title,sub; final IconData icon; final VoidCallback tap; const _Message(this.title,this.sub,this.icon,this.tap); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(bottom:10),child:InkWell(onTap:tap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFF2B315A))),child:Row(children:[Container(width:50,height:50,decoration:const BoxDecoration(shape:BoxShape.circle,gradient:LinearGradient(colors:[_purple,_pink])),child:Icon(icon,color:Colors.white)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900)),const SizedBox(height:4),Text(sub,style:const TextStyle(color:_muted,fontSize:11))])),const Icon(Icons.chevron_left_rounded,color:_gold)])))); }
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 28),
+      children: [
+        const SafeArea(
+          bottom: false,
+          child: Text('الألعاب', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+        ),
+        const SizedBox(height: 7),
+        const Text('صالة الألعاب', style: TextStyle(color: _muted)),
+        const SizedBox(height: 15),
+        const _Game('لودو', Icons.casino_rounded, 'لعبة اجتماعية متعددة اللاعبين'),
+        const _Game('دومينو', Icons.extension_rounded, 'لعبة الطاولة'),
+        const _Game('طاولة', Icons.grid_4x4_rounded, 'مباريات وتحديات'),
+        _Game(
+          'التحديات اليومية',
+          Icons.emoji_events_rounded,
+          'اربح مكافآت الكوينز',
+          tap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DailyTasksPage()),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Game extends StatelessWidget {
+  final String title;
+  final String sub;
+  final IconData icon;
+  final VoidCallback? tap;
+
+  const _Game(this.title, this.icon, this.sub, {this.tap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: tap ?? () => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$title غير موصول بمحرك لعبة في المشروع الحالي')),
+        ),
+        borderRadius: BorderRadius.circular(19),
+        child: Container(
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            color: _panel,
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(color: const Color(0xFF2B315A)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [_orange, _gold]),
+                ),
+                child: Icon(icon, color: const Color(0xFF4C2000), size: 29),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    const SizedBox(height: 4),
+                    Text(sub, style: const TextStyle(color: _muted, fontSize: 11)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_left_rounded, color: _gold),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AyomeMessagesPage extends StatelessWidget {
+  const _AyomeMessagesPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 28),
+      children: [
+        const SafeArea(
+          bottom: false,
+          child: Text('الرسائل', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+        ),
+        const SizedBox(height: 15),
+        _Message(
+          'Ayome Team / Asmar Team',
+          'الدردشة الرسمية والدعم',
+          Icons.verified_user_rounded,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalChatPage())),
+        ),
+        _Message(
+          'المحادثات الخاصة',
+          'رسائلك مع المستخدمين والأصدقاء',
+          Icons.chat_rounded,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivateConversationsPage())),
+        ),
+        _Message(
+          'الإشعارات',
+          'التنبيهات والتحديثات',
+          Icons.notifications_rounded,
+          () => _notifications(context),
+        ),
+      ],
+    );
+  }
+}
+
+class _Message extends StatelessWidget {
+  final String title;
+  final String sub;
+  final IconData icon;
+  final VoidCallback tap;
+
+  const _Message(this.title, this.sub, this.icon, this.tap);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: tap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: _panel,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFF2B315A)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [_purple, _pink]),
+                ),
+                child: Icon(icon, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 4),
+                    Text(sub, style: const TextStyle(color: _muted, fontSize: 11)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_left_rounded, color: _gold),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 Future<void> _notifications(BuildContext context) async { final db=Supabase.instance.client; final uid=db.auth.currentUser?.id; if(uid==null)return; await showModalBottomSheet<void>(context:context,isScrollControlled:true,backgroundColor:_bg,builder:(_)=>SizedBox(height:MediaQuery.of(context).size.height*.72,child:StreamBuilder<List<Map<String,dynamic>>>(stream:db.from('notifications').stream(primaryKey:['id']).order('created_at',ascending:false),builder:(c,s){final rows=(s.data??const <Map<String,dynamic>>[]).where((x)=>x['user_id']==uid).toList();if(rows.isEmpty)return const Center(child:Text('لا توجد إشعارات حالياً',style:TextStyle(color:_muted)));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:rows.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i)=>ListTile(tileColor:_panel,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(16)),leading:const Icon(Icons.notifications_active_rounded,color:_gold),title:Text(rows[i]['title']?.toString()??'إشعار'),subtitle:Text(rows[i]['body']?.toString()??'',style:const TextStyle(color:_muted))));}))); }
 
