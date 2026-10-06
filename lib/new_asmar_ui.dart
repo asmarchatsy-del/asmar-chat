@@ -10,6 +10,7 @@ import 'global_chat.dart';
 import 'private_conversations.dart';
 import 'wallet.dart';
 import 'svip.dart';
+import 'create_room_page.dart';
 
 const _bg = Color(0xFF070817);
 const _panel = Color(0xFF10132B);
@@ -249,29 +250,7 @@ class _NewHomePageState extends State<_NewHomePage> {
   final repo = RoomRepository();
 
   Future<void> _createRoom() async {
-    final c = TextEditingController();
-    final name = await showModalBottomSheet<String>(
-      context: context, isScrollControlled: true, backgroundColor: _panel,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Text('إنشاء غرفة صوتية', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 14),
-          TextField(controller: c, autofocus: true, style: const TextStyle(color: Colors.white), decoration: _input('اسم الغرفة')),
-          const SizedBox(height: 14),
-          FilledButton.icon(onPressed: () => Navigator.pop(ctx, c.text.trim()), icon: const Icon(Icons.mic_rounded), label: const Text('إنشاء الغرفة')),
-        ]),
-      ),
-    );
-    c.dispose();
-    if (name == null || name.isEmpty) return;
-    try {
-      final room = await repo.createRoom(name: name, liveKitRoomName: 'asmar-${DateTime.now().millisecondsSinceEpoch}');
-      if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: room)));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إنشاء الغرفة: $e')));
-    }
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateRoomPage()));
   }
 
   @override
