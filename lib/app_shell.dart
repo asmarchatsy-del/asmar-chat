@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/auth/auth_repository.dart';
 import 'core/backend/supabase_runtime.dart';
@@ -99,6 +100,29 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
   final displayName = TextEditingController();
   bool signUp = false;
   bool busy = false;
+  bool emailNotConfirmed = false;
+
+  Future<void> _resendConfirmation() async {
+    final mail = email.text.trim();
+    if (mail.isEmpty) return;
+    setState(() => busy = true);
+    try {
+      await AuthRepository().resendSignupConfirmation(mail);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إرسال رسالة تأكيد جديدة. افحص البريد الوارد والرسائل غير المرغوب فيها.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر إرسال رسالة التأكيد: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
 
   Future<void> _submit() async {
     final mail = email.text.trim();
@@ -109,17 +133,40 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
       );
       return;
     }
-    setState(() => busy = true);
+    setState(() {
+      busy = true;
+      emailNotConfirmed = false;
+    });
     try {
       final auth = AuthRepository();
       if (signUp) {
-        await auth.signUpWithEmail(
+        final response = await auth.signUpWithEmail(
           email: mail,
           password: pass,
           displayName: displayName.text.trim(),
         );
+        if (response.session == null && mounted) {
+          setState(() => emailNotConfirmed = true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم إنشاء الحساب. يلزم تأكيد البريد قبل تسجيل الدخول.')),
+          );
+        }
       } else {
         await auth.signInWithEmail(email: mail, password: pass);
+      }
+    } on AuthApiException catch (e) {
+      if (mounted) {
+        final isUnconfirmed = e.code == 'email_not_confirmed';
+        setState(() => emailNotConfirmed = isUnconfirmed);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isUnconfirmed
+                  ? 'البريد الإلكتروني غير مؤكد. اضغط «إعادة إرسال التأكيد» أدناه.'
+                  : 'تعذر تنفيذ العملية: ${e.message}',
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -155,7 +202,14 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
                 if (signUp)
                   TextField(controller: displayName, decoration: const InputDecoration(labelText: 'الاسم الظاهر')),
                 const SizedBox(height: 10),
-                TextField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'البريد الإلكتروني')),
+                TextField(
+                  controller: email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(labelText: 'البريد الإلكتروني'),
+                  onChanged: (_) {
+                    if (emailNotConfirmed) setState(() => emailNotConfirmed = false);
+                  },
+                ),
                 const SizedBox(height: 10),
                 TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور')),
                 const SizedBox(height: 18),
@@ -166,8 +220,17 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
                     child: Text(busy ? 'جارٍ التنفيذ...' : (signUp ? 'إنشاء الحساب' : 'تسجيل الدخول')),
                   ),
                 ),
+                if (emailNotConfirmed && !signUp)
+                  TextButton.icon(
+                    onPressed: busy ? null : _resendConfirmation,
+                    icon: const Icon(Icons.mark_email_read_outlined),
+                    label: const Text('إعادة إرسال تأكيد البريد'),
+                  ),
                 TextButton(
-                  onPressed: busy ? null : () => setState(() => signUp = !signUp),
+                  onPressed: busy ? null : () => setState(() {
+                    signUp = !signUp;
+                    emailNotConfirmed = false;
+                  }),
                   child: Text(signUp ? 'لدي حساب بالفعل' : 'إنشاء حساب جديد'),
                 ),
               ],
