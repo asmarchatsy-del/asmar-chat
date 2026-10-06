@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../backend/supabase_runtime.dart';
@@ -21,19 +19,23 @@ class AuthRepository {
 
   Future<void> signInWithGoogle() async {
     final db = client;
-    if (db == null) throw StateError('Supabase is not configured.');
+    if (db == null) {
+      throw StateError('Supabase is not configured.');
+    }
 
     final started = await db.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback/',
       authScreenLaunchMode:
           kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+      scopes: 'openid email profile',
     );
 
     if (!started) {
-      throw const AuthException('تعذر بدء تسجيل الدخول باستخدام Google.');
+      throw const AuthException(
+        'تعذر بدء تسجيل الدخول باستخدام Google. تحقق من تفعيل Google في Supabase Auth.',
+      );
     }
-
   }
 
   Future<AuthResponse> signInWithEmail({
@@ -41,25 +43,24 @@ class AuthRepository {
     required String password,
   }) async {
     final db = client;
-    if (db == null) throw StateError('Supabase is not configured.');
-    return db.auth.signInWithPassword(email: email.trim(), password: password);
-  }
-
-  Future<void> signInWithGoogle() async {
-    final db = client;
-    if (db == null) throw StateError('Supabase is not configured.');
-    await db.auth.signInWithOAuth(
-      OAuthProvider.google,
-      redirectTo: 'io.supabase.flutter://login-callback/',
-      authScreenLaunchMode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
-      scopes: 'openid email profile',
+    if (db == null) {
+      throw StateError('Supabase is not configured.');
+    }
+    return db.auth.signInWithPassword(
+      email: email.trim(),
+      password: password,
     );
   }
 
   Future<void> resendSignupConfirmation(String email) async {
     final db = client;
-    if (db == null) throw StateError('Supabase is not configured.');
-    await db.auth.resend(type: OtpType.signup, email: email.trim());
+    if (db == null) {
+      throw StateError('Supabase is not configured.');
+    }
+    await db.auth.resend(
+      type: OtpType.signup,
+      email: email.trim(),
+    );
   }
 
   Future<AuthResponse> signUpWithEmail({
@@ -68,7 +69,9 @@ class AuthRepository {
     required String displayName,
   }) async {
     final db = client;
-    if (db == null) throw StateError('Supabase is not configured.');
+    if (db == null) {
+      throw StateError('Supabase is not configured.');
+    }
     return db.auth.signUp(
       email: email.trim(),
       password: password,
