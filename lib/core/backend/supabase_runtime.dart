@@ -24,6 +24,7 @@ class SupabaseRuntime {
         url: BackendConfig.supabaseUrl,
         publishableKey: BackendConfig.supabasePublishableKey,
         authOptions: const FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
           detectSessionInUri: false,
         ),
       );
