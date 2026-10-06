@@ -1,6 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase_flutter_web_auth/supabase_flutter_web_auth.dart';
-
 import '../../backend_config.dart';
 
 class SupabaseRuntime {
@@ -28,9 +26,6 @@ class SupabaseRuntime {
       await Supabase.initialize(
         url: BackendConfig.supabaseUrl,
         publishableKey: BackendConfig.supabasePublishableKey,
-        authOptions: const FlutterAuthClientOptions(
-          oauthLauncher: FlutterWebAuth2OAuthLauncher(),
-        ),
       );
       _initialized = true;
       return true;
