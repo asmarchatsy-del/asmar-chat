@@ -499,7 +499,9 @@ class _AyomeProfilePage extends StatefulWidget {
 class _AyomeProfilePageState extends State<_AyomeProfilePage> {
   Map<String, dynamic> p = {};
   int followers = 0;
+  int following = 0;
   int friends = 0;
+  int visitors = 0;
 
   @override
   void initState() {
@@ -517,13 +519,18 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
           .select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url')
           .eq('id', user.id)
           .maybeSingle();
-      final followersRows = await db.from('follows').select('follower_id').eq('following_id', user.id);
-      final followingRows = await db.from('follows').select('following_id').eq('follower_id', user.id);
+      final followersRows = List<Map<String, dynamic>>.from(await db.from('follows').select('follower_id').eq('following_id', user.id));
+      final followingRows = List<Map<String, dynamic>>.from(await db.from('follows').select('following_id').eq('follower_id', user.id));
+      final followerIds = followersRows.map((x) => x['follower_id'].toString()).toSet();
+      final followingIds = followingRows.map((x) => x['following_id'].toString()).toSet();
+      final visitorRows = await db.from('visitors').select('visitor_id').eq('profile_id', user.id);
       if (!mounted) return;
       setState(() {
         p = Map<String, dynamic>.from(profile ?? {});
-        followers = (followersRows as List).length;
-        friends = (followingRows as List).length;
+        followers = followerIds.length;
+        following = followingIds.length;
+        friends = followerIds.intersection(followingIds).length;
+        visitors = (visitorRows as List).length;
       });
     } catch (_) {}
   }
@@ -653,9 +660,9 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _Stat(followers.toString(), 'المتابعون'),
-                    const _Stat('0', 'المشجعون'),
+                    _Stat(following.toString(), 'المتابَعون'),
                     _Stat(friends.toString(), 'الأصدقاء'),
-                    const _Stat('0', 'الزائرون'),
+                    _Stat(visitors.toString(), 'الزائرون'),
                   ],
                 ),
               ],
