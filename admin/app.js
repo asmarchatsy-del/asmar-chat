@@ -21,13 +21,26 @@ async function login(){
   if(!db){$('loginMsg').textContent='Supabase غير جاهز — أعد تحميل الصفحة.';return}
   if(!email||!password){$('loginMsg').textContent='أدخل البريد الإلكتروني وكلمة المرور.';return}
   if(btn) btn.disabled=true;
-  $('loginMsg').textContent='جاري التحقق من الحساب...';
+  $('loginMsg').textContent='جاري تسجيل الدخول والتحقق من صلاحيات CEO/SUPER_ADMIN...';
   try{
     const {data,error}=await db.auth.signInWithPassword({email,password});
-    if(error){$('loginMsg').textContent='تعذر تسجيل الدخول: '+error.message;return}
-    await boot(data?.user);
-  }catch(e){$('loginMsg').textContent='حدث خطأ أثناء تسجيل الدخول: '+(e?.message||e)}
-  finally{if(btn) btn.disabled=false}
+    if(error){
+      const msg=String(error.message||'');
+      $('loginMsg').textContent=msg.toLowerCase().includes('email not confirmed')
+        ? 'البريد الإلكتروني غير مؤكد في Supabase Auth.'
+        : 'تعذر تسجيل الدخول: '+msg;
+      return;
+    }
+    await new Promise(r=>setTimeout(r,150));
+    const session=await db.auth.getSession();
+    if(session.error||!session.data?.session){
+      $('loginMsg').textContent='تم التحقق من كلمة المرور لكن جلسة الإدارة لم تُنشأ. أعد المحاولة.';
+      return;
+    }
+    await boot(session.data.session.user);
+  }catch(e){
+    $('loginMsg').textContent='حدث خطأ أثناء تسجيل الدخول: '+(e?.message||e);
+  }finally{if(btn) btn.disabled=false}
 }
 async function logout(){await db.auth.signOut();location.reload()}
 async function boot(signedUser=null){
