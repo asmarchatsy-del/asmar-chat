@@ -18,6 +18,7 @@ import 'store.dart';
 import 'svip.dart';
 import 'wallet.dart';
 import 'wallet_gifts_page.dart';
+import 'public_profile_page.dart';
 
 const _bg = Color(0xFF070817);
 const _panel = Color(0xFF11152D);
@@ -159,6 +160,12 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
             List<Map<String, dynamic>> rows = [];
             try {
               rows = List<Map<String, dynamic>>.from(await db.from('rooms').select('id,name,owner_id,livekit_room_name,is_active,seat_count,country_code,tags,cover_url').eq('is_active', true).ilike('name', '%$q%').limit(20));
+              if (rows.isEmpty) {
+                try {
+                  final byId = await db.from('rooms').select('id,name,owner_id,livekit_room_name,is_active,seat_count,country_code,tags,cover_url').eq('id', q).eq('is_active', true).maybeSingle();
+                  if (byId != null) rows = [Map<String, dynamic>.from(byId)];
+                } catch (_) {}
+              }
             } catch (_) {}
             final users = List<Map<String, dynamic>>.from(await db.from('profiles').select('id,display_name,username,public_id,avatar_url,is_verified').or('username.ilike.%$q%,display_name.ilike.%$q%,public_id.eq.$q').limit(20));
             if (!sheet.mounted) return;
@@ -195,6 +202,7 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
                           title: Text(u['display_name']?.toString() ?? u['username']?.toString() ?? 'Asmar'),
                           subtitle: Text('ID ' + (u['public_id']?.toString() ?? u['id'].toString()), style: const TextStyle(color: _muted)),
                           trailing: u['is_verified'] == true ? const Icon(Icons.verified, color: _gold) : null,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AsmarPublicProfilePage(userId: u['id'].toString()))),
                         )),
                       ],
                     ],
@@ -238,7 +246,7 @@ class _HomeHeader extends StatelessWidget {
 }
 class _TreasureFab extends StatelessWidget { final VoidCallback onTap; const _TreasureFab({required this.onTap}); @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(30),child:Container(width:56,height:56,decoration:BoxDecoration(shape:BoxShape.circle,gradient:const LinearGradient(colors:[_gold,_orange]),boxShadow:[BoxShadow(color:_orange.withOpacity(.35),blurRadius:16,spreadRadius:2)]),child:const Icon(Icons.card_giftcard_rounded,color:Color(0xFF4A2100),size:29)))); }
 class _IconButton extends StatelessWidget { final IconData icon; final VoidCallback onTap; const _IconButton(this.icon,this.onTap); @override Widget build(BuildContext c)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(14),child:Container(width:40,height:40,decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(14)),child:Icon(icon,color:Colors.white,size:21))); }
-class _Tabs extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Tabs({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:45,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['لك','شائع','جديد','فيديو'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
+class _Tabs extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Tabs({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:45,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['لي','شائع','جديد','فيديو'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _CreateRoom extends StatelessWidget { final VoidCallback onTap; const _CreateRoom({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(height:78,padding:const EdgeInsets.all(15),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[_gold,_orange])),child:const Row(children:[Icon(Icons.auto_awesome_rounded,color:Color(0xFF542300),size:31),SizedBox(width:10),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text('إنشاء غرفتي',style:TextStyle(color:Color(0xFF4C2000),fontSize:20,fontWeight:FontWeight.w900)),Text('غرفة صوتية بـ 8 كراسي',style:TextStyle(color:Color(0xFF633000),fontSize:11))])),Icon(Icons.add_circle_outline_rounded,color:Color(0xFF4C2000),size:31)])))); }
 class _Filters extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Filters({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:44,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['الكل','متابعة','موثق','العائلة','غرف','مستخدمون'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _Banners extends StatelessWidget {
@@ -313,6 +321,7 @@ class _UserDirectorySliver extends StatelessWidget {
                     if (u['is_verified'] == true) const Icon(Icons.verified, color: _gold, size: 17),
                   ]),
                   subtitle: Text('ID ' + (u['public_id']?.toString() ?? u['id'].toString()) + ' • Lv.' + (u['user_level']?.toString() ?? '1'), style: const TextStyle(color: _muted, fontSize: 10)),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AsmarPublicProfilePage(userId: u['id'].toString()))),
                 ),
               ),
             );
@@ -518,7 +527,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
       final db = Supabase.instance.client;
       final profile = await db
           .from('profiles')
-          .select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url')
+          .select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url,language')
           .eq('id', user.id)
           .maybeSingle();
       final followersRows = List<Map<String, dynamic>>.from(await db.from('follows').select('follower_id').eq('following_id', user.id));
@@ -708,7 +717,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarAccessoriesPage())),
           ),
           _Action('العائلة', 'العائلة والترتيب', Icons.groups_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarFamilyPage()))),
-          _Action('المستوى', 'Lv.$level', Icons.star_rounded, () => _message('المستوى الحالي: $level')),
+          _Action('المستوى', 'Lv.$level', Icons.star_rounded, () => () async { final row = await Supabase.instance.client.from('user_exp').select('exp').eq('user_id', Supabase.instance.client.auth.currentUser!.id).maybeSingle(); if (mounted) _message('المستوى الحالي: $level • XP: ${row?['exp'] ?? 0}'); }),
           _Action(
             'الهدايا',
             'الهدايا والجوائز',
@@ -721,7 +730,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
             Icons.task_alt_rounded,
             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyTasksPage())),
           ),
-          _Action('مركز المساعدة', 'الدعم والمساعدة', Icons.help_outline_rounded, () => _message('استخدم الدردشة الرسمية للتواصل مع الدعم')),
+          _Action('مركز المساعدة', 'الدعم والمساعدة', Icons.help_outline_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalChatPage()))),
           _Action('الإعدادات', 'الخصوصية واللغة والحساب', Icons.settings_rounded, _openSettings),
           const SizedBox(height: 8),
           OutlinedButton.icon(
