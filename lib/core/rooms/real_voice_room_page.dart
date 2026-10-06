@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../gifts.dart';
+import '../../games_page.dart';
 
 import '../voice/livekit_room_service.dart';
 import 'room_repository.dart';
@@ -128,6 +129,10 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                               style: const TextStyle(color: muted, fontSize: 11)),
                         ],
                       ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RoomGamesPage(room: widget.room))),
+                      icon: const Icon(Icons.sports_esports_rounded, color: Colors.amber),
                     ),
                     IconButton(
                       onPressed: () => _openPeopleSheet(context),
