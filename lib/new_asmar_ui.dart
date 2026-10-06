@@ -615,7 +615,7 @@ class _NewMessagesPage extends StatelessWidget {
       const SizedBox(height: 10),
       _MessageTile(icon: Icons.chat_rounded, title: 'المحادثات الخاصة', subtitle: 'رسائلك ومحادثاتك الخاصة', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivateConversationsPage()))),
       const SizedBox(height: 10),
-      _MessageTile(icon: Icons.notifications_rounded, title: 'الإشعارات', subtitle: 'آخر التحديثات والتنبيهات', onTap: () => _showNotifications(context)),
+      _MessageTile(icon: Icons.notifications_rounded, title: 'الإشعارات', subtitle: 'آخر التحديثات والتنبيهات', onTap: () => _NewAsmarActions.showNotifications(context)),
     ]))),
   ]);
 }
