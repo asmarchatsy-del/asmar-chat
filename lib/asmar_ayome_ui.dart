@@ -116,13 +116,52 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
           final q = c.text.trim(); if (q.isEmpty) return;
           try {
             final db = Supabase.instance.client;
-            final rows = await db.from('rooms').select('id,name,owner_id,livekit_room_name,is_active,seat_count,country_code,tags,cover_url').eq('is_active', true).ilike('name', '%$q%').limit(20);
+            List<Map<String, dynamic>> rows = [];
+            try {
+              rows = List<Map<String, dynamic>>.from(await db.from('rooms').select('id,name,owner_id,livekit_room_name,is_active,seat_count,country_code,tags,cover_url').eq('is_active', true).ilike('name', '%$q%').limit(20));
+            } catch (_) {}
+            final users = List<Map<String, dynamic>>.from(await db.from('profiles').select('id,display_name,username,public_id,avatar_url,is_verified').or('username.ilike.%$q%,display_name.ilike.%$q%,public_id.eq.$q').limit(20));
             if (!sheet.mounted) return;
             Navigator.pop(sheet);
-            if (rows.isEmpty) { _showHomeMessage('لم نجد غرفة بهذا الاسم أو الرقم'); return; }
-            final rooms = (rows as List).map((x) => VoiceRoomRecord.fromMap(Map<String,dynamic>.from(x))).toList();
+            final rooms = rows.map(VoiceRoomRecord.fromMap).toList();
             if (!mounted) return;
-            await showModalBottomSheet<void>(context: context, backgroundColor: _bg, isScrollControlled: true, builder: (_) => Directionality(textDirection: TextDirection.rtl, child: SafeArea(child: ListView(padding: const EdgeInsets.all(14), shrinkWrap: true, children: [const Text('نتائج البحث', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)), const SizedBox(height: 10), ...rooms.map((room) => _Room(room: room, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: room))); }))]))));
+            await showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: _bg,
+              isScrollControlled: true,
+              builder: (_) => Directionality(
+                textDirection: TextDirection.rtl,
+                child: SafeArea(
+                  child: ListView(
+                    padding: const EdgeInsets.all(14),
+                    shrinkWrap: true,
+                    children: [
+                      const Text('نتائج البحث', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 10),
+                      if (rooms.isEmpty && users.isEmpty) const _Empty('لم نجد غرفة أو مستخدماً بهذا البحث'),
+                      if (rooms.isNotEmpty) ...[
+                        const Text('الغرف', style: TextStyle(color: _gold, fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 6),
+                        ...rooms.map((room) => _Room(room: room, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: room))); })),
+                      ],
+                      if (users.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        const Text('المستخدمون', style: TextStyle(color: _gold, fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 6),
+                        ...users.map((u) => ListTile(
+                          tileColor: _panel,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          leading: CircleAvatar(backgroundImage: (u['avatar_url']?.toString() ?? '').isNotEmpty ? NetworkImage(u['avatar_url'].toString()) : null, child: (u['avatar_url']?.toString() ?? '').isEmpty ? const Icon(Icons.person) : null),
+                          title: Text(u['display_name']?.toString() ?? u['username']?.toString() ?? 'Asmar'),
+                          subtitle: Text('ID ' + (u['public_id']?.toString() ?? u['id'].toString()), style: const TextStyle(color: _muted)),
+                          trailing: u['is_verified'] == true ? const Icon(Icons.verified, color: _gold) : null,
+                        )),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            );
           } catch (e) { if (sheet.mounted) Navigator.pop(sheet); _showHomeMessage('تعذر تنفيذ البحث'); }
         }, icon: const Icon(Icons.search), label: const Text('بحث'))])));
     c.dispose();
