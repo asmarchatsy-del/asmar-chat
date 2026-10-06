@@ -6,6 +6,7 @@ import 'core/rooms/real_voice_room_page.dart';
 import 'global_chat.dart';
 import 'private_conversations.dart';
 import 'wallet.dart';
+import 'svip.dart';
 
 const _bg = Color(0xFF070817);
 const _panel = Color(0xFF10132B);
@@ -97,11 +98,11 @@ class _NewHomePageState extends State<_NewHomePage> {
     c.dispose();
     if (name == null || name.isEmpty) return;
     try {
-      final room = await repo.createRoom(name: name, liveKitRoomName: 'asmar-\${DateTime.now().millisecondsSinceEpoch}');
+      final room = await repo.createRoom(name: name, liveKitRoomName: 'asmar-${DateTime.now().millisecondsSinceEpoch}');
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: room)));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إنشاء الغرفة: \$e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إنشاء الغرفة: $e')));
     }
   }
 
@@ -113,7 +114,7 @@ class _NewHomePageState extends State<_NewHomePage> {
     StreamBuilder<List<Map<String, dynamic>>>(
       stream: repo.watchActiveRooms(),
       builder: (context, snap) {
-        if (snap.hasError) return SliverToBoxAdapter(child: _EmptyCard('تعذر تحميل الغرف: \${snap.error}'));
+        if (snap.hasError) return SliverToBoxAdapter(child: _EmptyCard('تعذر تحميل الغرف: ${snap.error}'));
         final rooms = (snap.data ?? const <Map<String, dynamic>>[]).map(VoiceRoomRecord.fromMap).toList();
         if (rooms.isEmpty) return const SliverToBoxAdapter(child: _EmptyCard('لا توجد غرف مباشرة. أنشئ أول غرفة الآن.'));
         return SliverPadding(
@@ -146,9 +147,9 @@ class _HomeHeader extends StatelessWidget {
     child: Row(children: [
       const Text('Asmar', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic)),
       const Spacer(),
-      _CircleButton(icon: Icons.search_rounded, onTap: () {}),
+      _CircleButton(icon: Icons.search_rounded, onTap: () => _showRoomSearch(context)),
       const SizedBox(width: 8),
-      _CircleButton(icon: Icons.notifications_none_rounded, onTap: () {}),
+      _CircleButton(icon: Icons.notifications_none_rounded, onTap: () => _showNotifications(context)),
       const SizedBox(width: 8),
       _CircleButton(icon: Icons.add_rounded, onTap: onCreate),
     ]),
@@ -213,7 +214,7 @@ class _RoomCard extends StatelessWidget {
             Text(room.isActive ? 'مباشر الآن' : 'متوقف', style: const TextStyle(color: Colors.white70, fontSize: 11)),
             const Spacer(),
             const Icon(Icons.people_alt_rounded, size: 15, color: Colors.white70), const SizedBox(width: 4),
-            Text('\${room.seatCount}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            Text('${room.seatCount}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
           ]),
         ]),
       ),
@@ -282,7 +283,7 @@ class _DiscoverRoomTile extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(room.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
           const SizedBox(height: 5),
-          Text('غرفة صوتية • \${room.seatCount} مقعد', style: const TextStyle(color: _text2, fontSize: 12)),
+          Text('غرفة صوتية • ${room.seatCount} مقعد', style: const TextStyle(color: _text2, fontSize: 12)),
         ])),
         FilledButton(onPressed: onTap, style: FilledButton.styleFrom(backgroundColor: _purple), child: const Text('دخول')),
       ]),
@@ -303,7 +304,7 @@ class _NewMessagesPage extends StatelessWidget {
       const SizedBox(height: 10),
       _MessageTile(icon: Icons.chat_rounded, title: 'المحادثات الخاصة', subtitle: 'رسائلك ومحادثاتك الخاصة', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivateConversationsPage()))),
       const SizedBox(height: 10),
-      const _MessageTile(icon: Icons.notifications_rounded, title: 'الإشعارات', subtitle: 'آخر التحديثات والتنبيهات'),
+      _MessageTile(icon: Icons.notifications_rounded, title: 'الإشعارات', subtitle: 'آخر التحديثات والتنبيهات', onTap: () => _showNotifications(context)),
     ]))),
   ]);
 }
@@ -331,9 +332,9 @@ class _NewWalletPageState extends State<_NewWalletPage> {
       const SafeArea(bottom: false, child: Text('المحفظة', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900))),
       const SizedBox(height: 16),
       Row(children: [
-        Expanded(child: _BalanceCard('الكوينز', '\$coins', Icons.monetization_on_rounded, _purple)),
+        Expanded(child: _BalanceCard('الكوينز', '$coins', Icons.monetization_on_rounded, _purple)),
         const SizedBox(width: 10),
-        Expanded(child: _BalanceCard('الماس', '\$diamonds', Icons.diamond_rounded, _cyan)),
+        Expanded(child: _BalanceCard('الماس', '$diamonds', Icons.diamond_rounded, _cyan)),
       ]),
       const SizedBox(height: 16),
       _ActionCard(icon: Icons.add_circle_rounded, title: 'شحن الكوينز', subtitle: 'اختر طريقة الشحن المتاحة', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RechargeAgentsPage()))),
@@ -356,7 +357,7 @@ class _NewProfilePageState extends State<_NewProfilePage> {
     final u = Supabase.instance.client.auth.currentUser;
     if (u == null) return;
     try {
-      final r = await Supabase.instance.client.from('profiles').select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified').eq('id', u.id).maybeSingle();
+      final r = await Supabase.instance.client.from('profiles').select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url').eq('id', u.id).maybeSingle();
       if (mounted) setState(() => p = Map<String, dynamic>.from(r ?? {}));
     } catch (_) {}
   }
@@ -374,7 +375,7 @@ class _NewProfilePageState extends State<_NewProfilePage> {
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), gradient: const LinearGradient(colors: [Color(0xFF2A155F), Color(0xFF11162F)]), border: Border.all(color: Color(0xFF49327B))),
           child: Column(children: [
-            const _Avatar(initial: 'A', size: 86), const SizedBox(height: 12),
+            _Avatar(initial: name.isNotEmpty ? name.characters.first.toUpperCase() : 'A', size: 86, imageUrl: (p['avatar_url'] ?? '').toString()), const SizedBox(height: 12),
             Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
             const SizedBox(height: 4),
             Text("@$username • ID ${p['public_id'] ?? '—'}", style: const TextStyle(color: _text2, fontSize: 12)),
@@ -388,7 +389,7 @@ class _NewProfilePageState extends State<_NewProfilePage> {
           ]),
         ),
         const SizedBox(height: 14),
-        const _ActionCard(icon: Icons.workspace_premium_rounded, title: 'VIP / SVIP', subtitle: 'المزايا والمستويات'),
+        _ActionCard(icon: Icons.workspace_premium_rounded, title: 'VIP / SVIP', subtitle: 'المزايا والمستويات', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SvipPage()))),
         const SizedBox(height: 10),
         const _ActionCard(icon: Icons.auto_awesome_rounded, title: 'الإطارات والشارات', subtitle: 'تخصيص مظهرك داخل Asmar'),
         const SizedBox(height: 10),
@@ -424,13 +425,13 @@ class _Category extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  final String initial; final double size;
-  const _Avatar({required this.initial, required this.size});
+  final String initial; final double size; final String? imageUrl;
+  const _Avatar({required this.initial, required this.size, this.imageUrl});
   @override Widget build(BuildContext context) => Container(
     width: size, height: size,
     decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [_pink, _purple, _cyan]), boxShadow: [BoxShadow(color: Color(0x553D18A5), blurRadius: 12)]),
     padding: const EdgeInsets.all(3),
-    child: Container(decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF0E1027)), child: Center(child: Text(initial, style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)))),
+    child: Container(decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF0E1027)), child: ClipOval(child: (imageUrl ?? '').isNotEmpty ? Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Center(child: Text(initial, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900)))) : Center(child: Text(initial, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900))))),
   );
 }
 
