@@ -1,4 +1,5 @@
 name: Deploy External Admin Dashboard
+# Force GitHub Pages deployment on main changes
 
 on:
   workflow_dispatch:
