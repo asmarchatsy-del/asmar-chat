@@ -54,8 +54,7 @@ function showTab(id,btn){document.querySelectorAll('.tab').forEach(x=>x.classLis
 
 async function loadAll(){
   const [profiles,wallets,rooms,frames,packages,vips,policy,promotions,agencies]=await Promise.all([
-    db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified,recharge_points,svip_level,user_level').order('created_at',{ascending:false}),
-    db.from('wallets').select('user_id,balance').order('balance',{ascending:false}),
+    db.from('profiles').select('id,display_name,username,public_id,role,is_active,created_at,activity_admin_badge,customer_service_badge,is_verified,recharge_points,svip_level,user_level,coins').order('created_at',{ascending:false}),
     db.from('rooms').select('id,name,owner_id,is_active,created_at').order('created_at',{ascending:false}),
     db.from('frame_items').select('id,name,style_key,price,is_active,media_url,media_type,category,vip_level,svip_level,glow_enabled,motion_enabled').order('price'),
     db.from('coin_packages').select('id,name,coins,price_usd,is_active').order('price_usd'),
@@ -64,12 +63,12 @@ async function loadAll(){
     db.from('app_promotions').select('*').order('created_at',{ascending:false}),
     db.from('agencies').select('id,name,manager_id,is_active,created_at').order('created_at',{ascending:false})
   ]);
-  const firstError=[profiles,wallets,rooms,frames,packages,vips,policy,promotions,agencies].find(x=>x.error);
+  const firstError=[profiles,rooms,frames,packages,vips,policy,promotions,agencies].find(x=>x.error);
   if(firstError){alert(firstError.error.message);return}
-  const ps=profiles.data||[],ws=wallets.data||[],rs=rooms.data||[];
-  $('stats').innerHTML=[['المستخدمون',ps.length],['الغرف النشطة',rs.filter(r=>r.is_active).length],['إجمالي الكوينز',ws.reduce((a,w)=>a+Number(w.balance||0),0).toLocaleString()],['المضيفون',ps.filter(p=>p.role==='HOST').length]].map(x=>'<div class="stat">'+x[0]+'<strong>'+x[1]+'</strong></div>').join('');
+  const ps=profiles.data||[],rs=rooms.data||[];
+  $('stats').innerHTML=[['المستخدمون',ps.length],['الغرف النشطة',rs.filter(r=>r.is_active).length],['إجمالي الكوينز',ps.reduce((a,p)=>a+Number(p.coins||0),0).toLocaleString()],['المضيفون',ps.filter(p=>p.role==='HOST').length]].map(x=>'<div class="stat">'+x[0]+'<strong>'+x[1]+'</strong></div>').join('');
   renderStore(frames.data||[],packages.data||[],vips.data||[]);
-  renderPolicy(policy.data||[]);renderUsers(ps);renderRooms(rs);renderWallets(ws,ps);renderPromotions(promotions.data||[]);renderRoles(ps);renderAgencies(agencies.data||[],ps);
+  renderPolicy(policy.data||[]);renderUsers(ps);renderRooms(rs);renderWallets(ps,ps);renderPromotions(promotions.data||[]);renderRoles(ps);renderAgencies(agencies.data||[],ps);
   if(typeof loadFinance==='function') await loadFinance();
 }
 
@@ -160,7 +159,7 @@ async function warnUser(id){const reason=$('uaWarning').value.trim();if(!reason)
 async function adjustUserCoins(id){const n=Math.trunc(Number($('uaCoins').value));if(!Number.isFinite(n)||n===0){alert('أدخل قيمة كوين صحيحة');return}if(!confirm('تأكيد تعديل رصيد المستخدم؟'))return;const {error}=await db.rpc('admin_adjust_wallet',{p_user_id:id,p_amount:n});if(error){alert('تعذر تعديل الكوينز: '+error.message);return}alert('تم تعديل الرصيد');$('uaCoins').value='';await loadAll();openUserActions(id);}
 
 function renderRooms(rs){$('roomsTable').innerHTML='<table><tr><th>الغرفة</th><th>المالك</th><th>الحالة</th><th>إجراء</th></tr>'+rs.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.owner_id||'—')+'</td><td>'+(r.is_active?'نشطة':'مغلقة')+'</td><td><button onclick="toggleRoomActive(\''+r.id+'\','+(!r.is_active)+')">'+(r.is_active?'إغلاق':'تفعيل')+'</button></td></tr>').join('')+'</table>'}
-function renderWallets(ws,ps){const names=Object.fromEntries(ps.map(p=>[p.id,p.display_name||p.username||p.id]));$('walletsTable').innerHTML='<table><tr><th>المستخدم</th><th>الرصيد</th><th>تعديل</th></tr>'+ws.map(w=>'<tr><td>'+esc(names[w.user_id]||w.user_id)+'</td><td>'+Number(w.balance||0).toLocaleString()+'</td><td><input id="wa_'+w.user_id+'" type="number" step="1" placeholder="+/- كوين"><button onclick="adjustWallet(\''+w.user_id+'\')">تطبيق</button></td></tr>').join('')+'</table>'}
+function renderWallets(ws,ps){const rows=ps||[];$('walletsTable').innerHTML='<table><tr><th>المستخدم</th><th>الرصيد</th><th>تعديل</th></tr>'+rows.map(w=>'<tr><td>'+esc(w.display_name||w.username||w.id)+'</td><td>'+Number(w.coins||0).toLocaleString()+'</td><td><input id="wa_'+w.id+'" type="number" step="1" placeholder="+/- كوين"><button onclick="adjustWallet(\''+w.id+'\')">تطبيق</button></td></tr>').join('')+'</table>'}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function renderPromotions(items){const x=items[0]||{};$('promotionForm').innerHTML='<div class="promo-grid"><input id="ptitle" placeholder="عنوان الحدث" value="'+esc(x.title||'')+'"><input id="psubtitle" placeholder="الوصف" value="'+esc(x.subtitle||'')+'"><input id="pimage" placeholder="رابط صورة البنر" value="'+esc(x.image_url||'')+'"><input id="pbutton" placeholder="نص الزر" value="'+esc(x.button_text||'شارك الآن')+'"><input id="pfirst" placeholder="المركز الأول" value="'+esc(x.first_place||'المركز الأول')+'"><input id="psecond" placeholder="المركز الثاني" value="'+esc(x.second_place||'المركز الثاني')+'"><input id="pthird" placeholder="المركز الثالث" value="'+esc(x.third_place||'المركز الثالث')+'"><input id="pfirstprize" placeholder="جائزة الأول" value="'+esc(x.first_prize||'')+'"><input id="psecondprize" placeholder="جائزة الثاني" value="'+esc(x.second_prize||'')+'"><input id="pthirdprize" placeholder="جائزة الثالث" value="'+esc(x.third_prize||'')+'"><input id="pstart" type="datetime-local" value="'+toLocalInput(x.starts_at)+'"><input id="pend" type="datetime-local" value="'+toLocalInput(x.ends_at)+'"><label><input id="pactive" type="checkbox" '+(x.is_active?'checked':'')+'> الحدث فعال</label></div><button onclick="savePromotion(\''+(x.id||'')+'\')">حفظ الحدث</button>'}
 function toLocalInput(v){if(!v)return '';const d=new Date(v);if(Number.isNaN(d.getTime()))return '';const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())}
