@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../backend/supabase_runtime.dart';
 import 'real_voice_room_page.dart';
+import '../../profile_page.dart';
+import '../../features/games/games_center_screen.dart';
 import 'room_repository.dart';
 
 class RealRoomsHomePage extends StatefulWidget {
@@ -58,6 +60,21 @@ class _RealRoomsHomePageState extends State<RealRoomsHomePage> {
         final rows = snapshot.data ?? const <Map<String, dynamic>>[];
         final rooms = rows.map(VoiceRoomRecord.fromMap).toList(growable: false);
         return Scaffold(
+          appBar: AppBar(
+            title: const Text('Asmar Chat', style: TextStyle(fontWeight: FontWeight.w900)),
+            actions: [
+              IconButton(
+                tooltip: 'الألعاب',
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GamesCenterScreen())),
+                icon: const Icon(Icons.sports_esports_outlined),
+              ),
+              IconButton(
+                tooltip: 'ملفي',
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarProfilePage())),
+                icon: const Icon(Icons.account_circle_outlined),
+              ),
+            ],
+          ),
           body: SafeArea(
             child: Column(
               children: [
