@@ -57,15 +57,39 @@ class _AyomeHomePage extends StatefulWidget {
 class _AyomeHomePageState extends State<_AyomeHomePage> {
   final repo = RoomRepository();
   String tab = 'شائع'; String filter = 'الكل'; String country = 'Hot';
+  List<VoiceRoomRecord> _applyFilters(List<VoiceRoomRecord> rooms) {
+    Iterable<VoiceRoomRecord> out = rooms;
+    if (country != 'Hot') out = out.where((r) => (r.countryCode ?? '').toLowerCase() == _countryCode(country));
+    if (filter == 'غرف') out = out.where((r) => r.tags.any((t) => t.toLowerCase().contains('room')));
+    if (filter == 'عائلة') out = out.where((r) => r.tags.any((t) => t.toLowerCase().contains('family')));
+    if (tab == 'فيديو') out = out.where((r) => r.tags.any((t) => t.toLowerCase().contains('video')));
+    return out.toList(growable: false);
+  }
+  String _countryCode(String name) => switch (name) { 'Syria' => 'SY', 'Germany' => 'DE', 'Netherlands' => 'NL', _ => name.toUpperCase() };
   Future<void> createRoom() async => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateRoomPage()));
   Future<void> searchRooms() async {
     final c = TextEditingController();
     await showModalBottomSheet<void>(context: context, isScrollControlled: true, backgroundColor: _panel, builder: (sheet) => Padding(
       padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(sheet).viewInsets.bottom + 16),
       child: Column(mainAxisSize: MainAxisSize.min, children: [const Text('البحث عن غرفة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 12), TextField(controller: c, autofocus: true, decoration: input('اسم الغرفة أو رقمها')), const SizedBox(height: 10),
-        FilledButton.icon(onPressed: () => Navigator.pop(sheet), icon: const Icon(Icons.search), label: const Text('بحث'))])));
+        const SizedBox(height: 12), TextField(controller: c, autofocus: true, decoration: input('اسم الغرفة أو رقمها')),
+        const SizedBox(height: 10),
+        FilledButton.icon(onPressed: () async {
+          final q = c.text.trim(); if (q.isEmpty) return;
+          try {
+            final db = Supabase.instance.client;
+            final rows = await db.from('rooms').select('id,name,owner_id,livekit_room_name,is_active,seat_count,country_code,tags,cover_url').eq('is_active', true).ilike('name', '%$q%').limit(20);
+            if (!sheet.mounted) return;
+            Navigator.pop(sheet);
+            if (rows.isEmpty) { _showHomeMessage('لم نجد غرفة بهذا الاسم أو الرقم'); return; }
+            final rooms = (rows as List).map((x) => VoiceRoomRecord.fromMap(Map<String,dynamic>.from(x))).toList();
+            if (!mounted) return;
+            await showModalBottomSheet<void>(context: context, backgroundColor: _bg, isScrollControlled: true, builder: (_) => Directionality(textDirection: TextDirection.rtl, child: SafeArea(child: ListView(padding: const EdgeInsets.all(14), shrinkWrap: true, children: [const Text('نتائج البحث', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)), const SizedBox(height: 10), ...rooms.map((room) => _Room(room: room, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: room))); }))]))));
+          } catch (e) { if (sheet.mounted) Navigator.pop(sheet); _showHomeMessage('تعذر تنفيذ البحث'); }
+        }, icon: const Icon(Icons.search), label: const Text('بحث'))])));
     c.dispose();
+  }
+  void _showHomeMessage(String message) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message))); }
   }
   @override Widget build(BuildContext context) => CustomScrollView(slivers: [
     SliverToBoxAdapter(child: _HomeHeader(onSearch: searchRooms, onCreate: createRoom)),
@@ -77,10 +101,11 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
     const SliverToBoxAdapter(child: _TitleRow('قائمة الغرف', 'مباشر الآن')),
     StreamBuilder<List<Map<String,dynamic>>>(stream: repo.watchActiveRooms(), builder: (context, snap) {
       if (snap.hasError) return SliverToBoxAdapter(child: _Empty('تعذر تحميل الغرف'));
-      final rooms = (snap.data ?? const <Map<String,dynamic>>[]).map(VoiceRoomRecord.fromMap).toList();
+      final rooms = _applyFilters((snap.data ?? const <Map<String,dynamic>>[]).map(VoiceRoomRecord.fromMap).toList());
       if (rooms.isEmpty) return const SliverToBoxAdapter(child: _Empty('لا توجد غرف مباشرة الآن. أنشئ غرفتك الأولى.'));
       return SliverList.builder(itemCount: rooms.length, itemBuilder: (_, i) => _Room(room: rooms[i], onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: rooms[i])))));
     }),
+    SliverToBoxAdapter(child: _DailyTreasure(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyTasksPage())))),
     const SliverToBoxAdapter(child: SizedBox(height: 25)),
   ]);
 }
@@ -99,7 +124,9 @@ class _Filters extends StatelessWidget { final String selected; final ValueChang
 class _Banners extends StatelessWidget { const _Banners(); @override Widget build(BuildContext c)=>SizedBox(height:76,child:ListView(padding:const EdgeInsets.fromLTRB(14,8,14,6),scrollDirection:Axis.horizontal,children:const [_Banner(Icons.workspace_premium_rounded,'الثروة','ترتيب الأغنياء'),_Banner(Icons.bolt_rounded,'CP','ترتيب CP'),_Banner(Icons.groups_rounded,'العائلة','ترتيب العائلة')])); }
 class _Banner extends StatelessWidget { final IconData icon; final String title,sub; const _Banner(this.icon,this.title,this.sub); @override Widget build(BuildContext c)=>Container(width:150,margin:const EdgeInsets.only(left:8),padding:const EdgeInsets.all(9),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(15),border:Border.all(color:_gold.withOpacity(.35))),child:Row(children:[Icon(icon,color:_gold,size:25),const SizedBox(width:7),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900)),Text(sub,style:const TextStyle(color:_muted,fontSize:9))]))])); }
 class _Countries extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Countries({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:43,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['Hot','Syria','Germany','Netherlands'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
-class _Room extends StatelessWidget { final VoiceRoomRecord room; final VoidCallback onTap; const _Room({required this.room,required this.onTap}); @override Widget build(BuildContext c)=>StreamBuilder<List<Map<String,dynamic>>>(stream:RoomSocialRepository().watchSeats(room.id),builder:(c,s){final n=(s.data??const <Map<String,dynamic>>[]).where((x)=>x['occupant_id']!=null).length;return Padding(padding:const EdgeInsets.fromLTRB(14,5,14,5),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(17),child:Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(17),border:Border.all(color:const Color(0xFF2B315A))),child:Row(children:[const CircleAvatar(radius:27,backgroundColor:_purple,child:Icon(Icons.mic,color:Colors.white)),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(room.name,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:15)),const SizedBox(height:5),Row(children:[const Icon(Icons.circle,color:Colors.redAccent,size:8),const SizedBox(width:5),const Text('LIVE',style:TextStyle(color:_muted,fontSize:10)),const SizedBox(width:12),const Icon(Icons.people_alt_rounded,color:_muted,size:14),const SizedBox(width:4),Text(n.toString()+'/'+room.seatCount.toString(),style:const TextStyle(color:_muted,fontSize:10))])])),const Icon(Icons.chevron_left_rounded,color:_gold)]))));}); }
+class _DailyTreasure extends StatelessWidget { final VoidCallback onTap; const _DailyTreasure({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,10,14,4),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF5B2C09),Color(0xFF24110A)]),border:Border.all(color:_orange.withOpacity(.55))),child:const Row(children:[Icon(Icons.card_giftcard_rounded,color:_gold,size:31),SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('الهدية اليومية',style:TextStyle(fontWeight:FontWeight.w900,fontSize:15)),Text('افتح صندوق الكنز وخذ مكافأتك اليوم',style:TextStyle(color:_muted,fontSize:10))])),Icon(Icons.chevron_left_rounded,color:_gold)])))); }
+
+class _Room extends StatelessWidget { final VoiceRoomRecord room; final VoidCallback onTap; const _Room({required this.room,required this.onTap}); @override Widget build(BuildContext c)=>StreamBuilder<List<Map<String,dynamic>>>(stream:RoomSocialRepository().watchSeats(room.id),builder:(c,s){final n=(s.data??const <Map<String,dynamic>>[]).where((x)=>x['occupant_id']!=null).length;return Padding(padding:const EdgeInsets.fromLTRB(14,5,14,5),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(17),child:Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(17),border:Border.all(color:const Color(0xFF2B315A))),child:Row(children:[CircleAvatar(radius:27,backgroundColor:_purple,backgroundImage:(room.coverUrl ?? '').isNotEmpty ? NetworkImage(room.coverUrl!) : null,child:(room.coverUrl ?? '').isEmpty ? const Icon(Icons.mic,color:Colors.white) : null),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(room.name,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:15)),const SizedBox(height:5),Row(children:[const Icon(Icons.circle,color:Colors.redAccent,size:8),const SizedBox(width:5),const Text('LIVE',style:TextStyle(color:_muted,fontSize:10)),const SizedBox(width:12),const Icon(Icons.people_alt_rounded,color:_muted,size:14),const SizedBox(width:4),Text(n.toString()+'/'+room.seatCount.toString(),style:const TextStyle(color:_muted,fontSize:10))])])),const Icon(Icons.chevron_left_rounded,color:_gold)]))));}); }
 
 class _AyomeGamesPage extends StatelessWidget { const _AyomeGamesPage(); @override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(14,18,14,28),children:[const SafeArea(bottom:false,child:Text('الألعاب',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900))),const SizedBox(height:7),const Text('صالة الألعاب',style:TextStyle(color:_muted)),const SizedBox(height:15),_Game('لودو',Icons.casino_rounded,'لعبة اجتماعية متعددة اللاعبين'),_Game('دومينو',Icons.extension_rounded,'لعبة الطاولة'),_Game('طاولة',Icons.grid_4x4_rounded,'مباريات وتحديات'),_Game('التحديات اليومية',Icons.emoji_events_rounded,'اربح مكافآت الكوينز',tap:(c)=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const DailyTasksPage())))]); }
 class _Game extends StatelessWidget { final String title,sub; final IconData icon; final void Function(BuildContext)? tap; const _Game(this.title,this.icon,this.sub,{this.tap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(bottom:10),child:InkWell(onTap:tap==null?()=>ScaffoldMessenger.of(c).showSnackBar(SnackBar(content:Text(title+' غير موصول بمحرك لعبة في المشروع الحالي'))):()=>tap!(c),borderRadius:BorderRadius.circular(19),child:Container(padding:const EdgeInsets.all(17),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(19),border:Border.all(color:const Color(0xFF2B315A))),child:Row(children:[Container(width:56,height:56,decoration:const BoxDecoration(shape:BoxShape.circle,gradient:LinearGradient(colors:[_orange,_gold])),child:Icon(icon,color:const Color(0xFF4C2000),size:29)),const SizedBox(width:13),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),const SizedBox(height:4),Text(sub,style:const TextStyle(color:_muted,fontSize:11))])),const Icon(Icons.chevron_left_rounded,color:_gold)]))); }
