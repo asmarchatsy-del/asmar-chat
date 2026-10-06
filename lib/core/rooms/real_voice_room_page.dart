@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../gifts.dart';
 import '../../games_page.dart';
 
@@ -133,6 +134,10 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                     IconButton(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RoomGamesPage(room: widget.room))),
                       icon: const Icon(Icons.sports_esports_rounded, color: Colors.amber),
+                    ),
+                    IconButton(
+                      onPressed: () => _openTreasureSheet(context),
+                      icon: const Icon(Icons.card_giftcard_rounded, color: Colors.amberAccent),
                     ),
                     IconButton(
                       onPressed: () => _openPeopleSheet(context),
@@ -309,6 +314,93 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
     );
   }
 
+  Future<void> _openTreasureSheet(BuildContext context) async {
+    final db = Supabase.instance.client;
+    final rows = await db.rpc('asmar_list_room_treasure_boxes', params: {'p_room_id': widget.room.id});
+    if (!mounted) return;
+    final boxes = List<Map<String, dynamic>>.from(rows as List);
+    final isOwner = db.auth.currentUser?.id == widget.room.ownerId;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF10132B),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 16, 14, 22),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Row(children: [
+                const Icon(Icons.card_giftcard_rounded, color: Color(0xFFFFC94A)),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('صناديق الكنز', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
+                if (isOwner) IconButton(onPressed: () { Navigator.pop(context); _createTreasureBox(context); }, icon: const Icon(Icons.add_circle, color: Color(0xFFFFC94A))),
+              ]),
+              const SizedBox(height: 8),
+              if (boxes.isEmpty)
+                const Padding(padding: EdgeInsets.all(24), child: Text('لا يوجد صندوق نشط حالياً', style: TextStyle(color: Color(0xFF9CA2C5))))
+              else
+                ...boxes.map((box) => Card(
+                  color: const Color(0xFF171A3A),
+                  child: ListTile(
+                    leading: const CircleAvatar(backgroundColor: Color(0xFFFFC94A), child: Icon(Icons.redeem, color: Colors.black)),
+                    title: Text('متبقي ${box['remaining_coins']} Coins', style: const TextStyle(fontWeight: FontWeight.w900)),
+                    subtitle: Text('عدد الجوائز المتبقية: ${box['remaining_claims']}', style: const TextStyle(color: Color(0xFF9CA2C5))),
+                    trailing: FilledButton(
+                      onPressed: () async {
+                        try {
+                          final amount = await db.rpc('asmar_claim_room_treasure_box', params: {'p_box_id': box['id']});
+                          if (!context.mounted) return;
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('مبروك! حصلت على $amount Coins 🎁')));
+                        } catch (e) {
+                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر فتح الصندوق: $e')));
+                        }
+                      },
+                      child: const Text('افتح'),
+                    ),
+                  ),
+                )),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _createTreasureBox(BuildContext context) async {
+    final coins = TextEditingController(text: '1000');
+    final claims = TextEditingController(text: '10');
+    try {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('إنشاء صندوق كنز'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: coins, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'إجمالي Coins')),
+            TextField(controller: claims, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'عدد الفائزين')),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('إنشاء')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+      final total = int.tryParse(coins.text.trim());
+      final count = int.tryParse(claims.text.trim());
+      if (total == null || count == null) return;
+      try {
+        await Supabase.instance.client.rpc('asmar_create_room_treasure_box', params: {'p_room_id': widget.room.id, 'p_total_coins': total, 'p_claims': count, 'p_minutes': 30});
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إنشاء صندوق الكنز 🎁')));
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إنشاء الصندوق: $e')));
+      }
+    } finally {
+      coins.dispose();
+      claims.dispose();
+    }
+  }
   Future<void> _sendRoomMessage() async {
     final value = _messageController.text.trim();
     if (value.isEmpty) return;
