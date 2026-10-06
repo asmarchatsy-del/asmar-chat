@@ -1,3 +1,4 @@
+// Asmar external dashboard deployment marker: 2026-10-06
 const SUPABASE_URL='https://jojxsqsgmpaggfnnyuyy.supabase.co';
 const SUPABASE_KEY='sb_publishable_mC6rnw-HAwJzNu_2d-0A2g_SrEBWyjL';
 let db=null;
