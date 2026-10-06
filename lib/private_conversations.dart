@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'private_chat.dart';
 import 'country_flag.dart';
 import 'rank_frame.dart';
-import 'profile_badges.dart';
 
 class PrivateConversationsPage extends StatefulWidget {
   const PrivateConversationsPage({super.key});
