@@ -48,23 +48,20 @@ async function boot(signedUser=null){
   if(booting)return;
   booting=true;
   try{
-    $('loginMsg').textContent='';
+    $('loginMsg').textContent='1/4: التحقق من جلسة الإدارة...';
     const authResult=signedUser?{data:{user:signedUser},error:null}:await db.auth.getUser();
     const user=authResult.data?.user, authError=authResult.error;
-    if(authError){$('loginMsg').textContent='خطأ في جلسة الدخول: '+authError.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
-    if(!user){$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    if(authError){$('loginMsg').textContent='2/4: فشل التحقق من الجلسة: '+authError.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    if(!user){$('loginMsg').textContent='2/4: لا توجد جلسة مستخدم.';$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    $('loginMsg').textContent='3/4: التحقق من صلاحية CEO/SUPER_ADMIN...';
     const {data:canAdmin,error}=await db.rpc('admin_can_manage_dashboard');
-    if(error){$('loginMsg').textContent='تعذر التحقق من صلاحية لوحة الإدارة: '+error.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
-    if(!canAdmin){
-      await db.auth.signOut();
-      $('loginMsg').textContent='هذا الحساب ليس لديه صلاحية لوحة الإدارة';
-      $('login').classList.remove('hidden');$('app').classList.add('hidden');return;
-    }
+    if(error){$('loginMsg').textContent='3/4: فشل فحص صلاحية الإدارة: '+error.message;$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    if(!canAdmin){await db.auth.signOut();$('loginMsg').textContent='3/4: الحساب مسجل الدخول لكنه لا يملك صلاحية لوحة الإدارة.';$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+    $('loginMsg').textContent='4/4: الصلاحية صحيحة، جاري تحميل بيانات اللوحة...';
     $('login').classList.add('hidden');$('app').classList.remove('hidden');
     await loadAll();
-  }catch(e){
-    $('login').classList.remove('hidden');$('app').classList.add('hidden');
-    $('loginMsg').textContent='تعذر فتح لوحة الإدارة: '+(e?.message||e||'خطأ غير معروف');
+    $('loginMsg').textContent='';
+  }catch(e){$('login').classList.remove('hidden');$('app').classList.add('hidden');$('loginMsg').textContent='تعذر فتح لوحة الإدارة: '+(e?.message||e||'خطأ غير معروف');
   }finally{booting=false}
 }
 function showTab(id,btn){document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));const target=$(id);if(target)target.classList.remove('hidden');document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(id==='withdrawals'&&typeof loadFinance==='function')loadFinance();if(id==='badges'&&typeof loadBadges==='function')loadBadges()}
