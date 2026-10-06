@@ -29,11 +29,11 @@ class _WalletPageState extends State<WalletPage> {
     if (u != null) {
       try {
         final r = await Supabase.instance.client
-            .from('profiles')
-            .select('coins')
-            .eq('id', u.id)
+            .from('wallets')
+            .select('balance')
+            .eq('user_id', u.id)
             .maybeSingle();
-        balance = (r?['coins'] as num?)?.toInt() ?? 0;
+        balance = (r?['balance'] as num?)?.toInt() ?? 0;
       } catch (_) {}
     }
     if (mounted) {
