@@ -12,7 +12,9 @@ class SuperAdminPanel extends StatefulWidget {
 
 class _SuperAdminPanelState extends State<SuperAdminPanel> {
   bool loading = true;
+  bool authorized = false;
   List<Map<String, dynamic>> rooms = [];
+  List<Map<String, dynamic>> users = [];
 
   @override
   void initState() { super.initState(); _loadRooms(); }
@@ -20,16 +22,14 @@ class _SuperAdminPanelState extends State<SuperAdminPanel> {
   Future<void> _loadRooms() async {
     setState(() => loading = true);
     try {
-      final rows = await Supabase.instance.client
-          .from('rooms')
-          .select('id,name,is_active,sort_order,hot_score,country_code,seat_count')
-          .order('sort_order', ascending: true, nullsFirst: false)
-          .order('hot_score', ascending: false)
-          .order('created_at', ascending: false);
-      if (mounted) setState(() { rooms = List<Map<String, dynamic>>.from(rows); loading = false; });
-    } catch (e) {
-      if (mounted) { setState(() => loading = false); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحميل الغرف: $e'))); }
-    }
+      final can = await Supabase.instance.client.rpc('admin_can_manage_dashboard') as bool? ?? false;
+      if (!can) { if (mounted) setState(() { authorized = false; loading = false; }); return; }
+      final result = await Future.wait([
+        Supabase.instance.client.from('rooms').select('id,name,is_active,sort_order,hot_score,country_code,seat_count').order('sort_order', ascending: true, nullsFirst: false).order('hot_score', ascending: false).order('created_at', ascending: false).limit(100),
+        Supabase.instance.client.from('profiles').select('id,public_id,username,display_name,role,is_active,coins,svip_level,is_verified').order('created_at', ascending: false).limit(50),
+      ]);
+      if (mounted) setState(() { authorized = true; rooms = List<Map<String, dynamic>>.from(result[0]); users = List<Map<String, dynamic>>.from(result[1]); loading = false; });
+    } catch (e) { if (mounted) { setState(() => loading = false); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحميل لوحة الإدارة: $e'))); } }
   }
 
   Future<void> _pin(Map<String, dynamic> room, int? position) async {
@@ -53,18 +53,33 @@ class _SuperAdminPanelState extends State<SuperAdminPanel> {
         children: [
           const Text('Global Gift Active', style: TextStyle(color: gold, fontWeight: FontWeight.w900)),
           const SizedBox(height: 16),
-          _users(),
-          const SizedBox(height: 16),
-          _table(),
-          const SizedBox(height: 18),
-          _roomOrdering(),
+          if (!authorized) const Card(child: ListTile(title: Text('لا توجد صلاحية إدارية')))
+          else ...[
+            _users(),
+            const SizedBox(height: 18),
+            _roomOrdering(),
+          ],
         ],
       ),
     ),
   );
 
-  Widget _users() => const Card(child: ListTile(title: Text('Users'), subtitle: Wrap(children: [Chip(label: Text('User1')), Chip(label: Text('User2'))])));
-  Widget _table() => const Card(child: ListTile(title: Text('Table'), subtitle: Wrap(children: [Chip(label: Text('Item1')), Chip(label: Text('Item2'))])));
+  Widget _users() => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF4C3019))),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('آخر المستخدمين (' + users.length.toString() + ')', style: const TextStyle(color: gold, fontSize: 20, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 8),
+      if (users.isEmpty) const Text('لا توجد حسابات', style: TextStyle(color: Colors.white54))
+      else ...users.take(12).map((u) => ListTile(
+        dense: true, contentPadding: EdgeInsets.zero,
+        leading: Icon(u['is_verified'] == true ? Icons.verified : Icons.person, color: gold),
+        title: Text((u['display_name'] ?? u['username'] ?? u['public_id'] ?? 'Asmar').toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        subtitle: Text('ID ' + (u['public_id'] ?? u['id']).toString() + ' • ' + (u['role'] ?? 'USER').toString() + ' • Coins ' + (u['coins'] ?? 0).toString(), style: const TextStyle(color: Colors.white54, fontSize: 10)),
+        trailing: Icon(u['is_active'] == true ? Icons.check_circle : Icons.block, color: u['is_active'] == true ? Colors.green : Colors.red, size: 18),
+      )),
+    ]),
+  );
 
   Widget _roomOrdering() {
     return Container(
