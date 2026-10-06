@@ -243,14 +243,208 @@ class _Message extends StatelessWidget { final String title,sub; final IconData 
 
 Future<void> _notifications(BuildContext context) async { final db=Supabase.instance.client; final uid=db.auth.currentUser?.id; if(uid==null)return; await showModalBottomSheet<void>(context:context,isScrollControlled:true,backgroundColor:_bg,builder:(_)=>SizedBox(height:MediaQuery.of(context).size.height*.72,child:StreamBuilder<List<Map<String,dynamic>>>(stream:db.from('notifications').stream(primaryKey:['id']).order('created_at',ascending:false),builder:(c,s){final rows=(s.data??const <Map<String,dynamic>>[]).where((x)=>x['user_id']==uid).toList();if(rows.isEmpty)return const Center(child:Text('لا توجد إشعارات حالياً',style:TextStyle(color:_muted)));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:rows.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i)=>ListTile(tileColor:_panel,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(16)),leading:const Icon(Icons.notifications_active_rounded,color:_gold),title:Text(rows[i]['title']?.toString()??'إشعار'),subtitle:Text(rows[i]['body']?.toString()??'',style:const TextStyle(color:_muted))));}))); }
 
-class _AyomeProfilePage extends StatefulWidget { const _AyomeProfilePage(); @override State<_AyomeProfilePage> createState()=>_AyomeProfilePageState(); }
-class _AyomeProfilePageState extends State<_AyomeProfilePage> { Map<String,dynamic> p={}; int followers=0,friends=0;
-  @override void initState(){super.initState();load();}
-  Future<void> load() async { final u=Supabase.instance.client.auth.currentUser;if(u==null)return;try{final db=Supabase.instance.client;final r=await db.from('profiles').select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url').eq('id',u.id).maybeSingle();final a=await db.from('follows').select('follower_id').eq('following_id',u.id);final b=await db.from('follows').select('following_id').eq('follower_id',u.id);if(mounted)setState(() { p=Map<String,dynamic>.from(r??{}); followers=(a as List).length; friends=(b as List).length; });}catch(_){}}
-  @override Widget build(BuildContext c){final name=(p['display_name']??p['username']??'Asmar User').toString();final id=(p['public_id']??'—').toString();return RefreshIndicator(onRefresh:load,child:ListView(padding:const EdgeInsets.fromLTRB(14,18,14,30),children:[const SafeArea(bottom:false,child:Text('أنا',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900))),const SizedBox(height:12),Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(22),gradient:const LinearGradient(colors:[Color(0xFF2A155F),Color(0xFF10152E)]),border:Border.all(color:Color(0xFF4B3972))),child:Column(children:[CircleAvatar(radius:43,backgroundColor:_purple,backgroundImage:(p['avatar_url']??'').toString().isNotEmpty?NetworkImage(p['avatar_url'].toString()):null,child:(p['avatar_url']??'').toString().isEmpty?Text(name.isEmpty?'A':name.characters.first.toUpperCase(),style:const TextStyle(fontSize:30,fontWeight:FontWeight.w900)):null),const SizedBox(height:10),Text(name,style:const TextStyle(fontSize:21,fontWeight:FontWeight.w900)),Text('ID '+id,style:const TextStyle(color:_muted,fontSize:11)),const SizedBox(height:15),Row(mainAxisAlignment:MainAxisAlignment.spaceAround,children:[_Stat(followers.toString(),'المتابعون'),_Stat('0','المشجعون'),_Stat(friends.toString(),'الأصدقاء'),_Stat('0','الزائرون')])])),const SizedBox(height:10),_Action('رصيدي','المحفظة والشحن والسحب',Icons.account_balance_wallet_rounded,()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const WalletPage()))),_Action('SVIP','الاشتراك والمزايا',Icons.workspace_premium_rounded,()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const SvipPage()))),_Action('معرض الشارة','الشارات والإنجازات',Icons.military_tech_rounded,()=>showModalBottomSheet(context:c,backgroundColor:_panel,builder:(_)=>const Padding(padding:EdgeInsets.all(20),child:ProfileBadges(verified:true)))),_Action('المتجر','الإطارات والعناصر',Icons.storefront_rounded,()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const StorePage()))),_Action('إكسسواراتي','العناصر المملوكة',Icons.auto_awesome_rounded,()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const StorePage()))),_Action('العائلة','العائلة والترتيب',Icons.groups_rounded,()=>_msg(c,'وحدة العائلة تحتاج جداولها الخاصة قبل تشغيلها')), _Action('المستوى','Lv.'+(p['user_level']??0).toString(),Icons.star_rounded,()=>_msg(c,'المستوى الحالي: '+(p['user_level']??0).toString())),_Action('الهدايا','الهدايا والجوائز',Icons.card_giftcard_rounded,()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const WalletGiftsPage()))),_Action('المهام اليومية','المكافآت اليومية',Icons.task_alt_rounded,()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const DailyTasksPage()))),_Action('مركز المساعدة','الدعم والمساعدة',Icons.help_outline_rounded,()=>_msg(c,'استخدم الدردشة الرسمية للتواصل مع الدعم')), _Action('الإعدادات','الخصوصية واللغة والحساب',Icons.settings_rounded,()=>_settings(c)),OutlinedButton.icon(onPressed:()=>Supabase.instance.client.auth.signOut(),icon:const Icon(Icons.logout_rounded),label:const Text('تسجيل الخروج'))])); }
-  void _msg(BuildContext c,String s)=>ScaffoldMessenger.of(c).showSnackBar(SnackBar(content:Text(s)));
-  void _settings(BuildContext c)=>showModalBottomSheet(context:c,backgroundColor:_panel,builder:(_)=>SafeArea(child:Column(mainAxisSize:MainAxisSize.min,children:[const ListTile(title:Text('الإعدادات',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900))),ListTile(leading:const Icon(Icons.language),title:const Text('اللغة'),onTap:()=>Navigator.pop(c)),ListTile(leading:const Icon(Icons.lock_outline),title:const Text('الخصوصية'),onTap:()=>Navigator.pop(c)),ListTile(leading:const Icon(Icons.block),title:const Text('الحظر'),onTap:()=>Navigator.pop(c)),ListTile(leading:const Icon(Icons.delete_outline),title:const Text('حذف الحساب'),onTap:()=>Navigator.pop(c))])));
+class _AyomeProfilePage extends StatefulWidget {
+  const _AyomeProfilePage();
+
+  @override
+  State<_AyomeProfilePage> createState() => _AyomeProfilePageState();
 }
+
+class _AyomeProfilePageState extends State<_AyomeProfilePage> {
+  Map<String, dynamic> p = {};
+  int followers = 0;
+  int friends = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  Future<void> load() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final db = Supabase.instance.client;
+      final profile = await db
+          .from('profiles')
+          .select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+      final followersRows = await db.from('follows').select('follower_id').eq('following_id', user.id);
+      final followingRows = await db.from('follows').select('following_id').eq('follower_id', user.id);
+      if (!mounted) return;
+      setState(() {
+        p = Map<String, dynamic>.from(profile ?? {});
+        followers = (followersRows as List).length;
+        friends = (followingRows as List).length;
+      });
+    } catch (_) {}
+  }
+
+  void _message(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _openSettings() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _panel,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text('الإعدادات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.language, color: _gold),
+              title: const Text('اللغة'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock_outline, color: _gold),
+              title: const Text('الخصوصية'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.block, color: _gold),
+              title: const Text('الحظر'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              title: const Text('حذف الحساب'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (p['display_name'] ?? p['username'] ?? 'Asmar User').toString();
+    final publicId = (p['public_id'] ?? '—').toString();
+    final avatar = (p['avatar_url'] ?? '').toString();
+    final level = (p['user_level'] ?? 0).toString();
+
+    return RefreshIndicator(
+      onRefresh: load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(14, 18, 14, 30),
+        children: [
+          const SafeArea(
+            bottom: false,
+            child: Text('أنا', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2A155F), Color(0xFF10152E)],
+              ),
+              border: Border.all(color: Color(0xFF4B3972)),
+            ),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 43,
+                  backgroundColor: _purple,
+                  backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                  child: avatar.isEmpty
+                      ? Text(
+                          name.isEmpty ? 'A' : name.characters.first.toUpperCase(),
+                          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                        )
+                      : null,
+                ),
+                const SizedBox(height: 10),
+                Text(name, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 2),
+                Text('ID $publicId', style: const TextStyle(color: _muted, fontSize: 11)),
+                const SizedBox(height: 15),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _Stat(followers.toString(), 'المتابعون'),
+                    const _Stat('0', 'المشجعون'),
+                    _Stat(friends.toString(), 'الأصدقاء'),
+                    const _Stat('0', 'الزائرون'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          _Action(
+            'رصيدي',
+            'المحفظة والشحن والسحب',
+            Icons.account_balance_wallet_rounded,
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage())),
+          ),
+          _Action(
+            'SVIP',
+            'الاشتراك والمزايا',
+            Icons.workspace_premium_rounded,
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SvipPage())),
+          ),
+          _Action(
+            'معرض الشارة',
+            'الشارات والإنجازات',
+            Icons.military_tech_rounded,
+            () => showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: _panel,
+              builder: (_) => const Padding(
+                padding: EdgeInsets.all(20),
+                child: ProfileBadges(verified: true),
+              ),
+            ),
+          ),
+          _Action(
+            'المتجر',
+            'الإطارات والعناصر',
+            Icons.storefront_rounded,
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorePage())),
+          ),
+          _Action(
+            'إكسسواراتي',
+            'العناصر المملوكة',
+            Icons.auto_awesome_rounded,
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorePage())),
+          ),
+          _Action('العائلة', 'العائلة والترتيب', Icons.groups_rounded, () => _message('وحدة العائلة تحتاج جداولها الخاصة قبل تشغيلها')),
+          _Action('المستوى', 'Lv.$level', Icons.star_rounded, () => _message('المستوى الحالي: $level')),
+          _Action(
+            'الهدايا',
+            'الهدايا والجوائز',
+            Icons.card_giftcard_rounded,
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletGiftsPage())),
+          ),
+          _Action(
+            'المهام اليومية',
+            'المكافآت اليومية',
+            Icons.task_alt_rounded,
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyTasksPage())),
+          ),
+          _Action('مركز المساعدة', 'الدعم والمساعدة', Icons.help_outline_rounded, () => _message('استخدم الدردشة الرسمية للتواصل مع الدعم')),
+          _Action('الإعدادات', 'الخصوصية واللغة والحساب', Icons.settings_rounded, _openSettings),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => Supabase.instance.client.auth.signOut(),
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text('تسجيل الخروج'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Action extends StatelessWidget { final String title,sub; final IconData icon; final VoidCallback tap; const _Action(this.title,this.sub,this.icon,this.tap); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(bottom:8),child:InkWell(onTap:tap,borderRadius:BorderRadius.circular(16),child:Container(padding:const EdgeInsets.symmetric(horizontal:14,vertical:12),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(16)),child:Row(children:[Icon(icon,color:_gold,size:25),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900)),const SizedBox(height:2),Text(sub,style:const TextStyle(color:_muted,fontSize:10))])),const Icon(Icons.chevron_left_rounded,color:_muted)])))); }
 class _Stat extends StatelessWidget { final String value,label; const _Stat(this.value,this.label); @override Widget build(BuildContext c)=>Column(children:[Text(value,style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900)),const SizedBox(height:3),Text(label,style:const TextStyle(color:_muted,fontSize:9))]); }
 class _Chip extends StatelessWidget { final String label; final bool selected; final VoidCallback tap; const _Chip(this.label,this.selected,this.tap); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(left:7),child:ChoiceChip(label:Text(label,style:TextStyle(fontSize:11,fontWeight:selected?FontWeight.w900:FontWeight.w500)),selected:selected,onSelected:(_)=>tap(),selectedColor:_gold,backgroundColor:_panel,side:BorderSide(color:selected?_gold:const Color(0xFF2B315A)))); }
