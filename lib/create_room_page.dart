@@ -36,6 +36,9 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
       final room = await _repo.createRoom(
         name: name,
         liveKitRoomName: 'asmar-${DateTime.now().millisecondsSinceEpoch}',
+        tags: [_category],
+        roomType: _private ? 'private' : 'party',
+        seatCount: _seats,
       );
       if (!mounted) return;
       Navigator.pushReplacement(
