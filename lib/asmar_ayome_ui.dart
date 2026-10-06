@@ -7,6 +7,7 @@ import 'create_room_page.dart';
 import 'daily_tasks_page.dart';
 import 'family_page.dart';
 import 'blocked_users_page.dart';
+import 'badges_page.dart';
 import 'ranking_page.dart';
 import 'global_chat.dart';
 import 'games_page.dart';
@@ -683,16 +684,9 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
           ),
           _Action(
             'معرض الشارة',
-            'الشارات والإنجازات',
+            'الشارات والإنجازات الفعلية',
             Icons.military_tech_rounded,
-            () => showModalBottomSheet<void>(
-              context: context,
-              backgroundColor: _panel,
-              builder: (_) => const Padding(
-                padding: EdgeInsets.all(20),
-                child: ProfileBadges(verified: true),
-              ),
-            ),
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarBadgesPage())),
           ),
           _Action(
             'المتجر',
