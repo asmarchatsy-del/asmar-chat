@@ -84,7 +84,7 @@ class RoomRepository {
     }
     final row = await db.rpc('create_room_full', params: {
       'p_name': name.trim(),
-      'p_seat_count': seatCount ?? 15,
+      'p_seat_count': seatCount ?? 8,
       'p_room_type': roomType,
       'p_tags': tags,
       'p_country_code': 'JO',
@@ -99,12 +99,12 @@ class RoomRepository {
     if (db == null || SupabaseRuntime.currentUser == null) {
       throw StateError('Supabase authentication is required to join a room.');
     }
-    await db.rpc('join_room', params: {'p_room_id': roomId});
+    await db.rpc('asmar_join_room', params: {'p_room_id': roomId});
   }
 
   Future<void> leaveRoom(String roomId) async {
     final db = client;
     if (db == null || SupabaseRuntime.currentUser == null) return;
-    await db.rpc('leave_room', params: {'p_room_id': roomId});
+    await db.rpc('asmar_leave_room', params: {'p_room_id': roomId});
   }
 }
