@@ -98,3 +98,16 @@ begin
         jsonb_build_object('fee',r.fee,'note',p_note));
  return p_status;
 end $$;
+
+
+create or replace function public.admin_adjust_wallet(p_user_id uuid,p_amount bigint)
+returns bigint language plpgsql security definer set search_path=public
+as $$
+declare b bigint;
+begin
+ if not public.has_role(array['CEO','SUPER_ADMIN']::public.app_role[]) then raise exception 'not authorized'; end if;
+ update public.profiles set coins=coalesce(coins,0)+p_amount,updated_at=now()
+ where id=p_user_id and coalesce(coins,0)+p_amount>=0 returning coins into b;
+ if b is null then raise exception 'insufficient coins or profile not found'; end if;
+ return b;
+end $$;
