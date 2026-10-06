@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'core/rooms/room_repository.dart';
 import 'core/rooms/real_voice_room_page.dart';
 import 'daily_tasks_page.dart';
@@ -18,6 +19,43 @@ class AsmarGamesPage extends StatefulWidget {
 }
 class _AsmarGamesPageState extends State<AsmarGamesPage> {
   final repo = RoomRepository();
+  Future<void> _companyGames() async {
+    final rows = await db.from('company_game_links').select('id,name,provider,url,icon_url,description').eq('is_active', true).order('sort_order').order('created_at', ascending: false);
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _bg,
+      builder: (_) => SafeArea(
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: ListView(
+            padding: const EdgeInsets.all(14),
+            shrinkWrap: true,
+            children: [
+              const Text('ألعاب الشركة', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              ...List<Map<String, dynamic>>.from(rows).map((g) => ListTile(
+                tileColor: _panel,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                leading: const CircleAvatar(backgroundColor: _gold, child: Icon(Icons.sports_esports, color: Colors.black)),
+                title: Text(g['name']?.toString() ?? 'لعبة'),
+                subtitle: Text(g['provider']?.toString() ?? 'Asmar', style: const TextStyle(color: _muted)),
+                trailing: const Icon(Icons.open_in_new, color: _gold),
+                onTap: () async {
+                  final uri = Uri.tryParse(g['url']?.toString() ?? '');
+                  if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح رابط اللعبة')));
+                  }
+                },
+              )),
+              if (rows.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('لا توجد ألعاب شركة مفعلة حالياً', textAlign: TextAlign.center, style: TextStyle(color: _muted))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
@@ -188,6 +226,8 @@ class _RoomGamesPageState extends State<RoomGamesPage> {
         padding: const EdgeInsets.all(14),
         children: [
           const Text('الألعاب الفعلية', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 10),
+          FilledButton.icon(onPressed: _companyGames, icon: const Icon(Icons.link), label: const Text('ألعاب الشركة وروابطها')),
           const SizedBox(height: 8),
           if (gameId == null) ...[
             _GameButton('بدء نرد', Icons.casino, () => _start('dice')),
