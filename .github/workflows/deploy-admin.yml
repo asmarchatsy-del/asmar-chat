@@ -1,5 +1,6 @@
 name: Deploy External Admin Dashboard
 # Force GitHub Pages deployment on main changes
+# Manual republish trigger: 2026-10-06
 
 on:
   workflow_dispatch:
