@@ -91,7 +91,7 @@ class _AsmarFamilyPageState extends State<AsmarFamilyPage> {
     if (busy || mine != null) return;
     setState(() => busy = true);
     try {
-      await db.from('family_members').insert({'family_id': familyId, 'user_id': db.auth.currentUser!.id, 'role': 'member'});
+      await db.rpc('asmar_join_family', params: {'p_family_id': familyId});
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الانضمام: ' + e.toString())));
