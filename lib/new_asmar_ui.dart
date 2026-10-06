@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/rooms/room_repository.dart';
 import 'core/rooms/real_voice_room_page.dart';
+import 'core/rooms/room_social_repository.dart';
 import 'global_chat.dart';
 import 'private_conversations.dart';
 import 'wallet.dart';
@@ -184,40 +185,113 @@ class _HeroBanner extends StatelessWidget {
   );
 }
 
-class _RoomCard extends StatelessWidget {
+
+class _RoomCard extends StatefulWidget {
   final VoiceRoomRecord room;
   final VoidCallback onTap;
   const _RoomCard({required this.room, required this.onTap});
+
+  @override
+  State<_RoomCard> createState() => _RoomCardState();
+}
+
+class _RoomCardState extends State<_RoomCard> {
+  final social = RoomSocialRepository();
+  String? ownerAvatar;
+  String ownerInitial = 'A';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwner();
+  }
+
+  Future<void> _loadOwner() async {
+    final ownerId = widget.room.ownerId;
+    if (ownerId == null || ownerId.isEmpty) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('profiles')
+          .select('display_name,username,avatar_url')
+          .eq('id', ownerId)
+          .maybeSingle();
+      if (!mounted || row == null) return;
+      final name = (row['display_name'] ?? row['username'] ?? 'A').toString();
+      setState(() {
+        ownerAvatar = row['avatar_url']?.toString();
+        ownerInitial = name.isNotEmpty ? name.characters.first.toUpperCase() : 'A';
+      });
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
-    final seed = room.name.codeUnits.fold<int>(0, (a, b) => a + b);
+    final seed = widget.room.name.codeUnits.fold<int>(0, (a, b) => a + b);
     final gradients = [
-      const [Color(0xFF7C2DFF), Color(0xFF25104D)], const [Color(0xFFE32EFF), Color(0xFF35104A)],
-      const [Color(0xFF176CFF), Color(0xFF102548)], const [Color(0xFF00A9A5), Color(0xFF102F38)],
+      const [Color(0xFF7C2DFF), Color(0xFF25104D)],
+      const [Color(0xFFE32EFF), Color(0xFF35104A)],
+      const [Color(0xFF176CFF), Color(0xFF102548)],
+      const [Color(0xFF00A9A5), Color(0xFF102F38)],
     ];
     final g = gradients[seed % gradients.length];
-    return InkWell(
-      onTap: onTap, borderRadius: BorderRadius.circular(22),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), gradient: LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: g), border: Border.all(color: Colors.white.withOpacity(.08))),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            const _Avatar(initial: 'A', size: 48),
-            const SizedBox(width: 8),
-            Expanded(child: Text(room.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900))),
-            const Icon(Icons.more_horiz_rounded, color: Colors.white70),
-          ]),
-          const Spacer(),
-          Row(children: [
-            const Icon(Icons.mic_rounded, size: 16, color: _cyan), const SizedBox(width: 4),
-            Text(room.isActive ? 'مباشر الآن' : 'متوقف', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-            const Spacer(),
-            const Icon(Icons.people_alt_rounded, size: 15, color: Colors.white70), const SizedBox(width: 4),
-            Text('${room.seatCount}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-          ]),
-        ]),
-      ),
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: social.watchSeats(widget.room.id),
+      builder: (context, snap) {
+        final occupied = (snap.data ?? const <Map<String, dynamic>>[])
+            .where((row) => row['user_id'] != null)
+            .length;
+        return InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: g),
+              border: Border.all(color: Colors.white.withOpacity(.08)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _Avatar(initial: ownerInitial, size: 48, imageUrl: ownerAvatar),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.room.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    const Icon(Icons.more_horiz_rounded, color: Colors.white70),
+                  ],
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    const Icon(Icons.mic_rounded, size: 16, color: _cyan),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.room.isActive ? 'مباشر الآن' : 'متوقف',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.people_alt_rounded, size: 15, color: Colors.white70),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$occupied/${widget.room.seatCount}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
