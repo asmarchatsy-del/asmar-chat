@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'admin/**'
+      - 'lib/admin_web_config.dart'
       - '.github/workflows/deploy-admin.yml'
 
 permissions:
