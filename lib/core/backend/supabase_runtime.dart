@@ -26,6 +26,7 @@ class SupabaseRuntime {
       await Supabase.initialize(
         url: BackendConfig.supabaseUrl,
         publishableKey: BackendConfig.supabasePublishableKey,
+        authFlowType: AuthFlowType.pkce,
       );
       _initialized = true;
       return true;
