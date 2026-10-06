@@ -8,6 +8,7 @@ import 'daily_tasks_page.dart';
 import 'family_page.dart';
 import 'blocked_users_page.dart';
 import 'badges_page.dart';
+import 'accessories_page.dart';
 import 'ranking_page.dart';
 import 'global_chat.dart';
 import 'games_page.dart';
@@ -696,9 +697,9 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
           ),
           _Action(
             'إكسسواراتي',
-            'العناصر المملوكة',
+            'العناصر المملوكة فعلياً',
             Icons.auto_awesome_rounded,
-            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorePage())),
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarAccessoriesPage())),
           ),
           _Action('العائلة', 'العائلة والترتيب', Icons.groups_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarFamilyPage()))),
           _Action('المستوى', 'Lv.$level', Icons.star_rounded, () => _message('المستوى الحالي: $level')),
