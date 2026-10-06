@@ -109,6 +109,27 @@ class _NewAsmarActions {
   controller.dispose();
 }
 
+
+  static Future<void> showBadges(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _panel,
+      builder: (_) => const Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('الشارات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            SizedBox(height: 14),
+            ProfileBadges(verified: true),
+            SizedBox(height: 12),
+            Text('ستظهر الشارات المتاحة لحسابك هنا.', style: TextStyle(color: _text2)),
+          ],
+        ),
+      ),
+    );
+  }
+
   static Future<void> showNotifications(BuildContext context) async {
   final db = Supabase.instance.client;
   final uid = db.auth.currentUser?.id;
@@ -752,7 +773,7 @@ class _NewProfilePageState extends State<_NewProfilePage> {
         const SizedBox(height: 14),
         _ActionCard(icon: Icons.workspace_premium_rounded, title: 'VIP / SVIP', subtitle: 'المزايا والمستويات', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SvipPage()))),
         const SizedBox(height: 10),
-        _ActionCard(icon: Icons.auto_awesome_rounded, title: 'الإطارات والشارات', subtitle: 'تخصيص مظهرك داخل Asmar', onTap: () => showModalBottomSheet<void>(context: context, backgroundColor: _panel, builder: (_) => const Padding(padding: EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [Text('الشارات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)), SizedBox(height: 14), ProfileBadges(verified: true), SizedBox(height: 12), Text('ستظهر الشارات المتاحة لحسابك هنا.', style: TextStyle(color: _text2))]))),
+        _ActionCard(icon: Icons.auto_awesome_rounded, title: 'الإطارات والشارات', subtitle: 'تخصيص مظهرك داخل Asmar', onTap: () => _NewAsmarActions.showBadges(context)),
         const SizedBox(height: 10),
         _ActionCard(icon: Icons.logout_rounded, title: 'تسجيل الخروج', subtitle: 'الخروج من الحساب', onTap: () => Supabase.instance.client.auth.signOut()),
       ]),
