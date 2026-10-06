@@ -6,6 +6,7 @@ import 'core/rooms/room_social_repository.dart';
 import 'create_room_page.dart';
 import 'daily_tasks_page.dart';
 import 'family_page.dart';
+import 'blocked_users_page.dart';
 import 'global_chat.dart';
 import 'private_conversations.dart';
 import 'profile_badges.dart';
@@ -500,32 +501,68 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: _panel,
-      builder: (_) => SafeArea(
+      builder: (sheet) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ListTile(
-              title: Text('الإعدادات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-            ),
+            const ListTile(title: Text('الإعدادات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
             ListTile(
               leading: const Icon(Icons.language, color: _gold),
               title: const Text('اللغة'),
-              onTap: () => Navigator.pop(context),
+              subtitle: Text((p['language'] ?? 'ar').toString()),
+              onTap: () async {
+                final lang = await showDialog<String>(context: sheet, builder: (d) => SimpleDialog(
+                  title: const Text('اختر اللغة'),
+                  children: [
+                    SimpleDialogOption(onPressed: () => Navigator.pop(d, 'ar'), child: const Text('العربية')),
+                    SimpleDialogOption(onPressed: () => Navigator.pop(d, 'en'), child: const Text('English')),
+                    SimpleDialogOption(onPressed: () => Navigator.pop(d, 'de'), child: const Text('Deutsch')),
+                    SimpleDialogOption(onPressed: () => Navigator.pop(d, 'nl'), child: const Text('Nederlands')),
+                  ],
+                ));
+                if (lang == null) return;
+                await Supabase.instance.client.from('profiles').update({'language': lang}).eq('id', Supabase.instance.client.auth.currentUser!.id);
+                if (mounted) { Navigator.pop(sheet); await load(); }
+              },
             ),
             ListTile(
               leading: const Icon(Icons.lock_outline, color: _gold),
               title: const Text('الخصوصية'),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(sheet);
+                _message('إعدادات الخصوصية الأساسية مرتبطة بسياسات قاعدة البيانات. الحظر متاح من قسم الحظر.');
+              },
             ),
             ListTile(
               leading: const Icon(Icons.block, color: _gold),
               title: const Text('الحظر'),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(sheet);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AsmarBlockedUsersPage()));
+              },
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
               title: const Text('حذف الحساب'),
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                Navigator.pop(sheet);
+                final ok = await showDialog<bool>(context: context, builder: (d) => AlertDialog(
+                  title: const Text('حذف الحساب'),
+                  content: const Text('سيتم تعطيل حسابك فوراً ولا يمكن استخدامه حتى تعيد تفعيله من الإدارة. هل تريد المتابعة؟'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('إلغاء')),
+                    FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('تعطيل الحساب')),
+                  ],
+                ));
+                if (ok == true) {
+                  try {
+                    await Supabase.instance.client.rpc('deactivate_my_account');
+                    await Supabase.instance.client.auth.signOut();
+                  } catch (e) {
+                    if (mounted) _message('تعذر تعطيل الحساب: ' + e.toString());
+                  }
+                }
+              },
             ),
           ],
         ),
