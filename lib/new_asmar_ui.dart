@@ -19,6 +19,147 @@ const _pink = Color(0xFFE33DFF);
 const _cyan = Color(0xFF4EDCFF);
 const _text2 = Color(0xFF9EA6C7);
 
+
+Future<void> _showRoomSearch(BuildContext context) async {
+  final controller = TextEditingController();
+  final repo = RoomRepository();
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: _panel,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setSheetState) {
+        List<VoiceRoomRecord> results = const [];
+        bool loading = false;
+        String? error;
+        Future<void> search() async {
+          final q = controller.text.trim();
+          if (q.isEmpty) return;
+          setSheetState(() { loading = true; error = null; });
+          try {
+            final db = repo.client;
+            if (db == null) throw StateError('Supabase غير متاح');
+            final rows = await db
+                .from('rooms')
+                .select('id,name,owner_id,livekit_room_name,is_active,seat_count')
+                .eq('is_active', true)
+                .ilike('name', '%$q%')
+                .order('created_at', ascending: false)
+                .limit(20);
+            results = (rows as List).cast<Map<String, dynamic>>().map(VoiceRoomRecord.fromMap).toList(growable: false);
+          } catch (e) {
+            error = 'تعذر البحث: $e';
+          } finally {
+            if (sheetContext.mounted) setSheetState(() => loading = false);
+          }
+        }
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(sheetContext).viewInsets.bottom + 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('بحث عن غرفة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: TextField(
+                  controller: controller,
+                  autofocus: true,
+                  onSubmitted: (_) => search(),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _input('اسم الغرفة'),
+                )),
+                const SizedBox(width: 8),
+                IconButton.filled(onPressed: loading ? null : search, icon: const Icon(Icons.search_rounded)),
+              ]),
+              const SizedBox(height: 12),
+              if (loading)
+                const Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())
+              else if (error != null)
+                Padding(padding: const EdgeInsets.all(16), child: Text(error!, style: const TextStyle(color: Colors.white70)))
+              else if (results.isNotEmpty)
+                Flexible(child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: results.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) {
+                    final room = results[i];
+                    return ListTile(
+                      tileColor: _panel2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      leading: const _Avatar(initial: 'A', size: 48),
+                      title: Text(room.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                      subtitle: Text('\${room.seatCount} مقعد', style: const TextStyle(color: _text2)),
+                      trailing: const Icon(Icons.chevron_left_rounded),
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: room)));
+                      },
+                    );
+                  },
+                ))
+              else
+                const Padding(padding: EdgeInsets.all(20), child: Text('اكتب اسم الغرفة ثم اضغط بحث.', style: TextStyle(color: _text2))),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+  controller.dispose();
+}
+
+Future<void> _showNotifications(BuildContext context) async {
+  final db = Supabase.instance.client;
+  final uid = db.auth.currentUser?.id;
+  if (uid == null) return;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: _bg,
+    builder: (sheetContext) => SafeArea(
+      child: SizedBox(
+        height: MediaQuery.of(sheetContext).size.height * .72,
+        child: Column(children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(18, 18, 18, 10),
+            child: Row(children: [
+              Icon(Icons.notifications_active_rounded, color: _pink),
+              SizedBox(width: 8),
+              Text('الإشعارات', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+            ]),
+          ),
+          Expanded(child: StreamBuilder<List<Map<String, dynamic>>>(
+            stream: db.from('notifications').stream(primaryKey: ['id']).order('created_at', ascending: false),
+            builder: (context, snap) {
+              final rows = (snap.data ?? const <Map<String, dynamic>>[]).where((x) => x['user_id'] == uid).toList();
+              if (rows.isEmpty) return const Center(child: Text('لا توجد إشعارات حالياً', style: TextStyle(color: _text2)));
+              return ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: rows.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (_, i) {
+                  final row = rows[i];
+                  final read = row['is_read'] == true;
+                  return ListTile(
+                    tileColor: read ? _panel : const Color(0xFF21183B),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    leading: Icon(read ? Icons.notifications_none_rounded : Icons.notifications_active_rounded, color: read ? _text2 : _cyan),
+                    title: Text(row['title']?.toString() ?? 'إشعار', style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(row['body']?.toString() ?? '', style: const TextStyle(color: _text2)),
+                    onTap: read ? null : () async {
+                      await db.rpc('mark_notification_read', params: {'p_id': row['id']});
+                    },
+                  );
+                },
+              );
+            },
+          )),
+        ]),
+      ),
+    ),
+  );
+}
+
 class NewAsmarShell extends StatefulWidget {
   const NewAsmarShell({super.key});
   @override State<NewAsmarShell> createState() => _NewAsmarShellState();
