@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/rooms/room_repository.dart';
 import 'core/rooms/real_voice_room_page.dart';
 import 'core/rooms/room_social_repository.dart';
+import 'profile_badges.dart';
+import 'core/wallet/wallet_repository.dart';
 import 'global_chat.dart';
 import 'private_conversations.dart';
 import 'wallet.dart';
@@ -296,6 +298,7 @@ class _RoomCardState extends State<_RoomCard> {
   }
 }
 
+
 class _NewDiscoverPage extends StatefulWidget {
   const _NewDiscoverPage();
   @override State<_NewDiscoverPage> createState() => _NewDiscoverPageState();
@@ -304,65 +307,91 @@ class _NewDiscoverPage extends StatefulWidget {
 class _NewDiscoverPageState extends State<_NewDiscoverPage> {
   final repo = RoomRepository();
   String category = 'الكل';
+  String query = '';
+
+  bool _matches(VoiceRoomRecord room) {
+    final q = query.trim().toLowerCase();
+    if (q.isNotEmpty && !room.name.toLowerCase().contains(q)) return false;
+    if (category == 'الكل') return true;
+    final name = room.name.toLowerCase();
+    const keywords = {
+      'موسيقى': ['موسيقى', 'music', 'song', 'dj'],
+      'دردشة': ['دردشة', 'chat', 'talk'],
+      'أصدقاء': ['أصدقاء', 'friends', 'friend'],
+      'مميز': ['مميز', 'vip', 'svip', 'elite'],
+    };
+    return (keywords[category] ?? const <String>[]).any(name.contains);
+  }
+
   @override
   Widget build(BuildContext context) => CustomScrollView(slivers: [
-    SliverToBoxAdapter(child: SafeArea(bottom: false, child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('اكتشف', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 14),
-        TextField(style: const TextStyle(color: Colors.white), decoration: _input('ابحث عن غرفة أو مستخدم...').copyWith(prefixIcon: const Icon(Icons.search))),
-        const SizedBox(height: 14),
-        SizedBox(height: 42, child: ListView(
-          scrollDirection: Axis.horizontal,
-          children: ['الكل', 'موسيقى', 'دردشة', 'أصدقاء', 'مميز'].map((x) => Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: ChoiceChip(label: Text(x), selected: category == x, onSelected: (_) => setState(() => category = x), selectedColor: _purple, backgroundColor: _panel, labelStyle: TextStyle(color: category == x ? Colors.white : _text2)),
-          )).toList(),
-        )),
-      ]),
-    ))),
+    SliverToBoxAdapter(
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('اكتشف', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 14),
+              TextField(
+                style: const TextStyle(color: Colors.white),
+                onChanged: (value) => setState(() => query = value),
+                decoration: _input('ابحث عن غرفة...').copyWith(prefixIcon: const Icon(Icons.search)),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 42,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: ['الكل', 'موسيقى', 'دردشة', 'أصدقاء', 'مميز'].map((x) => Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: ChoiceChip(
+                      label: Text(x),
+                      selected: category == x,
+                      onSelected: (_) => setState(() => category = x),
+                      selectedColor: _purple,
+                      backgroundColor: _panel,
+                      labelStyle: TextStyle(color: category == x ? Colors.white : _text2),
+                    ),
+                  )).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
     StreamBuilder<List<Map<String, dynamic>>>(
       stream: repo.watchActiveRooms(),
       builder: (context, snap) {
-        final rooms = (snap.data ?? const <Map<String, dynamic>>[]).map(VoiceRoomRecord.fromMap).toList();
-        if (rooms.isEmpty) return const SliverToBoxAdapter(child: _EmptyCard('لا توجد غرف مطابقة الآن.'));
+        final rooms = (snap.data ?? const <Map<String, dynamic>>[])
+            .map(VoiceRoomRecord.fromMap)
+            .where(_matches)
+            .toList(growable: false);
+        if (rooms.isEmpty) {
+          return const SliverToBoxAdapter(child: _EmptyCard('لا توجد غرف مطابقة الآن.'));
+        }
         return SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           sliver: SliverList.builder(
             itemCount: rooms.length,
             itemBuilder: (_, i) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _DiscoverRoomTile(room: rooms[i], onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: rooms[i])))),
+              child: _DiscoverRoomTile(
+                room: rooms[i],
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RealVoiceRoomPage(room: rooms[i])),
+                ),
+              ),
             ),
           ),
         );
       },
     ),
   ]);
-}
-
-class _DiscoverRoomTile extends StatelessWidget {
-  final VoiceRoomRecord room;
-  final VoidCallback onTap;
-  const _DiscoverRoomTile({required this.room, required this.onTap});
-  @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap, borderRadius: BorderRadius.circular(20),
-    child: Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF262B50))),
-      child: Row(children: [
-        const _Avatar(initial: 'A', size: 58), const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(room.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 5),
-          Text('غرفة صوتية • ${room.seatCount} مقعد', style: const TextStyle(color: _text2, fontSize: 12)),
-        ])),
-        FilledButton(onPressed: onTap, style: FilledButton.styleFrom(backgroundColor: _purple), child: const Text('دخول')),
-      ]),
-    ),
-  );
 }
 
 class _NewMessagesPage extends StatelessWidget {
@@ -381,6 +410,77 @@ class _NewMessagesPage extends StatelessWidget {
       _MessageTile(icon: Icons.notifications_rounded, title: 'الإشعارات', subtitle: 'آخر التحديثات والتنبيهات', onTap: () => _showNotifications(context)),
     ]))),
   ]);
+}
+
+
+class _WalletHistoryPage extends StatelessWidget {
+  const _WalletHistoryPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final repo = WalletRepository();
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _bg,
+        appBar: AppBar(
+          backgroundColor: _bg,
+          title: const Text('سجل العمليات', style: TextStyle(fontWeight: FontWeight.w900)),
+        ),
+        body: uid == null
+            ? const Center(child: Text('يجب تسجيل الدخول أولاً'))
+            : StreamBuilder<List<Map<String, dynamic>>>(
+                stream: repo.watchTransactions(),
+                builder: (context, snap) {
+                  final rows = (snap.data ?? const <Map<String, dynamic>>[])
+                      .where((row) => row['user_id'] == uid)
+                      .toList();
+                  if (rows.isEmpty) {
+                    return const Center(
+                      child: Text('لا توجد عمليات حتى الآن', style: TextStyle(color: _text2)),
+                    );
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: rows.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) {
+                      final row = rows[i];
+                      final delta = (row['coins_delta'] ?? row['amount'] ?? row['value'] ?? 0);
+                      final reason = (row['reason'] ?? row['type'] ?? 'عملية محفظة').toString();
+                      final created = row['created_at']?.toString() ?? '';
+                      return Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(18)),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.receipt_long_rounded, color: _cyan),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(reason, style: const TextStyle(fontWeight: FontWeight.w800)),
+                                  if (created.isNotEmpty)
+                                    Text(created.replaceFirst('T', ' '), style: const TextStyle(color: _text2, fontSize: 10)),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              delta.toString(),
+                              style: const TextStyle(fontWeight: FontWeight.w900, color: _pink),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+      ),
+    );
+  }
 }
 
 class _NewWalletPage extends StatefulWidget {
@@ -415,7 +515,7 @@ class _NewWalletPageState extends State<_NewWalletPage> {
       const SizedBox(height: 10),
       _ActionCard(icon: Icons.account_balance_rounded, title: 'السحب', subtitle: 'إدارة طلبات السحب', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WithdrawalMethodsPage()))),
       const SizedBox(height: 10),
-      const _ActionCard(icon: Icons.history_rounded, title: 'سجل العمليات', subtitle: 'راجع حركة محفظتك'),
+      _ActionCard(icon: Icons.history_rounded, title: 'سجل العمليات', subtitle: 'راجع حركة محفظتك', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _WalletHistoryPage()))),
     ]),
   );
 }
@@ -465,7 +565,7 @@ class _NewProfilePageState extends State<_NewProfilePage> {
         const SizedBox(height: 14),
         _ActionCard(icon: Icons.workspace_premium_rounded, title: 'VIP / SVIP', subtitle: 'المزايا والمستويات', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SvipPage()))),
         const SizedBox(height: 10),
-        const _ActionCard(icon: Icons.auto_awesome_rounded, title: 'الإطارات والشارات', subtitle: 'تخصيص مظهرك داخل Asmar'),
+        _ActionCard(icon: Icons.auto_awesome_rounded, title: 'الإطارات والشارات', subtitle: 'تخصيص مظهرك داخل Asmar', onTap: () => showModalBottomSheet<void>(context: context, backgroundColor: _panel, builder: (_) => const Padding(padding: EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [Text('الشارات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)), SizedBox(height: 14), ProfileBadges(verified: true), SizedBox(height: 12), Text('ستظهر الشارات المتاحة لحسابك هنا.', style: TextStyle(color: _text2))]))),
         const SizedBox(height: 10),
         _ActionCard(icon: Icons.logout_rounded, title: 'تسجيل الخروج', subtitle: 'الخروج من الحساب', onTap: () => Supabase.instance.client.auth.signOut()),
       ]),
