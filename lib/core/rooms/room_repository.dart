@@ -64,6 +64,9 @@ class RoomRepository {
   Future<VoiceRoomRecord> createRoom({
     required String name,
     required String liveKitRoomName,
+    List<String> tags = const [],
+    String roomType = 'party',
+    int? seatCount,
   }) async {
     final db = client;
     final user = SupabaseRuntime.currentUser;
@@ -78,6 +81,9 @@ class RoomRepository {
           'owner_id': user.id,
           'livekit_room_name': liveKitRoomName.trim(),
           'is_active': true,
+          'tags': tags,
+          'room_type': roomType,
+          if (seatCount != null) 'seat_count': seatCount,
         })
         .select('id,name,owner_id,livekit_room_name,is_active,seat_count')
         .single();
