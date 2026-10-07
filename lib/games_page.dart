@@ -7,11 +7,11 @@ import 'core/rooms/room_repository.dart';
 import 'core/rooms/real_voice_room_page.dart';
 import 'daily_tasks_page.dart';
 
-const _bg = Color(0xFF070817);
-const _panel = Color(0xFF11152D);
+const _bg = Color(0xFF090604);
+const _panel = Color(0xFF1B0E08);
 const _gold = Color(0xFFFFC94A);
-const _orange = Color(0xFFFF9418);
-const _muted = Color(0xFFA9B0D0);
+const _orange = Color(0xFFB77921);
+const _muted = Color(0xFFB9A995);
 
 class AsmarGamesPage extends StatefulWidget {
   const AsmarGamesPage({super.key});
@@ -50,7 +50,7 @@ class _AsmarGamesPageState extends State<AsmarGamesPage> {
       borderRadius: BorderRadius.circular(19),
       child: Container(
         padding: const EdgeInsets.all(17),
-        decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(19), border: Border.all(color: const Color(0xFF2B315A))),
+        decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(19), border: Border.all(color: const Color(0xFF5A3A19))),
         child: Row(children: [
           Container(width: 56, height: 56, decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [_orange, _gold])), child: Icon(icon, color: const Color(0xFF4C2000), size: 29)),
           const SizedBox(width: 13),
@@ -88,7 +88,7 @@ class _AsmarGamesPageState extends State<AsmarGamesPage> {
                     ...rooms.map((room) => ListTile(
                       tileColor: _panel,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      leading: const CircleAvatar(backgroundColor: Color(0xFF7B3FF2), child: Icon(Icons.mic)),
+                      leading: const CircleAvatar(backgroundColor: Color(0xFF8B5A1E), child: Icon(Icons.mic)),
                       title: Text(room.name, style: const TextStyle(fontWeight: FontWeight.w900)),
                       subtitle: Text(room.id, style: const TextStyle(color: _muted, fontSize: 9)),
                       trailing: const Icon(Icons.play_arrow_rounded, color: _gold),
