@@ -25,7 +25,10 @@ class SupabaseRuntime {
         publishableKey: BackendConfig.supabasePublishableKey,
         authOptions: const FlutterAuthClientOptions(
           authFlowType: AuthFlowType.pkce,
-          detectSessionInUri: false,
+          // Let supabase_flutter own the OAuth callback/deep-link lifecycle.
+          // A second manual getSessionFromUrl() handler can consume the same
+          // PKCE state twice and produce "State has already been used".
+          detectSessionInUri: true,
         ),
       );
       _initialized = true;
