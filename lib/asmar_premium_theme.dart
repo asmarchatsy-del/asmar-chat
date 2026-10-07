@@ -7,33 +7,33 @@ abstract final class AsmarPremiumTheme {
   static const surface2 = Color(0xFF24150D);
   static const gold = Color(0xFFFFD36A);
   static const goldBright = Color(0xFFFFE8A8);
-  static const goldDeep = Color(0xFFE53935);
-  static const copper = Color(0xFFB71C1C);
-  static const wine = Color(0xFF5C1015);
+  static const goldDeep = Color(0xFF9A641F);
+  static const copper = Color(0xFFB77921);
+  static const wine = Color(0xFF3A1808);
   static const muted = Color(0xFFB9A995);
 
   static const goldGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [goldBright, gold, goldDeep],
+    colors: [goldBright, gold, copper],
   );
 
   static const luxuryGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF5C1015), surface, bg],
+    colors: [Color(0xFF3A1808), surface, bg],
   );
 
   static BoxDecoration panel({double radius = 20, bool glow = false}) => BoxDecoration(
     gradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFF32100D), Color(0xFF120A07)],
+      colors: [Color(0xFF2A1609), Color(0xFF100805)],
     ),
     borderRadius: BorderRadius.circular(radius),
     border: Border.all(color: goldDeep.withOpacity(.48)),
     boxShadow: glow
-        ? const [BoxShadow(color: Color(0x55B71C1C), blurRadius: 24, spreadRadius: 1)]
+        ? const [BoxShadow(color: Color(0x554A2608), blurRadius: 24, spreadRadius: 1)]
         : const [],
   );
 
