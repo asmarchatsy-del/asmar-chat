@@ -20,14 +20,14 @@ import 'wallet.dart';
 import 'wallet_gifts_page.dart';
 import 'public_profile_page.dart';
 
-const _bg = Color(0xFF090604);
-const _panel = Color(0xFF1A100B);
-const _panel2 = Color(0xFF24150D);
-const _gold = Color(0xFFFFD36A);
-const _orange = Color(0xFFB77921);
-const _purple = Color(0xFF8B5A1E);
-const _pink = Color(0xFF9A641F);
-const _muted = Color(0xFFB9A995);
+const _bg = Color(0xFFFFFAF6);
+const _panel = Color(0xFFFFFFFF);
+const _panel2 = Color(0xFFFFF0E8);
+const _gold = Color(0xFFFF9D2E);
+const _orange = Color(0xFFF47B20);
+const _purple = Color(0xFFD98A4A);
+const _pink = Color(0xFFE96D72);
+const _muted = Color(0xFF8E7C70);
 
 class AsmarAyomeShell extends StatefulWidget {
   const AsmarAyomeShell({super.key});
@@ -58,10 +58,10 @@ class _Bottom extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF100906),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0x665B3A18)),
-        boxShadow: const [BoxShadow(color: Color(0x44000000), blurRadius: 18, offset: Offset(0, 6))],
+        border: Border.all(color: const Color(0x33C97A32)),
+        boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 6))],
       ),
       child: SafeArea(
         top: false,
@@ -79,10 +79,10 @@ class _Bottom extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     gradient: selected
-                        ? const LinearGradient(colors: [Color(0x333A2108), Color(0x111A100B)])
+                        ? const LinearGradient(colors: [Color(0x33FF9D2E), Color(0x11FF7B54)])
                         : null,
                     borderRadius: BorderRadius.circular(18),
-                    border: selected ? Border.all(color: const Color(0x668D5A22)) : null,
+                    border: selected ? Border.all(color: const Color(0x66F47B20)) : null,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
