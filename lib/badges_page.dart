@@ -101,12 +101,12 @@ class _AsmarBadgesPageState extends State<AsmarBadgesPage> {
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF11152D),
+                      color: const Color(0xFF1A100B),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: equipped
-                            ? const Color(0xFFFFC94A)
-                            : const Color(0xFF2B315A),
+                            ? const Color(0xFFFFD36A)
+                            : const Color(0xFF3A2412),
                         width: equipped ? 2 : 1,
                       ),
                     ),
@@ -115,8 +115,8 @@ class _AsmarBadgesPageState extends State<AsmarBadgesPage> {
                       children: [
                         CircleAvatar(
                           radius: 35,
-                          backgroundColor: const Color(0xFF252B50),
-                          child: Icon(_icon(b['icon_key']?.toString() ?? ''), size: 38, color: const Color(0xFFFFC94A)),
+                          backgroundColor: const Color(0xFF24150D),
+                          child: Icon(_icon(b['icon_key']?.toString() ?? ''), size: 38, color: const Color(0xFFFFD36A)),
                         ),
                         const SizedBox(height: 10),
                         Text(
@@ -130,27 +130,27 @@ class _AsmarBadgesPageState extends State<AsmarBadgesPage> {
                           textAlign: TextAlign.center,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Color(0xFFA9B0D0), fontSize: 10),
+                          style: const TextStyle(color: Color(0xFFB9A995), fontSize: 10),
                         ),
                         if (official)
                           const Padding(
                             padding: EdgeInsets.only(top: 6),
-                            child: Text('رسمية من Asmar', style: TextStyle(color: Color(0xFFFFC94A), fontWeight: FontWeight.w800, fontSize: 10)),
+                            child: Text('رسمية من Asmar', style: TextStyle(color: Color(0xFFFFD36A), fontWeight: FontWeight.w800, fontSize: 10)),
                           ),
                         if (role.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text(role, style: const TextStyle(color: Color(0xFFA9B0D0), fontSize: 9)),
+                            child: Text(role, style: const TextStyle(color: Color(0xFFB9A995), fontSize: 9)),
                           ),
                         if (equipped)
                           const Padding(
                             padding: EdgeInsets.only(top: 6),
-                            child: Text('مفعّلة', style: TextStyle(color: Color(0xFFFFC94A), fontWeight: FontWeight.w800)),
+                            child: Text('مفعّلة', style: TextStyle(color: Color(0xFFFFD36A), fontWeight: FontWeight.w800)),
                           )
                         else
                           const Padding(
                             padding: EdgeInsets.only(top: 6),
-                            child: Text('اضغط للتفعيل', style: TextStyle(color: Color(0xFFA9B0D0), fontSize: 10)),
+                            child: Text('اضغط للتفعيل', style: TextStyle(color: Color(0xFFB9A995), fontSize: 10)),
                           ),
                       ],
                     ),
