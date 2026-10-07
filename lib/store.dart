@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'vip.dart';
 
-const _gold = Color(0xFFFF9D2E);
-const _gold2 = Color(0xFFF47B20);
-const _bg = Color(0xFFFFFAF6);
-const _card = Color(0xFFFFFFFF);
+const _gold = Color(0xFFD4AF37);
+const _gold2 = Color(0xFFD4AF37);
+const _bg = Color(0xFF0A0A0A);
+const _card = Color(0xFF1A1A1A);
 
 class StorePage extends StatefulWidget {
   const StorePage({super.key});
@@ -105,7 +105,7 @@ class _FrameCard extends StatelessWidget {
         _FramePreview(style: frame['style_key'].toString(), mediaUrl: frame['media_url']?.toString()),
         const SizedBox(height: 10),
         Text(frame['name'].toString(), textAlign: TextAlign.center,
-          style: const TextStyle(color: const Color(0xFF3A2518), fontWeight: FontWeight.w900)),
+          style: const TextStyle(color: const Color(0xFFD4AF37), fontWeight: FontWeight.w900)),
         const SizedBox(height: 6),
         Text('${frame['price']} Coins', style: const TextStyle(color: _gold, fontWeight: FontWeight.bold)),
         const Spacer(),
