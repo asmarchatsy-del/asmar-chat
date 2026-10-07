@@ -7,11 +7,11 @@ import 'core/rooms/room_repository.dart';
 import 'core/rooms/real_voice_room_page.dart';
 import 'daily_tasks_page.dart';
 
-const _bg = Color(0xFF090604);
-const _panel = Color(0xFF1B0E08);
-const _gold = Color(0xFFFFC94A);
-const _orange = Color(0xFFB77921);
-const _muted = Color(0xFFB9A995);
+const _bg = Color(0xFF0A0A0A);
+const _panel = Color(0xFF1A1A1A);
+const _gold = Color(0xFFD4AF37);
+const _orange = Color(0xFFD4AF37);
+const _muted = Color(0xFF888888);
 
 class AsmarGamesPage extends StatefulWidget {
   const AsmarGamesPage({super.key});
@@ -50,9 +50,9 @@ class _AsmarGamesPageState extends State<AsmarGamesPage> {
       borderRadius: BorderRadius.circular(19),
       child: Container(
         padding: const EdgeInsets.all(17),
-        decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(19), border: Border.all(color: const Color(0xFF5A3A19))),
+        decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(19), border: Border.all(color: const Color(0x55D4AF37))),
         child: Row(children: [
-          Container(width: 56, height: 56, decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [_orange, _gold])), child: Icon(icon, color: const Color(0xFF4C2000), size: 29)),
+          Container(width: 56, height: 56, decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [_orange, _gold])), child: Icon(icon, color: Colors.black, size: 29)),
           const SizedBox(width: 13),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
