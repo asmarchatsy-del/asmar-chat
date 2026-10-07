@@ -20,14 +20,14 @@ import 'wallet.dart';
 import 'wallet_gifts_page.dart';
 import 'public_profile_page.dart';
 
-const _bg = Color(0xFFFFFAF6);
-const _panel = Color(0xFFFFFFFF);
-const _panel2 = Color(0xFFFFF0E8);
-const _gold = Color(0xFFFF9D2E);
-const _orange = Color(0xFFF47B20);
-const _purple = Color(0xFFD98A4A);
-const _pink = Color(0xFFE96D72);
-const _muted = Color(0xFF8E7C70);
+const _bg = Color(0xFF0A0A0A);
+const _panel = Color(0xFF1A1A1A);
+const _panel2 = Color(0xFF141414);
+const _gold = Color(0xFFD4AF37);
+const _orange = Color(0xFFD4AF37);
+const _purple = Color(0xFFB8942E);
+const _pink = Color(0xFFD4AF37);
+const _muted = Color(0xFF888888);
 
 class AsmarAyomeShell extends StatefulWidget {
   const AsmarAyomeShell({super.key});
@@ -39,10 +39,10 @@ class _AsmarAyomeShellState extends State<AsmarAyomeShell> {
   @override Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Theme(
-      data: ThemeData.light(useMaterial3: true).copyWith(
+      data: ThemeData.dark(useMaterial3: true).copyWith(
         scaffoldBackgroundColor: _bg,
-        colorScheme: ColorScheme.fromSeed(seedColor: _orange),
-        appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, elevation: 0, foregroundColor: Color(0xFF3A2518)),
+        colorScheme: ColorScheme.fromSeed(seedColor: _gold, brightness: Brightness.dark),
+        appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, elevation: 0, foregroundColor: _gold),
       ),
       child: Scaffold(backgroundColor: _bg, body: Stack(children: [IndexedStack(index: index, children: pages), Positioned(left: 14, bottom: 76, child: _TreasureFab(onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DailyTasksPage()))))]),
       bottomNavigationBar: _Bottom(index: index, onChanged: (v) => setState(() => index = v))),
@@ -65,7 +65,7 @@ class _Bottom extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _panel,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0x33C97A32)),
         boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 6))],
