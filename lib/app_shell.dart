@@ -9,6 +9,7 @@ import 'friends.dart';
 import 'messages.dart';
 import 'store.dart';
 import 'wallet.dart';
+import 'asmar_premium_theme.dart';
 
 class AsmarAppShell extends StatefulWidget {
   const AsmarAppShell({super.key});
@@ -205,7 +206,7 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Scaffold(
-      backgroundColor: const Color(0xFF070817),
+      backgroundColor: AsmarPremiumTheme.bg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -223,7 +224,7 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
                         colors: [Color(0xFFFFE26A), Color(0xFFFFC94A), Color(0xFFFF9418)],
                       ),
                       boxShadow: [
-                        BoxShadow(color: Color(0x553D18A5), blurRadius: 28, spreadRadius: 3),
+                        BoxShadow(color: Color(0x664E2C0A), blurRadius: 30, spreadRadius: 3),
                       ],
                     ),
                     child: const Icon(Icons.mic_rounded, size: 48, color: Color(0xFF111111)),
