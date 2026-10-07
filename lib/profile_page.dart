@@ -30,13 +30,12 @@ class _AsmarProfilePageState extends State<AsmarProfilePage> {
       appBar: AppBar(backgroundColor: _bg, foregroundColor: _gold,
         title: const Text('ملفي الشخصي', style: TextStyle(color: _gold, fontWeight: FontWeight.w900)),
         actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))]),
-      body: AppBar(title: const Text('ملفي الشخصي'), actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))]),
       body: loading ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
         onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
           CircleAvatar(radius: 42, backgroundColor: _panel, foregroundColor: _gold, child: Text(display.characters.first.toUpperCase(), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold))),
           const SizedBox(height: 12), Center(child: Text(display, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900))),
           Center(child: Text('ID ' + (p['public_user_id'] ?? p['public_id'] ?? '—').toString(), style: const TextStyle(color: _muted))), const SizedBox(height: 20),
-          _info('ID', p['public_id'] ?? '—', Icons.badge_outlined), _info('Coins', p['coins'] ?? 0, Icons.monetization_on_outlined),
+          _info('ID', p['public_user_id'] ?? p['public_id'] ?? '—', Icons.badge_outlined), _info('Coins', p['coins'] ?? 0, Icons.monetization_on_outlined),
           _info('المستوى', p['user_level'] ?? 1, Icons.trending_up), _info('SVIP', p['svip_level'] ?? 0, Icons.workspace_premium_outlined),
           _info('الدور', p['role'] ?? 'USER', Icons.admin_panel_settings_outlined),
           if (p['is_verified'] == true) const ListTile(leading: Icon(Icons.verified, color: _gold), title: Text('الحساب موثق')),
