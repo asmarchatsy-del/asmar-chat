@@ -13,6 +13,8 @@ class VoiceRoomRecord {
     this.countryCode,
     this.tags = const [],
     this.coverUrl,
+    this.isPrivate = false,
+    this.chatEnabled = true,
   });
 
   final String id;
@@ -24,6 +26,8 @@ class VoiceRoomRecord {
   final String? countryCode;
   final List<String> tags;
   final String? coverUrl;
+  final bool isPrivate;
+  final bool chatEnabled;
 
   factory VoiceRoomRecord.fromMap(Map<String, dynamic> map) {
     return VoiceRoomRecord(
@@ -36,6 +40,8 @@ class VoiceRoomRecord {
       countryCode: map['country_code'] as String?,
       tags: (map['tags'] is List) ? List<String>.from(map['tags']) : const [],
       coverUrl: map['cover_url'] as String?,
+      isPrivate: (map['is_private'] as bool?) ?? false,
+      chatEnabled: (map['chat_enabled'] as bool?) ?? true,
     );
   }
 }
@@ -51,7 +57,7 @@ class RoomRepository {
     if (db == null) return const [];
     final rows = await db
         .from('rooms')
-        .select('id,name,owner_id,livekit_room_name,is_active,seat_count,country_code,tags,cover_url')
+        .select('id,name,owner_id,livekit_room_name,is_active,seat_count,country_code,tags,cover_url,is_private,chat_enabled')
         .eq('is_active', true)
         .order('created_at', ascending: false);
     return (rows as List)
@@ -101,6 +107,16 @@ class RoomRepository {
     }
     await db.rpc('asmar_join_room', params: {'p_room_id': roomId});
   }
+
+  Future<void> requestMic(String roomId) async { final db = client; if (db == null) return; await db.rpc('request_room_mic', params: {'p_room_id': roomId}); }
+
+  Future<void> inviteUser(String roomId, String userId) async { final db = client; if (db == null) return; await db.rpc('invite_user_to_room', params: {'p_room_id': roomId, 'p_user_id': userId}); }
+
+  Future<void> setChatEnabled(String roomId, bool enabled) async { final db = client; if (db == null) return; await db.rpc('set_room_chat_enabled', params: {'p_room_id': roomId, 'p_enabled': enabled}); }
+
+  Future<void> setPrivate(String roomId, bool value) async { final db = client; if (db == null) return; await db.rpc('set_room_private', params: {'p_room_id': roomId, 'p_private': value}); }
+
+  Future<void> muteAll(String roomId) async { final db = client; if (db == null) return; await db.rpc('mute_all_room_speakers', params: {'p_room_id': roomId}); }
 
   Future<void> leaveRoom(String roomId) async {
     final db = client;
