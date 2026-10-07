@@ -166,7 +166,7 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
     if (tab == 'لي') out = out.where((r) => r.ownerId != null && (_followedIds.contains(r.ownerId) || r.ownerId == Supabase.instance.client.auth.currentUser?.id));
     return out.toList(growable: false);
   }
-  String _countryCode(String name) => switch (name) { 'Syria' => 'SY', 'Germany' => 'DE', 'Netherlands' => 'NL', _ => name.toUpperCase() };
+  String _countryCode(String name) => switch (name) { 'Syria' => 'SY', 'Jordan' => 'JO', 'Turkey' => 'TR', _ => name.toUpperCase() };
   Future<void> createRoom() async => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateRoomPage()));
   Future<void> searchRooms() async {
     final c = TextEditingController();
@@ -268,7 +268,27 @@ class _HomeHeader extends StatelessWidget {
 }
 class _TreasureFab extends StatelessWidget { final VoidCallback onTap; const _TreasureFab({required this.onTap}); @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(30),child:Container(width:56,height:56,decoration:BoxDecoration(shape:BoxShape.circle,gradient:const LinearGradient(colors:[_gold,_orange]),boxShadow:[BoxShadow(color:_orange.withOpacity(.35),blurRadius:16,spreadRadius:2)]),child:const Icon(Icons.card_giftcard_rounded,color:Color(0xFF4A2100),size:29)))); }
 class _IconButton extends StatelessWidget { final IconData icon; final VoidCallback onTap; const _IconButton(this.icon,this.onTap); @override Widget build(BuildContext c)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(14),child:Container(width:40,height:40,decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(14)),child:Icon(icon,color:const Color(0xFF5A2D16),size:21))); }
-class _Tabs extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Tabs({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:45,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['لي','شائع','جديد','فيديو'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
+class _Tabs extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+  const _Tabs({required this.selected, required this.onChanged});
+  @override Widget build(BuildContext c) => SizedBox(
+    height: 48,
+    child: Row(
+      children: ['لي','شائع','جديد','فيديو'].map((x) => Expanded(
+        child: InkWell(
+          onTap: () => onChanged(x),
+          child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+            Text(x, style: TextStyle(color: selected == x ? _gold : _muted, fontWeight: selected == x ? FontWeight.w900 : FontWeight.w600)),
+            const SizedBox(height: 7),
+            AnimatedContainer(duration: const Duration(milliseconds: 180), height: 3, width: selected == x ? 34 : 0, decoration: BoxDecoration(color: _gold, borderRadius: BorderRadius.circular(3))),
+            const SizedBox(height: 4),
+          ]),
+        ),
+      )).toList(),
+    ),
+  );
+}
 class _CreateRoom extends StatelessWidget { final VoidCallback onTap; const _CreateRoom({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(height:78,padding:const EdgeInsets.all(15),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[_gold,_orange])),child:const Row(children:[Icon(Icons.auto_awesome_rounded,color:Color(0xFF542300),size:31),SizedBox(width:10),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text('إنشاء غرفتي',style:TextStyle(color:Color(0xFF4C2000),fontSize:20,fontWeight:FontWeight.w900)),Text('غرفة صوتية بـ 8 كراسي',style:TextStyle(color:Color(0xFF633000),fontSize:11))])),Icon(Icons.add_circle_outline_rounded,color:Color(0xFF4C2000),size:31)])))); }
 class _Filters extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Filters({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:44,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['الكل','متابعة','موثق','العائلة','غرف','مستخدمون'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _Banners extends StatelessWidget {
@@ -280,6 +300,7 @@ class _Banners extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
       scrollDirection: Axis.horizontal,
       children: [
+        _Banner(Icons.celebration_rounded, 'احتفال Asmar', 'فعاليات ومكافآت اليوم', () => Navigator.push(c, MaterialPageRoute(builder: (_) => const DailyTasksPage()))),
         _Banner(Icons.workspace_premium_rounded, 'الثروة', 'ترتيب الأغنياء', () => Navigator.push(c, MaterialPageRoute(builder: (_) => const AsmarRankingPage(type: 'wealth')))),
         _Banner(Icons.bolt_rounded, 'CP', 'ترتيب CP', () => Navigator.push(c, MaterialPageRoute(builder: (_) => const AsmarRankingPage(type: 'cp')))),
         _Banner(Icons.groups_rounded, 'العائلة', 'ترتيب العائلة', () => Navigator.push(c, MaterialPageRoute(builder: (_) => const AsmarRankingPage(type: 'family')))),
@@ -549,7 +570,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
       final db = Supabase.instance.client;
       final profile = await db
           .from('profiles')
-          .select('display_name,username,public_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url,language')
+          .select('display_name,username,public_id,public_user_id,coins,diamonds,user_level,svip_level,is_verified,avatar_url,language')
           .eq('id', user.id)
           .maybeSingle();
       final followersRows = List<Map<String, dynamic>>.from(await db.from('follows').select('follower_id').eq('following_id', user.id));
@@ -648,7 +669,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
   @override
   Widget build(BuildContext context) {
     final name = (p['display_name'] ?? p['username'] ?? 'Asmar User').toString();
-    final publicId = (p['public_id'] ?? '—').toString();
+    final publicId = (p['public_user_id'] ?? p['public_id'] ?? '—').toString();
     final avatar = (p['avatar_url'] ?? '').toString();
     final level = (p['user_level'] ?? 0).toString();
 
@@ -669,7 +690,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
               gradient: const LinearGradient(
                 colors: [Color(0xFF5C1015), Color(0xFF1A100B)],
               ),
-              border: Border.all(color: Color(0xFFB71C1C)),
+              border: Border.all(color: _gold),
             ),
             child: Column(
               children: [
