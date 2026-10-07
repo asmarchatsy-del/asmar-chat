@@ -96,8 +96,8 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   @override
   Widget build(BuildContext context) {
     const bg = Color(0xFF090604);
-    const panel2 = Color(0xFF24150D);
-    const purple = Color(0xFF8D4E24);
+    const panel2 = Color(0xFF1B0E08);
+    const purple = Color(0xFF8B5A1E);
     const pink = Color(0xFFB77921);
     const cyan = Color(0xFFFFD36A);
     const muted = Color(0xFFB9A995);
@@ -322,7 +322,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
     final isOwner = db.auth.currentUser?.id == widget.room.ownerId;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF10132B),
+      backgroundColor: const Color(0xFF120B08),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (_) => Directionality(
         textDirection: TextDirection.rtl,
@@ -426,7 +426,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   void _openPeopleSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF10132B),
+      backgroundColor: const Color(0xFF120B08),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (_) => StreamBuilder<List<Map<String, dynamic>>>(
         stream: _socialRepository.watchSeats(widget.room.id),
@@ -471,7 +471,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   void _openRoomInfoSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF10132B),
+      backgroundColor: const Color(0xFF120B08),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (_) => SafeArea(
         child: Padding(
