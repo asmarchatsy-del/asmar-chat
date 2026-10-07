@@ -38,8 +38,15 @@ class _AsmarAyomeShellState extends State<AsmarAyomeShell> {
   final pages = const [_AyomeHomePage(), _AyomeGamesPage(), _AyomeMessagesPage(), _AyomeProfilePage()];
   @override Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
-    child: Scaffold(backgroundColor: _bg, body: Stack(children: [IndexedStack(index: index, children: pages), Positioned(left: 14, bottom: 76, child: _TreasureFab(onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DailyTasksPage()))))]),
+    child: Theme(
+      data: ThemeData.light(useMaterial3: true).copyWith(
+        scaffoldBackgroundColor: _bg,
+        colorScheme: ColorScheme.fromSeed(seedColor: _orange),
+        appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, elevation: 0, foregroundColor: Color(0xFF3A2518)),
+      ),
+      child: Scaffold(backgroundColor: _bg, body: Stack(children: [IndexedStack(index: index, children: pages), Positioned(left: 14, bottom: 76, child: _TreasureFab(onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DailyTasksPage()))))]),
       bottomNavigationBar: _Bottom(index: index, onChanged: (v) => setState(() => index = v))),
+    ),
   );
 }
 class _Bottom extends StatelessWidget {
@@ -92,7 +99,7 @@ class _Bottom extends StatelessWidget {
                       Text(
                         items[i].$2,
                         style: TextStyle(
-                          color: selected ? Colors.white : _muted,
+                          color: selected ? const Color(0xFF5A2D16) : _muted,
                           fontSize: 10.5,
                           fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
                         ),
