@@ -67,7 +67,7 @@ class _Bottom extends StatelessWidget {
       decoration: BoxDecoration(
         color: _panel,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0x33C97A32)),
+        border: Border.all(color: const Color(0x55D4AF37)),
         boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 6))],
       ),
       child: SafeArea(
@@ -86,10 +86,10 @@ class _Bottom extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     gradient: selected
-                        ? const LinearGradient(colors: [Color(0x33FF9D2E), Color(0x11FF7B54)])
+                        ? const LinearGradient(colors: [Color(0x22D4AF37), Color(0x11D4AF37)])
                         : null,
                     borderRadius: BorderRadius.circular(18),
-                    border: selected ? Border.all(color: const Color(0x66F47B20)) : null,
+                    border: selected ? Border.all(color: const Color(0x66D4AF37)) : null,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -99,7 +99,7 @@ class _Bottom extends StatelessWidget {
                       Text(
                         items[i].$2,
                         style: TextStyle(
-                          color: selected ? const Color(0xFF5A2D16) : _muted,
+                          color: selected ? const Color(0xFFD4AF37) : _muted,
                           fontSize: 10.5,
                           fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
                         ),
@@ -266,8 +266,8 @@ class _HomeHeader extends StatelessWidget {
     _IconButton(Icons.search_rounded, onSearch), const SizedBox(width: 7), _IconButton(Icons.notifications_none_rounded, onNotifications), const SizedBox(width: 7), _IconButton(Icons.add_rounded, onCreate),
   ])));
 }
-class _TreasureFab extends StatelessWidget { final VoidCallback onTap; const _TreasureFab({required this.onTap}); @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(30),child:Container(width:56,height:56,decoration:BoxDecoration(shape:BoxShape.circle,gradient:const LinearGradient(colors:[_gold,_orange]),boxShadow:[BoxShadow(color:_orange.withOpacity(.35),blurRadius:16,spreadRadius:2)]),child:const Icon(Icons.card_giftcard_rounded,color:Color(0xFF4A2100),size:29)))); }
-class _IconButton extends StatelessWidget { final IconData icon; final VoidCallback onTap; const _IconButton(this.icon,this.onTap); @override Widget build(BuildContext c)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(14),child:Container(width:40,height:40,decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(14)),child:Icon(icon,color:const Color(0xFF5A2D16),size:21))); }
+class _TreasureFab extends StatelessWidget { final VoidCallback onTap; const _TreasureFab({required this.onTap}); @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(30),child:Container(width:56,height:56,decoration:BoxDecoration(shape:BoxShape.circle,gradient:const LinearGradient(colors:[_gold,_orange]),boxShadow:[BoxShadow(color:_orange.withOpacity(.35),blurRadius:16,spreadRadius:2)]),child:const Icon(Icons.card_giftcard_rounded,color:Color(0xFF0A0A0A),size:29)))); }
+class _IconButton extends StatelessWidget { final IconData icon; final VoidCallback onTap; const _IconButton(this.icon,this.onTap); @override Widget build(BuildContext c)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(14),child:Container(width:40,height:40,decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(14)),child:Icon(icon,color:const Color(0xFFD4AF37),size:21))); }
 class _Tabs extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
@@ -289,7 +289,7 @@ class _Tabs extends StatelessWidget {
     ),
   );
 }
-class _CreateRoom extends StatelessWidget { final VoidCallback onTap; const _CreateRoom({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(height:78,padding:const EdgeInsets.all(15),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[_gold,_orange])),child:const Row(children:[Icon(Icons.auto_awesome_rounded,color:Color(0xFF542300),size:31),SizedBox(width:10),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text('إنشاء غرفتي',style:TextStyle(color:Color(0xFF4C2000),fontSize:20,fontWeight:FontWeight.w900)),Text('غرفة صوتية بـ 8 كراسي',style:TextStyle(color:Color(0xFF633000),fontSize:11))])),Icon(Icons.add_circle_outline_rounded,color:Color(0xFF4C2000),size:31)])))); }
+class _CreateRoom extends StatelessWidget { final VoidCallback onTap; const _CreateRoom({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(height:78,padding:const EdgeInsets.all(15),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[_gold,_orange])),child:const Row(children:[Icon(Icons.auto_awesome_rounded,color:Color(0xFF0A0A0A),size:31),SizedBox(width:10),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text('إنشاء غرفتي',style:TextStyle(color:Color(0xFF0A0A0A),fontSize:20,fontWeight:FontWeight.w900)),Text('غرفة صوتية بـ 8 كراسي',style:TextStyle(color:Color(0xFF888888),fontSize:11))])),Icon(Icons.add_circle_outline_rounded,color:Color(0xFF0A0A0A),size:31)])))); }
 class _Filters extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Filters({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:44,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['الكل','متابعة','موثق','العائلة','غرف','مستخدمون'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
 class _Banners extends StatelessWidget {
   const _Banners();
@@ -334,7 +334,7 @@ class _Banner extends StatelessWidget {
   );
 }
 class _Countries extends StatelessWidget { final String selected; final ValueChanged<String> onChanged; const _Countries({required this.selected,required this.onChanged}); @override Widget build(BuildContext c)=>SizedBox(height:43,child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),scrollDirection:Axis.horizontal,children:['Hot','Syria','Germany','Netherlands'].map((x)=>_Chip(x,selected==x,()=>onChanged(x))).toList())); }
-class _DailyTreasure extends StatelessWidget { final VoidCallback onTap; const _DailyTreasure({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,10,14,4),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF5B2C09),Color(0xFF24110A)]),border:Border.all(color:_orange.withOpacity(.55))),child:const Row(children:[Icon(Icons.card_giftcard_rounded,color:_gold,size:31),SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('الهدية اليومية',style:TextStyle(fontWeight:FontWeight.w900,fontSize:15)),Text('افتح صندوق الكنز وخذ مكافأتك اليوم',style:TextStyle(color:_muted,fontSize:10))])),Icon(Icons.chevron_left_rounded,color:_gold)])))); }
+class _DailyTreasure extends StatelessWidget { final VoidCallback onTap; const _DailyTreasure({required this.onTap}); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,10,14,4),child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF1A1A1A),Color(0xFF0A0A0A)]),border:Border.all(color:_orange.withOpacity(.55))),child:const Row(children:[Icon(Icons.card_giftcard_rounded,color:_gold,size:31),SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('الهدية اليومية',style:TextStyle(fontWeight:FontWeight.w900,fontSize:15)),Text('افتح صندوق الكنز وخذ مكافأتك اليوم',style:TextStyle(color:_muted,fontSize:10))])),Icon(Icons.chevron_left_rounded,color:_gold)])))); }
 
 class _UserDirectorySliver extends StatelessWidget {
   const _UserDirectorySliver();
@@ -399,7 +399,7 @@ class _Room extends StatelessWidget {
               decoration: BoxDecoration(
                 color: _panel,
                 borderRadius: BorderRadius.circular(17),
-                border: Border.all(color: const Color(0xFF5C1015)),
+                border: Border.all(color: const Color(0xFF3A0A0A)),
               ),
               child: Row(
                 children: [
@@ -508,7 +508,7 @@ class _Message extends StatelessWidget {
           decoration: BoxDecoration(
             color: _panel,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF2B315A)),
+            border: Border.all(color: const Color(0x55D4AF37)),
           ),
           child: Row(
             children: [
@@ -688,7 +688,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
               gradient: const LinearGradient(
-                colors: [Color(0xFF5C1015), Color(0xFF1A100B)],
+                colors: [Color(0xFF3A0A0A), Color(0xFF0A0A0A)],
               ),
               border: Border.all(color: _gold),
             ),
@@ -789,7 +789,7 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
 
 class _Action extends StatelessWidget { final String title,sub; final IconData icon; final VoidCallback tap; const _Action(this.title,this.sub,this.icon,this.tap); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(bottom:8),child:InkWell(onTap:tap,borderRadius:BorderRadius.circular(16),child:Container(padding:const EdgeInsets.symmetric(horizontal:14,vertical:12),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(16)),child:Row(children:[Icon(icon,color:_gold,size:25),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900)),const SizedBox(height:2),Text(sub,style:const TextStyle(color:_muted,fontSize:10))])),const Icon(Icons.chevron_left_rounded,color:_muted)])))); }
 class _Stat extends StatelessWidget { final String value,label; const _Stat(this.value,this.label); @override Widget build(BuildContext c)=>Column(children:[Text(value,style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900)),const SizedBox(height:3),Text(label,style:const TextStyle(color:_muted,fontSize:9))]); }
-class _Chip extends StatelessWidget { final String label; final bool selected; final VoidCallback tap; const _Chip(this.label,this.selected,this.tap); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(left:7),child:ChoiceChip(label:Text(label,style:TextStyle(fontSize:11,fontWeight:selected?FontWeight.w900:FontWeight.w500)),selected:selected,onSelected:(_)=>tap(),selectedColor:_gold,backgroundColor:_panel,side:BorderSide(color:selected?_gold:const Color(0xFF2B315A)))); }
+class _Chip extends StatelessWidget { final String label; final bool selected; final VoidCallback tap; const _Chip(this.label,this.selected,this.tap); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.only(left:7),child:ChoiceChip(label:Text(label,style:TextStyle(fontSize:11,fontWeight:selected?FontWeight.w900:FontWeight.w500)),selected:selected,onSelected:(_)=>tap(),selectedColor:_gold,backgroundColor:_panel,side:BorderSide(color:selected?_gold:const Color(0x55D4AF37)))); }
 class _TitleRow extends StatelessWidget { final String a,b; const _TitleRow(this.a,this.b); @override Widget build(BuildContext c)=>Padding(padding:const EdgeInsets.fromLTRB(14,10,14,4),child:Row(children:[Text(a,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900)),const Spacer(),Text(b,style:const TextStyle(color:_gold,fontSize:11,fontWeight:FontWeight.w800))])); }
 class _Empty extends StatelessWidget { final String text; const _Empty(this.text); @override Widget build(BuildContext c)=>Container(margin:const EdgeInsets.all(14),padding:const EdgeInsets.all(28),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(18)),child:Center(child:Text(text,textAlign:TextAlign.center,style:const TextStyle(color:_muted)))); }
 InputDecoration input(String label)=>InputDecoration(labelText:label,filled:true,fillColor:_panel2,border:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:BorderSide.none));
