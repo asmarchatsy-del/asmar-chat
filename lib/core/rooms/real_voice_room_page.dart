@@ -59,6 +59,11 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
       }
       await _voice.join(roomName: liveKitRoom);
       await _voice.setMicrophoneEnabled(false);
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid != null) {
+        final own = await Supabase.instance.client.from('room_seats').select('seat_index').eq('room_id', widget.room.id).eq('occupant_id', uid).maybeSingle();
+        if (mounted && own != null) setState(() => _mySeat = ((own['seat_index'] as num).toInt() - 1));
+      }
     } catch (e) {
       if (mounted) setState(() => _error = _friendlyError(e));
     } finally {
