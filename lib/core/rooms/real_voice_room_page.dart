@@ -32,7 +32,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
     _connect();
   }
 
-  Future<void> _connect() async {
+  String _friendlyError(Object error) {\n    final text = error.toString().toLowerCase();\n    if (text.contains('not in room') || text.contains('room_members')) return 'تعذر الانضمام للغرفة. حاول الدخول مرة أخرى.';\n    if (text.contains('seat_number_check') || text.contains('room_seats')) return 'تعذر تجهيز مقاعد الغرفة. حاول مرة أخرى.';\n    if (text.contains('permission denied') || text.contains('42501')) return 'لا توجد صلاحية كافية لهذه العملية.';\n    return 'تعذر الاتصال بالغرفة. حاول مرة أخرى.';\n  }\n\n  Future<void> _connect() async {
     try {
       await _roomRepository.joinRoom(widget.room.id);
       final liveKitRoom = widget.room.liveKitRoomName;
@@ -42,7 +42,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
       await _voice.join(roomName: liveKitRoom);
       await _voice.setMicrophoneEnabled(false);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = _friendlyError(e));
     } finally {
       if (mounted) setState(() => _joining = false);
     }
