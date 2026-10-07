@@ -95,12 +95,12 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF060716);
-    const panel2 = Color(0xFF171A3A);
-    const purple = Color(0xFF8B4DFF);
-    const pink = Color(0xFFE33DFF);
-    const cyan = Color(0xFF4EDCFF);
-    const muted = Color(0xFF9CA2C5);
+    const bg = Color(0xFF090604);
+    const panel2 = Color(0xFF24150D);
+    const purple = Color(0xFF8D4E24);
+    const pink = Color(0xFFB77921);
+    const cyan = Color(0xFFFFD36A);
+    const muted = Color(0xFFB9A995);
 
     return Scaffold(
       backgroundColor: bg,
@@ -109,7 +109,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF17104A), bg, bg],
+            colors: [Color(0xFF3A2110), bg, bg],
           ),
         ),
         child: SafeArea(
