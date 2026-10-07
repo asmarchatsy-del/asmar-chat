@@ -105,6 +105,6 @@ class RoomRepository {
   Future<void> leaveRoom(String roomId) async {
     final db = client;
     if (db == null || SupabaseRuntime.currentUser == null) return;
-    await db.rpc('asmar_leave_room', params: {'p_room_id': roomId});
+    await db.rpc('asmar_exit_room', params: {'p_room_id': roomId});
   }
 }
