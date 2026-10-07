@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'core/rooms/room_repository.dart';
 import 'core/rooms/real_voice_room_page.dart';
 
-const _crBg = Color(0xFF070817);
-const _crPanel = Color(0xFF10132B);
-const _crPurple = Color(0xFF8B4DFF);
-const _crPink = Color(0xFFE33DFF);
-const _crCyan = Color(0xFF4EDCFF);
-const _crMuted = Color(0xFF9EA6C7);
+const _crBg = Color(0xFF090604);
+const _crPanel = Color(0xFF1B0E08);
+const _crPurple = Color(0xFFB77921);
+const _crPink = Color(0xFF9A641F);
+const _crCyan = Color(0xFFFFD36A);
+const _crMuted = Color(0xFFB9A995);
 
 class CreateRoomPage extends StatefulWidget {
   const CreateRoomPage({super.key});
@@ -71,7 +71,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF7B2CFF), Color(0xFF21104C), Color(0xFF10183A)],
+                  colors: [Color(0xFFE0A52A), Color(0xFF6B2C0B), Color(0xFF1B0E08)],
                   begin: Alignment.topRight, end: Alignment.bottomLeft,
                 ),
               ),
