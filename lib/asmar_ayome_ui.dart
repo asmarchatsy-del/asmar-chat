@@ -20,14 +20,14 @@ import 'wallet.dart';
 import 'wallet_gifts_page.dart';
 import 'public_profile_page.dart';
 
-const _bg = Color(0xFF070817);
-const _panel = Color(0xFF11152D);
-const _panel2 = Color(0xFF171C3A);
-const _gold = Color(0xFFFFC94A);
-const _orange = Color(0xFFFF9418);
-const _purple = Color(0xFF7B3FF2);
-const _pink = Color(0xFFE447FF);
-const _muted = Color(0xFFA9B0D0);
+const _bg = Color(0xFF090604);
+const _panel = Color(0xFF1A100B);
+const _panel2 = Color(0xFF24150D);
+const _gold = Color(0xFFFFD36A);
+const _orange = Color(0xFFB77921);
+const _purple = Color(0xFF8D4E24);
+const _pink = Color(0xFF9C4A4A);
+const _muted = Color(0xFFB9A995);
 
 class AsmarAyomeShell extends StatefulWidget {
   const AsmarAyomeShell({super.key});
@@ -56,31 +56,45 @@ class _Bottom extends StatelessWidget {
       (Icons.person_rounded, 'أنا'),
     ];
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0B0D20),
-        border: Border(top: BorderSide(color: Color(0xFF2A2F55))),
+      margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF100906),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0x665B3A18)),
+        boxShadow: const [BoxShadow(color: Color(0x44000000), blurRadius: 18, offset: Offset(0, 6))],
       ),
       child: SafeArea(
         top: false,
+        minimum: const EdgeInsets.symmetric(vertical: 5),
         child: Row(
           children: List.generate(items.length, (i) {
             final selected = i == index;
             return Expanded(
               child: InkWell(
                 onTap: () => onChanged(i),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 9),
+                borderRadius: BorderRadius.circular(20),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  margin: const EdgeInsets.symmetric(horizontal: 5),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: selected
+                        ? const LinearGradient(colors: [Color(0x333A2108), Color(0x111A100B)])
+                        : null,
+                    borderRadius: BorderRadius.circular(18),
+                    border: selected ? Border.all(color: const Color(0x668D5A22)) : null,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(items[i].$1, color: selected ? _gold : _muted, size: 24),
+                      Icon(items[i].$1, color: selected ? _gold : _muted, size: selected ? 24 : 22),
                       const SizedBox(height: 3),
                       Text(
                         items[i].$2,
                         style: TextStyle(
                           color: selected ? Colors.white : _muted,
-                          fontSize: 11,
-                          fontWeight: selected ? FontWeight.w900 : FontWeight.w500,
+                          fontSize: 10.5,
+                          fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
                         ),
                       ),
                     ],
