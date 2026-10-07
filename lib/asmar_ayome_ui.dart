@@ -189,7 +189,7 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
                 } catch (_) {}
               }
             } catch (_) {}
-            final users = List<Map<String, dynamic>>.from(await db.from('profiles').select('id,display_name,username,public_id,avatar_url,is_verified').or('username.ilike.%$q%,display_name.ilike.%$q%,public_id.eq.$q').limit(20));
+            final users = List<Map<String, dynamic>>.from(await db.from('profiles').select('id,display_name,username,public_id,public_user_id,avatar_url,is_verified').or('username.ilike.%$q%,display_name.ilike.%$q%,public_user_id.eq.$q').limit(20));
             if (!sheet.mounted) return;
             Navigator.pop(sheet);
             final rooms = rows.map(VoiceRoomRecord.fromMap).toList();
@@ -222,7 +222,7 @@ class _AyomeHomePageState extends State<_AyomeHomePage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           leading: CircleAvatar(backgroundImage: (u['avatar_url']?.toString() ?? '').isNotEmpty ? NetworkImage(u['avatar_url'].toString()) : null, child: (u['avatar_url']?.toString() ?? '').isEmpty ? const Icon(Icons.person) : null),
                           title: Text(u['display_name']?.toString() ?? u['username']?.toString() ?? 'Asmar'),
-                          subtitle: Text('ID ' + (u['public_id']?.toString() ?? u['id'].toString()), style: const TextStyle(color: _muted)),
+                          subtitle: Text('ID ' + (u['public_user_id']?.toString() ?? u['public_id']?.toString() ?? u['id'].toString()), style: const TextStyle(color: _muted)),
                           trailing: u['is_verified'] == true ? const Icon(Icons.verified, color: _gold) : null,
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AsmarPublicProfilePage(userId: u['id'].toString()))),
                         )),
