@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'vip.dart';
 
-const _gold = Color(0xFFFFD36A);
-const _gold2 = Color(0xFFE53935);
-const _bg = Color(0xFF090604);
-const _card = Color(0xFF1B0E08);
+const _gold = Color(0xFFFF9D2E);
+const _gold2 = Color(0xFFF47B20);
+const _bg = Color(0xFFFFFAF6);
+const _card = Color(0xFFFFFFFF);
 
 class StorePage extends StatefulWidget {
   const StorePage({super.key});
@@ -27,7 +27,7 @@ class _StorePageState extends State<StorePage> {
 
   Future<List<Map<String, dynamic>>> _loadFrames() async {
     final data = await Supabase.instance.client
-        .from('frame_items').select('id,name,price,style_key')
+        .from('frame_items').select('id,name,price,style_key,media_url,media_type,category,vip_level,svip_level,glow_enabled,motion_enabled')
         .eq('is_active', true).order('price');
     return List<Map<String, dynamic>>.from(data);
   }
@@ -99,13 +99,13 @@ class _FrameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(20), border: Border.all(color: _gold2)),
+      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(20), border: Border.all(color: _gold2.withOpacity(.45)), boxShadow: const [BoxShadow(color: Color(0x16000000), blurRadius: 16, offset: Offset(0, 7))]),
       padding: const EdgeInsets.all(12),
       child: Column(children: [
-        _FramePreview(style: frame['style_key'].toString()),
+        _FramePreview(style: frame['style_key'].toString(), mediaUrl: frame['media_url']?.toString()),
         const SizedBox(height: 10),
         Text(frame['name'].toString(), textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+          style: const TextStyle(color: const Color(0xFF3A2518), fontWeight: FontWeight.w900)),
         const SizedBox(height: 6),
         Text('${frame['price']} Coins', style: const TextStyle(color: _gold, fontWeight: FontWeight.bold)),
         const Spacer(),
@@ -121,7 +121,8 @@ class _FrameCard extends StatelessWidget {
 
 class _FramePreview extends StatelessWidget {
   final String style;
-  const _FramePreview({required this.style});
+  final String? mediaUrl;
+  const _FramePreview({required this.style, this.mediaUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +133,11 @@ class _FramePreview extends StatelessWidget {
       'svip' => const [Color(0xFFFFF4C2), Color(0xFF8F1D1D)],
       _ => const [Color(0xFFFFE08A), Color(0xFFE53935)],
     };
-    return Container(
+    if (mediaUrl != null && mediaUrl!.isNotEmpty) return SizedBox(width: 128, height: 128, child: ClipRRect(borderRadius: BorderRadius.circular(24), child: Image.network(mediaUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallback(colors))));
+    return _fallback(colors);
+  }
+
+  Widget _fallback(List<Color> colors) => Container(
       width: 112, height: 112, padding: const EdgeInsets.all(7),
       decoration: BoxDecoration(shape: BoxShape.circle,
         gradient: SweepGradient(colors: [...colors, colors.first]),
