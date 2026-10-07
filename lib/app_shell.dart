@@ -109,7 +109,7 @@ class _AuthLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Scaffold(
-    backgroundColor: Color(0xFF070817),
+    backgroundColor: Color(0xFF090604),
     body: Center(
       child: CircularProgressIndicator(),
     ),
@@ -221,10 +221,10 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFFFE26A), Color(0xFFFFC94A), Color(0xFFFF9418)],
+                        colors: [Color(0xFFFFE26A), Color(0xFFFFC94A), Color(0xFFE53935)],
                       ),
                       boxShadow: [
-                        BoxShadow(color: Color(0x664E2C0A), blurRadius: 30, spreadRadius: 3),
+                        BoxShadow(color: Color(0x66B71C1C), blurRadius: 30, spreadRadius: 3),
                       ],
                     ),
                     child: const Icon(Icons.mic_rounded, size: 48, color: Color(0xFF111111)),
@@ -232,7 +232,7 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
                   const SizedBox(height: 18),
                   const Text('Asmar', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
-                  const Text('ادخل إلى عالمك الصوتي', style: TextStyle(color: Color(0xFF9EA6C7), fontSize: 14)),
+                  const Text('ادخل إلى عالمك الصوتي', style: TextStyle(color: Color(0xFFB9A995), fontSize: 14)),
                   const SizedBox(height: 30),
                   if (!emailMode) ...[
                     SizedBox(
