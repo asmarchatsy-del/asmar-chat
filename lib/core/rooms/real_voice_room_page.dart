@@ -24,11 +24,14 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
   bool _joining = true;
   bool _muted = true;
   int? _mySeat;
+  bool _canManage = false;
+  bool _micRequested = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _loadRoomPermissions();
     _connect();
   }
 
@@ -38,6 +41,13 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
     if (text.contains('seat_number_check') || text.contains('room_seats')) return 'تعذر تجهيز مقاعد الغرفة. حاول مرة أخرى.';
     if (text.contains('permission denied') || text.contains('42501')) return 'لا توجد صلاحية كافية لهذه العملية.';
     return 'تعذر الاتصال بالغرفة. حاول مرة أخرى.';
+  }
+
+  Future<void> _loadRoomPermissions() async {
+    try {
+      final value = await Supabase.instance.client.rpc('can_manage_room', params: {'p_room_id': widget.room.id});
+      if (mounted) setState(() => _canManage = value == true);
+    } catch (_) {}
   }
 
   Future<void> _connect() async {
@@ -150,6 +160,15 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                     IconButton(
                       onPressed: () => _openPeopleSheet(context),
                       icon: const Icon(Icons.people_alt_rounded, color: cyan),
+                    ),
+                    if (_canManage)
+                      IconButton(
+                        onPressed: () => _openManagementSheet(context),
+                        icon: const Icon(Icons.settings_rounded, color: cyan),
+                      ),
+                    IconButton(
+                      onPressed: () => _shareRoom(context),
+                      icon: const Icon(Icons.share_rounded),
                     ),
                     IconButton(
                       onPressed: () => _openRoomInfoSheet(context),
@@ -286,30 +305,27 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                   child: Row(
                     children: [
                       IconButton.filledTonal(
-                        onPressed: _mySeat == null ? null : _toggleMute,
-                        icon: Icon(_muted ? Icons.mic_off_rounded : Icons.mic_rounded),
+                        onPressed: _mySeat == null ? (_micRequested ? null : () => _requestMic(context)) : _toggleMute,
+                        icon: Icon(_mySeat == null ? (_micRequested ? Icons.hourglass_top_rounded : Icons.back_hand_rounded) : (_muted ? Icons.mic_off_rounded : Icons.mic_rounded)),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          decoration: InputDecoration(
-                            hintText: 'اكتب رسالة...',
-                            filled: true,
-                            fillColor: panel2,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(22),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                          ),
-                          onSubmitted: (_) => _sendRoomMessage(),
-                        ),
+                        child: widget.room.chatEnabled
+                            ? TextField(
+                                controller: _messageController,
+                                decoration: InputDecoration(
+                                  hintText: 'اكتب رسالة...',
+                                  filled: true,
+                                  fillColor: panel2,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                                ),
+                                onSubmitted: (_) => _sendRoomMessage(),
+                              )
+                            : const Center(child: Text('الدردشة متوقفة', style: TextStyle(color: muted))),
                       ),
-                      IconButton(
-                        onPressed: () => _openGiftSheet(context),
-                        icon: const Icon(Icons.card_giftcard_rounded, color: pink),
-                      ),
+                      IconButton(onPressed: () => _openGiftSheet(context), icon: const Icon(Icons.card_giftcard_rounded, color: pink)),
+                      IconButton(onPressed: () => _inviteUser(context), icon: const Icon(Icons.person_add_alt_1_rounded)),
                       IconButton(onPressed: _leave, icon: const Icon(Icons.logout_rounded)),
                     ],
                   ),
@@ -420,6 +436,79 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
+  }
+
+  Future<void> _requestMic(BuildContext context) async {
+    try {
+      await _roomRepository.requestMic(widget.room.id);
+      if (mounted) setState(() => _micRequested = true);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إرسال طلب المايك إلى إدارة الغرفة')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر طلب المايك: $e')));
+    }
+  }
+
+  Future<void> _inviteUser(BuildContext context) async {
+    final controller = TextEditingController();
+    final id = await showDialog<String>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('دعوة مستخدم'),
+        content: TextField(controller: controller, decoration: const InputDecoration(labelText: 'معرّف المستخدم UUID')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(d), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(d, controller.text.trim()), child: const Text('دعوة')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (id == null || id.isEmpty) return;
+    try {
+      await _roomRepository.inviteUser(widget.room.id, id);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إرسال الدعوة')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إرسال الدعوة: $e')));
+    }
+  }
+
+  Future<void> _shareRoom(BuildContext context) async {
+    final text = 'انضم إلى غرفة ${widget.room.name} — ID: ${widget.room.id}';
+    await showDialog<void>(context: context, builder: (d) => AlertDialog(title: const Text('مشاركة الغرفة'), content: SelectableText(text), actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('إغلاق'))]));
+  }
+
+  Future<void> _openManagementSheet(BuildContext context) async {
+    final db = Supabase.instance.client;
+    final requests = await db.from('room_mic_requests').select('id,user_id,created_at').eq('room_id', widget.room.id).eq('status','pending').order('created_at');
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF120B08),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (sheet) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('إدارة الغرفة', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            ListTile(leading: const Icon(Icons.volume_off_rounded), title: const Text('كتم جميع المتحدثين'), onTap: () async { await _roomRepository.muteAll(widget.room.id); if (sheet.mounted) Navigator.pop(sheet); }),
+            SwitchListTile(value: widget.room.chatEnabled, onChanged: (v) async { await _roomRepository.setChatEnabled(widget.room.id, v); if (sheet.mounted) Navigator.pop(sheet); }, title: const Text('الدردشة')),
+            SwitchListTile(value: widget.room.isPrivate, onChanged: (v) async { await _roomRepository.setPrivate(widget.room.id, v); if (sheet.mounted) Navigator.pop(sheet); }, title: const Text('غرفة خاصة')),
+            const Divider(),
+            const Text('طلبات المايك', style: TextStyle(fontWeight: FontWeight.w900)),
+            if ((requests as List).isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('لا توجد طلبات معلقة')),
+            ...List<Map<String,dynamic>>.from(requests).map((r) => ListTile(
+              leading: const Icon(Icons.back_hand_rounded),
+              title: Text(r['user_id'].toString(), maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                IconButton(onPressed: () async { await db.rpc('resolve_room_mic_request', params: {'p_request_id': r['id'], 'p_approve': true}); if (sheet.mounted) Navigator.pop(sheet); }, icon: const Icon(Icons.check_circle, color: Colors.greenAccent)),
+                IconButton(onPressed: () async { await db.rpc('resolve_room_mic_request', params: {'p_request_id': r['id'], 'p_approve': false}); if (sheet.mounted) Navigator.pop(sheet); }, icon: const Icon(Icons.cancel, color: Colors.redAccent)),
+              ]),
+            )),
+          ],
+        ),
+      ),
+    );
   }
 
   void _openGiftSheet(BuildContext context) {
