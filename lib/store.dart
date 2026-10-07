@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'vip.dart';
 
 const _gold = Color(0xFFFFD36A);
-const _gold2 = Color(0xFFB77921);
+const _gold2 = Color(0xFFE53935);
 const _bg = Color(0xFF090604);
 const _card = Color(0xFF1B0E08);
 
@@ -126,11 +126,11 @@ class _FramePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = switch (style) {
-      'diamond' => const [Color(0xFFE9F7FF), Color(0xFF79BFFF)],
+      'diamond' => const [Color(0xFFFFE8A8), Color(0xFFE53935)],
       'fire' => const [Color(0xFFFFD36A), Color(0xFFFF3D00)],
-      'vip' => const [Color(0xFFE6C66A), Color(0xFF7D3C98)],
-      'svip' => const [Color(0xFFFFFFFF), Color(0xFF7B2CFF)],
-      _ => const [Color(0xFFFFE08A), Color(0xFFB77921)],
+      'vip' => const [Color(0xFFFFE8A8), Color(0xFFB71C1C)],
+      'svip' => const [Color(0xFFFFF4C2), Color(0xFF8F1D1D)],
+      _ => const [Color(0xFFFFE08A), Color(0xFFE53935)],
     };
     return Container(
       width: 112, height: 112, padding: const EdgeInsets.all(7),
