@@ -118,12 +118,12 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF090604);
-    const panel2 = Color(0xFF1B0E08);
-    const purple = Color(0xFF8B5A1E);
-    const pink = Color(0xFFB77921);
-    const cyan = Color(0xFFFFD36A);
-    const muted = Color(0xFFB9A995);
+    const bg = Color(0xFF0A0A0A);
+    const panel2 = Color(0xFF1A1A1A);
+    const purple = Color(0xFFD4AF37);
+    const pink = Color(0xFFD4AF37);
+    const cyan = Color(0xFFD4AF37);
+    const muted = Color(0xFF888888);
 
     return Scaffold(
       backgroundColor: bg,
@@ -132,7 +132,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF3A2110), bg, bg],
+            colors: [Color(0xFF1A1A1A), bg, bg],
           ),
         ),
         child: SafeArea(
@@ -156,11 +156,11 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                     ),
                     IconButton(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RoomGamesPage(room: widget.room))),
-                      icon: const Icon(Icons.sports_esports_rounded, color: Colors.amber),
+                      icon: const Icon(Icons.sports_esports_rounded, color: const Color(0xFFD4AF37)),
                     ),
                     IconButton(
                       onPressed: () => _openTreasureSheet(context),
-                      icon: const Icon(Icons.card_giftcard_rounded, color: Colors.amberAccent),
+                      icon: const Icon(Icons.card_giftcard_rounded, color: const Color(0xFFD4AF37)),
                     ),
                     IconButton(
                       onPressed: () => _openPeopleSheet(context),
@@ -351,7 +351,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
     final isOwner = db.auth.currentUser?.id == widget.room.ownerId;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF120B08),
+      backgroundColor: const Color(0xFF0A0A0A),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (_) => Directionality(
         textDirection: TextDirection.rtl,
@@ -370,7 +370,7 @@ class _RealVoiceRoomPageState extends State<RealVoiceRoomPage> {
                 const Padding(padding: EdgeInsets.all(24), child: Text('لا يوجد صندوق نشط حالياً', style: TextStyle(color: Color(0xFF9CA2C5))))
               else
                 ...boxes.map((box) => Card(
-                  color: const Color(0xFF171A3A),
+                  color: const Color(0xFF1A1A1A),
                   child: ListTile(
                     leading: const CircleAvatar(backgroundColor: Color(0xFFFFC94A), child: Icon(Icons.redeem, color: Colors.black)),
                     title: Text('متبقي ${box['remaining_coins']} Coins', style: const TextStyle(fontWeight: FontWeight.w900)),
