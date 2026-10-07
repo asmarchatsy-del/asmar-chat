@@ -148,4 +148,3 @@ class _FramePreview extends StatelessWidget {
       ),
     );
   }
-}
