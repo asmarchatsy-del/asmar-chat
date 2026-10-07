@@ -27,12 +27,12 @@ class AsmarAccessoriesPage extends StatelessWidget {
                 final r = rows[i];
                 final asset = r['asset_url']?.toString() ?? '';
                 return ListTile(
-                  tileColor: const Color(0xFF11152D),
+                  tileColor: const Color(0xFF1A100B),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   leading: CircleAvatar(backgroundImage: asset.isNotEmpty ? NetworkImage(asset) : null, child: asset.isEmpty ? const Icon(Icons.auto_awesome) : null),
                   title: Text(r['item_name']?.toString() ?? 'عنصر', style: const TextStyle(fontWeight: FontWeight.w900)),
-                  subtitle: Text(r['item_type']?.toString() ?? '', style: const TextStyle(color: Color(0xFFA9B0D0))),
-                  trailing: r['is_equipped'] == true ? const Icon(Icons.check_circle, color: Color(0xFFFFC94A)) : null,
+                  subtitle: Text(r['item_type']?.toString() ?? '', style: const TextStyle(color: Color(0xFFB9A995))),
+                  trailing: r['is_equipped'] == true ? const Icon(Icons.check_circle, color: Color(0xFFFFD36A)) : null,
                 );
               },
             );
