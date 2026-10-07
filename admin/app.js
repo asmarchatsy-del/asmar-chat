@@ -16,8 +16,8 @@ if(typeof supabase==='undefined' || typeof supabase.createClient!=='function'){
 const $=id=>document.getElementById(id);
 
 let booting=false;
-async function login(){
-  const btn=document.querySelector('button[onclick="login()"]');
+async function adminLogin(){
+  const btn=document.querySelector('button[onclick="adminLogin()"]');
   const email=$('email').value.trim(), password=$('password').value;
   if(!db){$('loginMsg').textContent='Supabase غير جاهز — أعد تحميل الصفحة.';return}
   if(!email||!password){$('loginMsg').textContent='أدخل البريد الإلكتروني وكلمة المرور.';return}
