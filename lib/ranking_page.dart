@@ -68,7 +68,7 @@ class _AsmarRankingPageState extends State<AsmarRankingPage> {
             final avatar = r['avatar_url']?.toString() ?? '';
             final score = r['score'] ?? (r[widget.type == 'cp' ? 'support_points' : 'coins'] ?? 0);
             return Container(
-              decoration: BoxDecoration(color: const Color(0xFF11152D), borderRadius: BorderRadius.circular(17), border: Border.all(color: i < 3 ? const Color(0xFFFFC94A) : const Color(0xFF2B315A))),
+              decoration: BoxDecoration(color: const Color(0xFF1A100B), borderRadius: BorderRadius.circular(17), border: Border.all(color: i < 3 ? const Color(0xFFFFD36A) : const Color(0xFF3A2412))),
               child: ListTile(
                 leading: CircleAvatar(
                   radius: 24,
@@ -76,8 +76,8 @@ class _AsmarRankingPageState extends State<AsmarRankingPage> {
                   child: avatar.isEmpty ? Text((i + 1).toString(), style: const TextStyle(fontWeight: FontWeight.w900)) : null,
                 ),
                 title: Text(r['name']?.toString() ?? r['display_name']?.toString() ?? r['username']?.toString() ?? 'Asmar', style: const TextStyle(fontWeight: FontWeight.w900)),
-                subtitle: Text(r['public_id']?.toString() ?? 'المركز ' + (i + 1).toString(), style: const TextStyle(color: Color(0xFFA9B0D0))),
-                trailing: Text(score.toString() + (widget.type == 'family' ? ' عضو' : ' 🪙'), style: const TextStyle(color: Color(0xFFFFC94A), fontWeight: FontWeight.w900)),
+                subtitle: Text(r['public_id']?.toString() ?? 'المركز ' + (i + 1).toString(), style: const TextStyle(color: Color(0xFFB9A995))),
+                trailing: Text(score.toString() + (widget.type == 'family' ? ' عضو' : ' 🪙'), style: const TextStyle(color: Color(0xFFFFD36A), fontWeight: FontWeight.w900)),
               ),
             );
           },
