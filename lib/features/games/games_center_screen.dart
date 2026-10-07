@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../asmar/asmar_theme.dart';
+import '../../asmar_premium_theme.dart';
 
 class GamesCenterScreen extends StatefulWidget {
   const GamesCenterScreen({super.key});
@@ -44,12 +44,12 @@ class _GamesCenterScreenState extends State<GamesCenterScreen> {
                 onTap: () => _startGame(context, game.$1.toLowerCase()),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  decoration: AsmarTheme.goldCard(radius: 20),
+                  decoration: AsmarPremiumTheme.panel(radius: 20),
                   padding: const EdgeInsets.all(16),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Container(width: 76, height: 76, decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [AsmarTheme.gold, AsmarTheme.goldDark])), child: Icon(game.$2, color: Colors.black, size: 40)),
+                    Container(width: 76, height: 76, decoration: const BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [AsmarPremiumTheme.gold, AsmarPremiumTheme.copper])), child: Icon(game.$2, color: Colors.black, size: 40)),
                     const SizedBox(height: 13),
-                    Text(game.$1, style: const TextStyle(color: AsmarTheme.gold, fontSize: 19, fontWeight: FontWeight.w900)),
+                    Text(game.$1, style: const TextStyle(color: AsmarPremiumTheme.gold, fontSize: 19, fontWeight: FontWeight.w900)),
                     const SizedBox(height: 5),
                     Text(game.$3, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 11)),
                   ]),
