@@ -120,7 +120,7 @@ abstract final class AsmarPremiumTheme {
       surfaceTintColor: Colors.transparent,
       showDragHandle: true,
     ),
-    dialogTheme: DialogThemeData(
+    dialogTheme: DialogTheme(
       backgroundColor: surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
