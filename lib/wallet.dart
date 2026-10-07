@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _gold = Color(0xFFFF9D2E);
-const _gold2 = Color(0xFFF47B20);
-const _bg = Color(0xFFFFFAF6);
-const _card = Color(0xFFFFFFFF);
+const _gold = Color(0xFFD4AF37);
+const _gold2 = Color(0xFFD4AF37);
+const _bg = Color(0xFF0A0A0A);
+const _card = Color(0xFF1A1A1A);
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -64,7 +64,7 @@ class _WalletPageState extends State<WalletPage> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(24),
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFFFC56E), Color(0xFFFF8A4C)],
+                          colors: [Color(0xFFD4AF37), Color(0xFF8A6B1F)],
                         ),
                         border: Border.all(color: _gold2),
                       ),
