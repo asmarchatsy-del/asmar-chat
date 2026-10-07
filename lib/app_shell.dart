@@ -110,9 +110,7 @@ class _AuthLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Scaffold(
     backgroundColor: Color(0xFF090604),
-    body: Center(
-      child: CircularProgressIndicator(),
-    ),
+    body: Center(child: CircularProgressIndicator()),
   );
 }
 
@@ -135,7 +133,9 @@ class _BackendUnavailable extends StatelessWidget {
 
 class AsmarLoginPage extends StatefulWidget {
   const AsmarLoginPage({super.key});
-  @override State<AsmarLoginPage> createState() => _AsmarLoginPageState();
+
+  @override
+  State<AsmarLoginPage> createState() => _AsmarLoginPageState();
 }
 
 class _AsmarLoginPageState extends State<AsmarLoginPage> {
@@ -143,6 +143,7 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
   final password = TextEditingController();
   bool emailMode = false;
   bool busy = false;
+  bool obscurePassword = true;
 
   Future<void> _googleLogin() async {
     if (busy) return;
@@ -203,104 +204,307 @@ class _AsmarLoginPageState extends State<AsmarLoginPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Directionality(
-    textDirection: TextDirection.rtl,
-    child: Scaffold(
-      backgroundColor: AsmarPremiumTheme.bg,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(
-                children: [
-                  Container(
-                    width: 94,
-                    height: 94,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFFE26A), Color(0xFFFFC94A), Color(0xFFE53935)],
-                      ),
-                      boxShadow: [
-                        BoxShadow(color: Color(0x66B71C1C), blurRadius: 30, spreadRadius: 3),
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: AsmarPremiumTheme.bg,
+        body: Stack(
+          children: [
+            Positioned(
+              top: -110,
+              left: -90,
+              child: IgnorePointer(
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AsmarPremiumTheme.gold.withOpacity(.20),
+                        Colors.transparent,
                       ],
                     ),
-                    child: const Icon(Icons.mic_rounded, size: 48, color: Color(0xFF111111)),
                   ),
-                  const SizedBox(height: 18),
-                  const Text('Asmar', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 6),
-                  const Text('ادخل إلى عالمك الصوتي', style: TextStyle(color: Color(0xFFB9A995), fontSize: 14)),
-                  const SizedBox(height: 30),
-                  if (!emailMode) ...[
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: FilledButton.icon(
-                        onPressed: busy ? null : _googleLogin,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black87,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -120,
+              right: -90,
+              child: IgnorePointer(
+                child: Container(
+                  width: 320,
+                  height: 320,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AsmarPremiumTheme.copper.withOpacity(.16),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 430),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 154,
+                          height: 154,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFFFFF0A8),
+                                Color(0xFFFFC107),
+                                Color(0xFFE53935),
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AsmarPremiumTheme.gold.withOpacity(.24),
+                                blurRadius: 34,
+                                spreadRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/asmar_login_icon.jpg',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
-                        icon: const Icon(Icons.g_mobiledata_rounded, size: 30),
-                        label: Text(
-                          busy ? 'جارٍ تسجيل الدخول...' : 'المتابعة باستخدام Google',
-                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Asmar',
+                          style: textTheme.headlineMedium?.copyWith(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .2,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 7),
+                        Text(
+                          'عالمك الصوتي يبدأ من هنا',
+                          textAlign: TextAlign.center,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: AsmarPremiumTheme.muted,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          child: emailMode
+                              ? _buildEmailLogin()
+                              : _buildSocialLogin(),
+                        ),
+                        const SizedBox(height: 22),
+                        Text(
+                          'بتسجيل الدخول أنت توافق على شروط الاستخدام وسياسة الخصوصية.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AsmarPremiumTheme.muted.withOpacity(.72),
+                            fontSize: 11,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'إذا كان لديك حساب Google بالفعل سيتم تسجيل دخولك مباشرة. وإذا كانت هذه أول مرة، سيُنشأ حساب Asmar تلقائياً من بيانات Google بدون نموذج إنشاء حساب منفصل.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF9EA6C7), fontSize: 12, height: 1.5),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialLogin() {
+    return Column(
+      key: const ValueKey('social-login'),
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton(
+            onPressed: busy ? null : _googleLogin,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF17110D),
+              disabledBackgroundColor: Colors.white.withOpacity(.65),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'G',
+                    style: TextStyle(
+                      color: Color(0xFF4285F4),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
                     ),
-                    const SizedBox(height: 22),
-                    TextButton(
-                      onPressed: busy ? null : () => setState(() => emailMode = true),
-                      child: const Text('لدي حساب بالفعل بالبريد الإلكتروني'),
-                    ),
-                  ] else ...[
-                    const Align(
-                      alignment: Alignment.centerRight,
-                      child: Text('تسجيل الدخول بالبريد الإلكتروني', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: email,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(labelText: 'البريد الإلكتروني'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: password,
-                      obscureText: true,
-                      decoration: const InputDecoration(labelText: 'كلمة المرور'),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: FilledButton(
-                        onPressed: busy ? null : _emailLogin,
-                        child: Text(busy ? 'جارٍ الدخول...' : 'تسجيل الدخول'),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: busy ? null : () => setState(() => emailMode = false),
-                      child: const Text('العودة إلى تسجيل الدخول باستخدام Google'),
-                    ),
-                  ],
-                ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  busy ? 'جارٍ فتح تسجيل الدخول...' : 'المتابعة باستخدام Google',
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: Divider(color: AsmarPremiumTheme.muted.withOpacity(.18))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                'أو',
+                style: TextStyle(
+                  color: AsmarPremiumTheme.muted.withOpacity(.8),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: AsmarPremiumTheme.muted.withOpacity(.18))),
+          ],
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: OutlinedButton.icon(
+            onPressed: busy ? null : () => setState(() => emailMode = true),
+            icon: const Icon(Icons.mail_outline_rounded, size: 20),
+            label: const Text(
+              'تسجيل الدخول بالبريد الإلكتروني',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AsmarPremiumTheme.goldBright,
+              side: BorderSide(color: AsmarPremiumTheme.gold.withOpacity(.38)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
               ),
             ),
           ),
         ),
-      ),
-    ),
-  );
+        const SizedBox(height: 13),
+        Text(
+          'لست بحاجة إلى إنشاء حساب منفصل عند استخدام Google.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AsmarPremiumTheme.muted.withOpacity(.9),
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmailLogin() {
+    return Column(
+      key: const ValueKey('email-login'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              onPressed: busy ? null : () => setState(() => emailMode = false),
+              icon: const Icon(Icons.arrow_forward_rounded),
+              tooltip: 'العودة',
+            ),
+            const Expanded(
+              child: Text(
+                'تسجيل الدخول بالبريد الإلكتروني',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+              ),
+            ),
+            const SizedBox(width: 48),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: email,
+          keyboardType: TextInputType.emailAddress,
+          textDirection: TextDirection.ltr,
+          decoration: const InputDecoration(
+            labelText: 'البريد الإلكتروني',
+            prefixIcon: Icon(Icons.mail_outline_rounded),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: password,
+          obscureText: obscurePassword,
+          textDirection: TextDirection.ltr,
+          decoration: InputDecoration(
+            labelText: 'كلمة المرور',
+            prefixIcon: const Icon(Icons.lock_outline_rounded),
+            suffixIcon: IconButton(
+              onPressed: () => setState(() => obscurePassword = !obscurePassword),
+              icon: Icon(
+                obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          height: 54,
+          child: FilledButton(
+            onPressed: busy ? null : _emailLogin,
+            style: FilledButton.styleFrom(
+              backgroundColor: AsmarPremiumTheme.gold,
+              foregroundColor: const Color(0xFF17100B),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+            child: Text(
+              busy ? 'جارٍ الدخول...' : 'تسجيل الدخول',
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: busy ? null : () => setState(() => emailMode = false),
+          child: const Text('العودة إلى خيارات الدخول'),
+        ),
+      ],
+    );
+  }
 }
