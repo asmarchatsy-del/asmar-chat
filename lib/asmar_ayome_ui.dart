@@ -24,9 +24,9 @@ const _bg = Color(0xFF090604);
 const _panel = Color(0xFF1A100B);
 const _panel2 = Color(0xFF24150D);
 const _gold = Color(0xFFFFD36A);
-const _orange = Color(0xFFB77921);
-const _purple = Color(0xFF8D4E24);
-const _pink = Color(0xFF9C4A4A);
+const _orange = Color(0xFFE53935);
+const _purple = Color(0xFFB71C1C);
+const _pink = Color(0xFF8F1D1D);
 const _muted = Color(0xFFB9A995);
 
 class AsmarAyomeShell extends StatefulWidget {
@@ -370,7 +370,7 @@ class _Room extends StatelessWidget {
               decoration: BoxDecoration(
                 color: _panel,
                 borderRadius: BorderRadius.circular(17),
-                border: Border.all(color: const Color(0xFF2B315A)),
+                border: Border.all(color: const Color(0xFF5C1015)),
               ),
               child: Row(
                 children: [
@@ -659,9 +659,9 @@ class _AyomeProfilePageState extends State<_AyomeProfilePage> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
               gradient: const LinearGradient(
-                colors: [Color(0xFF2A155F), Color(0xFF10152E)],
+                colors: [Color(0xFF5C1015), Color(0xFF1A100B)],
               ),
-              border: Border.all(color: Color(0xFF4B3972)),
+              border: Border.all(color: Color(0xFFB71C1C)),
             ),
             child: Column(
               children: [
