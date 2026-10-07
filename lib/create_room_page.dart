@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'core/rooms/room_repository.dart';
 import 'core/rooms/real_voice_room_page.dart';
 
-const _crBg = Color(0xFF090604);
-const _crPanel = Color(0xFF1B0E08);
-const _crPurple = Color(0xFFB77921);
-const _crPink = Color(0xFF9A641F);
-const _crCyan = Color(0xFFFFD36A);
-const _crMuted = Color(0xFFB9A995);
+const _crBg = Color(0xFF0A0A0A);
+const _crPanel = Color(0xFF1A1A1A);
+const _crPurple = Color(0xFFD4AF37);
+const _crPink = Color(0xFFD4AF37);
+const _crCyan = Color(0xFFD4AF37);
+const _crMuted = Color(0xFF888888);
 
 class CreateRoomPage extends StatefulWidget {
   const CreateRoomPage({super.key});
@@ -71,7 +71,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFE0A52A), Color(0xFF6B2C0B), Color(0xFF1B0E08)],
+                  colors: [Color(0xFFD4AF37), Color(0xFF8A6B1F), Color(0xFF0A0A0A)],
                   begin: Alignment.topRight, end: Alignment.bottomLeft,
                 ),
               ),
@@ -135,7 +135,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
             FilledButton.icon(
               onPressed: _busy ? null : _create,
               style: FilledButton.styleFrom(
-                backgroundColor: _crPurple, foregroundColor: Colors.white,
+                backgroundColor: _crPurple, foregroundColor: Colors.black,
                 minimumSize: const Size.fromHeight(54),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               ),
