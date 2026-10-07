@@ -8,7 +8,7 @@ import 'asmar_premium_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   BackendConfig.validate();
-  final initialized = await SupabaseRuntime.initialize();
+  await SupabaseRuntime.initialize();
   runApp(const AsmarChatApp());
 }
 
